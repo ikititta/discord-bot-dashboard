@@ -3,6 +3,7 @@ import { toRoyalBold } from "./embed-format.js";
 export const PRIVATE_CHAT_LOBBY_CHANNEL_ID = "1568179043356901376";
 
 const MAX_CHANNEL_LABEL_LENGTH = 32;
+const PRIVATE_CHAT_NAME_SEPARATOR = "୨୧";
 
 /** Convert a display name into a channel-safe slug while preserving Unicode letters. */
 export function normalizePrivateChatLabel(value) {
@@ -26,7 +27,7 @@ export function normalizePrivateChatLabel(value) {
 }
 
 export function formatPrivateChatChannelName(displayName) {
-  return `👤｜9e—${toRoyalBold(normalizePrivateChatLabel(displayName))}—9e°♡`;
+  return `👤｜${PRIVATE_CHAT_NAME_SEPARATOR}—${toRoyalBold(normalizePrivateChatLabel(displayName))}—${PRIVATE_CHAT_NAME_SEPARATOR}°♡`;
 }
 
 /** Ignore decorative marks and compatibility-font lettering such as math script. */
