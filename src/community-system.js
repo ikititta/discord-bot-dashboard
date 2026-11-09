@@ -650,7 +650,7 @@ function hasReportButton(message, kind, messageId) {
 
 async function getConfiguredReportsChannel(interaction, settings) {
   const configuredId = settings?.get(interaction.guildId)?.reportsChannelId;
-  if (/^\\d{17,20}$/.test(configuredId ?? "") &&
+  if (/^\d{17,20}$/.test(configuredId ?? "") &&
       ![CONFESSIONS_CHANNEL_ID, LOVE_LETTERS_CHANNEL_ID].includes(configuredId)) {
     const configured = await interaction.guild.channels.fetch(configuredId).catch(() => null);
     if (configured?.type === ChannelType.GuildText) return configured;
