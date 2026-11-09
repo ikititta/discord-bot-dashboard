@@ -126,6 +126,25 @@ export function attachStickyPanel(client, {
     await pin(next);
   }
 
+  async function refresh() {
+    const channel = await getChannel();
+    let previous = currentMessage;
+    if (!previous) previous = await fetchSaved(channel);
+    if (!previous) previous = await findExisting(channel);
+    if (!previous) return ensure();
+
+    // Explicitly refresh after Sugar publishes a community post; bot-authored
+    // messages are intentionally ignored by the generic MessageCreate hook.
+    const next = await channel.send(buildPayload());
+    currentMessage = next;
+    store.set(key, next.id);
+    await previous.delete().catch((error) => {
+      if (error?.code !== 10008) logFailure(error);
+    });
+    await pin(next);
+    return next;
+  }
+
   client.once(Events.ClientReady, () => {
     void enqueue(ensure);
   });
@@ -141,4 +160,6 @@ export function attachStickyPanel(client, {
     store.set(key, null);
     void enqueue(ensure);
   });
+
+  return { refresh: () => enqueue(refresh) };
 }
