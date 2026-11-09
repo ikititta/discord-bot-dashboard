@@ -5,6 +5,7 @@ import {
   MessageType,
 } from "discord.js";
 import { createCanvas, loadImage } from "@napi-rs/canvas";
+import { registerApplicationCommands } from "./command-registry.js";
 
 const QUOTES_CHANNEL_NAME = "quotes";
 const PINK = "#ffd9ff";
@@ -179,7 +180,22 @@ export async function createQuoteFromReply(commandMessage) {
   await commandMessage.react("♡").catch(() => {});
 }
 
-export function attachQuoteSystem(client) {
+export function attachQuoteSystem(client, { token, applicationId } = {}) {
+  client.once(Events.ClientReady, async () => {
+    for (const guild of client.guilds.cache.values()) {
+      try {
+        await registerApplicationCommands({
+          token,
+          applicationId,
+          guildId: guild.id,
+          commands: [],
+          removeCommandNames: ["quote", "Quote"],
+        });
+      } catch (error) {
+        console.error(`[quotes] legacy command cleanup failed in ${guild.id}: ${error.message}`);
+      }
+    }
+  });
   client.on(Events.MessageCreate, async (message) => {
     if (message.author.bot || !message.guild || message.content.trim().toLowerCase() !== COMMAND) return;
     try {
