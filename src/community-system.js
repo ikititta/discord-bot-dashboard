@@ -651,7 +651,7 @@ async function submitCommunityReport(interaction, { reportKind, messageId, setti
       !hasReportButton(target, reportKind, messageId)) {
     return interaction.editReply("This post can no longer be reported.");
   }
-  const reportChannelId = settings?.get(interaction.guildId)?.logChannelId;
+  const reportChannelId = settings?.get(interaction.guildId)?.reportsChannelId;
   if (!/^\d{17,20}$/.test(reportChannelId ?? "")) {
     return interaction.editReply("Reports are temporarily unavailable. Please contact a moderator.");
   }
