@@ -690,7 +690,7 @@ async function publishCommunityThreadMessageReply(interaction, kind, mode, targe
 
 function formatReplyDescription(body, replyName, targetName) {
   if (replyName && targetName) {
-    return `**${replyName} replied to ${targetName}**\\n\\n${body}`;
+    return `**@${replyName} replied to @${targetName}**\\n\\n${body}`;
   }
   return body;
 }
