@@ -122,6 +122,12 @@ test("legacy standalone confess picker now opens two anonymous-or-named buttons"
   assert.ok(buttons.every((item) => item.type === 2));
 });
 
+test("reply thread lookup fetches the thread by its starter message ID", () => {
+  const source = fs.readFileSync(new URL("../src/community-system.js", import.meta.url), "utf8");
+  assert.match(source, /channel\.threads\.fetch\(parent\.id, \{ force: true \}\)/);
+  assert.doesNotMatch(source, /threads\.fetch\(\{\s*message:/);
+});
+
 test("community post reply picker offers anonymous and named thread replies", () => {
   const payload = buildReplyModePicker("confession", "123456789012345678");
   const buttons = payload.components[0].toJSON().components;
