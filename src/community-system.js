@@ -575,7 +575,7 @@ async function publishThreadReply(interaction, channel, kind, mode, parentId) {
   }
   // Fetch even when Discord reports no active thread: an archived thread may
   // already exist for this message, and trying to create a second one fails.
-  let thread = await parent.fetchThread().catch(() => null);
+  let thread = await channel.threads.fetch({ message: parent.id }).catch(() => null);
   if (thread?.locked) await thread.setLocked(false, "Reopening community replies");
   if (thread?.archived) await thread.setArchived(false, "Reopening community replies");
   if (!thread) {
