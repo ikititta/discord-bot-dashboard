@@ -9,8 +9,8 @@ export class SuggestionStore {
   }
 
   vote(messageId, userId, direction) {
-    if (!/^\\d{17,20}$/.test(messageId ?? "") ||
-        !/^\\d{17,20}$/.test(userId ?? "") ||
+    if (!/^\d{17,20}$/.test(messageId ?? "") ||
+        !/^\d{17,20}$/.test(userId ?? "") ||
         !["up", "down"].includes(direction)) {
       throw new Error("Invalid suggestion vote.");
     }
@@ -51,9 +51,9 @@ export class SuggestionStore {
     }
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed) ||
         Object.entries(parsed).some(([messageId, votes]) =>
-          !/^\\d{17,20}$/.test(messageId) || !votes || typeof votes !== "object" ||
+          !/^\d{17,20}$/.test(messageId) || !votes || typeof votes !== "object" ||
           Array.isArray(votes) || Object.entries(votes).some(([userId, vote]) =>
-            !/^\\d{17,20}$/.test(userId) || !["up", "down"].includes(vote)))) {
+            !/^\d{17,20}$/.test(userId) || !["up", "down"].includes(vote)))) {
       throw new Error("suggestion-votes.json has an invalid structure; refusing to overwrite it.");
     }
     return parsed;
