@@ -85,6 +85,7 @@ test("sticky panel moves to the bottom after a new channel message", async () =>
     id: "323456789012345678",
     channelId: h.channel.id,
     author: { id: "323456789012345678", bot: false },
+    content: ".",
     createdTimestamp: h.nextTimestamp(),
   };
   h.messages.set(userMessage.id, userMessage);
@@ -240,7 +241,7 @@ test("messages in other channels and bot-authored non-panel messages cannot cros
   assert.notEqual(h.stickyStore.get("main-panel"), firstId);
 });
 
-test("startup preserves the existing panel without refreshing its content", async () => {
+test("startup refreshes an existing sticky panel with the latest embed and buttons", async () => {
   const h = makeHarness();
   const oldPanel = {
     id: "723456789012345678",
@@ -267,5 +268,5 @@ test("startup preserves the existing panel without refreshing its content", asyn
   const currentId = h.stickyStore.get("main-panel");
   assert.equal(currentId, oldPanel.id);
   assert.equal(h.messages.has(oldPanel.id), true);
-  assert.deepEqual(h.messages.get(currentId).embeds, [{ title: "Primary Panel", description: "legacy" }]);
+  assert.deepEqual(h.messages.get(currentId).embeds, [{ title: "Primary Panel" }]);
 });
