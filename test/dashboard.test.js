@@ -359,16 +359,16 @@ test("a server name cannot inject markup into the settings page", () => {
 test("the selected channel is the one that comes back selected", () => {
   const html = guildPage({
     guild: { id: "1", name: "Emberfell" },
-    settings: cleanSettings({}),
+    settings: cleanSettings({ logChannelId: "22222" }),
     channels: [
-      { id: "2", name: "general" },
-      { id: "3", name: "logs" },
+      { id: "22222", name: "general" },
+      { id: "33333", name: "logs" },
     ],
     csrf: "token",
   });
 
-  assert.match(html, /<option value="2" selected>#general<\/option>/);
-  assert.match(html, /<option value="3">#logs<\/option>/);
+  assert.match(html, /<option value="22222" selected>#general<\/option>/);
+  assert.match(html, /<option value="33333">#logs<\/option>/);
 });
 
 test("escapeHtml covers the characters that matter", () => {
