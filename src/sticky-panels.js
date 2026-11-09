@@ -97,7 +97,7 @@ export function attachStickyPanel(client, {
     return message;
   }
 
-  async function moveAfter(triggerMessage) {
+  async function moveAfter() {
     const channel = await getChannel();
     let previous = currentMessage;
     if (!previous) previous = await fetchSaved(channel);
@@ -106,8 +106,8 @@ export function attachStickyPanel(client, {
       await ensure();
       return;
     }
-    // Every non-bot message must put the panel after it. Do not rely only on
-    // timestamps: Discord can deliver events close together or out of order.
+    // A new message in this channel puts the panel after it. Do not rely only
+    // on timestamps: Discord can deliver events close together or out of order.
 
     // Publish first, then retire the old message so a send failure never loses the panel.
     const next = await channel.send(buildPayload());
@@ -127,7 +127,7 @@ export function attachStickyPanel(client, {
     // Ignore this sticky panel only. Any other message, including another
     // bot's post, is activity local to this channel.
     if (message.id === currentMessage?.id || message.id === store.get(key) || isPanel(message)) return;
-    void enqueue(() => moveAfter(message));
+    void enqueue(moveAfter);
   });
 
   client.on(Events.MessageDelete, (message) => {
