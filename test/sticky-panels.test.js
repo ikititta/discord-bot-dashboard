@@ -191,7 +191,7 @@ test("sticky panel setup restores the panel below messages posted while Sugar wa
 });
 
 
-test("community-triggered refresh republishes the panel and deletes the previous message", async () => {
+test("sticky panel exposes no cross-system refresh action", async () => {
   const h = makeHarness();
   const panel = attachStickyPanel(h.client, {
     store: h.stickyStore,
@@ -202,16 +202,45 @@ test("community-triggered refresh republishes the panel and deletes the previous
   });
   h.client.emit(Events.ClientReady);
   await settle();
-  const firstId = h.stickyStore.get("main-panel");
-
-  await panel.refresh();
-  const nextId = h.stickyStore.get("main-panel");
-  assert.notEqual(nextId, firstId);
-  assert.equal(h.messages.has(firstId), false);
-  assert.equal(h.messages.get(nextId).pinned, false);
+  assert.equal(panel.channelId, h.channel.id);
+  assert.equal(panel.key, "main-panel");
+  assert.equal(panel.refresh, undefined);
 });
 
-test("startup replaces the existing panel with the current canonical payload", async () => {
+test("messages in other channels and bot-authored non-panel messages cannot cross-update panels", async () => {
+  const h = makeHarness();
+  attachStickyPanel(h.client, {
+    store: h.stickyStore,
+    key: "main-panel",
+    channelId: h.channel.id,
+    titles: ["Primary Panel"],
+    buildPayload: h.payload,
+  });
+  h.client.emit(Events.ClientReady);
+  await settle();
+  const firstId = h.stickyStore.get("main-panel");
+
+  h.client.emit(Events.MessageCreate, {
+    id: "823456789012345678",
+    channelId: "923456789012345678",
+    author: { id: "323456789012345678", bot: false },
+  });
+  await settle();
+  assert.equal(h.stickyStore.get("main-panel"), firstId);
+
+  const otherBotMessage = {
+    id: "823456789012345679",
+    channelId: h.channel.id,
+    author: { id: "423456789012345678", bot: true },
+    createdTimestamp: h.nextTimestamp(),
+  };
+  h.messages.set(otherBotMessage.id, otherBotMessage);
+  h.client.emit(Events.MessageCreate, otherBotMessage);
+  await settle();
+  assert.notEqual(h.stickyStore.get("main-panel"), firstId);
+});
+
+test("startup preserves the existing panel without refreshing its content", async () => {
   const h = makeHarness();
   const oldPanel = {
     id: "723456789012345678",
@@ -236,7 +265,7 @@ test("startup replaces the existing panel with the current canonical payload", a
   h.client.emit(Events.ClientReady);
   await settle();
   const currentId = h.stickyStore.get("main-panel");
-  assert.notEqual(currentId, oldPanel.id);
-  assert.equal(h.messages.has(oldPanel.id), false);
-  assert.deepEqual(h.messages.get(currentId).embeds, h.payload().embeds);
+  assert.equal(currentId, oldPanel.id);
+  assert.equal(h.messages.has(oldPanel.id), true);
+  assert.deepEqual(h.messages.get(currentId).embeds, [{ title: "Primary Panel", description: "legacy" }]);
 });
