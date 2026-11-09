@@ -51,6 +51,8 @@ test("confessions panel offers anonymous, named, and poll actions", () => {
   ]);
   assert.ok(buttons.every((item) => !item.label.toLowerCase().includes("with my name")));
   assert.equal(payload.embeds[0].toJSON().title, "୨୧ 𝒄𝒐𝒏𝒇𝒆𝒔𝒔ions ♡");
+  assert.equal(buttons[1].style, 2);
+  assert.equal(buttons[1].label, "Create a Poll ♡");
 });
 
 test("love letters panel offers anonymous and named public submissions", () => {
@@ -101,9 +103,10 @@ test("Love Letters posts use green Reply and red Report buttons with an empty he
   assert.equal(letterButtons.at(-1).label, "Report ♡");
 
   const confessionButtons = buildCommunityPostComponents("confession", "123456789012345678")[0].toJSON().components;
-  assert.equal(confessionButtons[0].style, 2);
+  assert.equal(confessionButtons[0].style, 3);
+  assert.equal(confessionButtons[0].label, "Reply ♡");
   assert.equal(confessionButtons.at(-1).style, 4);
-  assert.equal(confessionButtons.at(-1).label, "Report");
+  assert.equal(confessionButtons.at(-1).label, "Report ♡");
 });
 
 test("legacy standalone confess picker now opens the anonymous-or-named selector", () => {
