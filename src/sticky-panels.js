@@ -76,28 +76,29 @@ export function attachStickyPanel(client, {
 
   async function ensure() {
     const channel = await getChannel();
-    let message = await fetchSaved(channel);
-    if (message && !isPanel(message)) message = null;
-    if (!message) message = await findExisting(channel);
-    if (message) {
-      await message.edit(buildPayload());
-      const recent = await channel.messages.fetch({ limit: 100 });
-      const newestOtherMessage = [...recent.values()]
-        .filter((candidate) => candidate.id !== message.id)
-        .sort((a, b) => b.createdTimestamp - a.createdTimestamp)[0];
-      if (newestOtherMessage && newestOtherMessage.createdTimestamp > message.createdTimestamp) {
-        const previous = message;
-        message = await channel.send(buildPayload());
-        store.set(key, message.id);
-        await previous.delete().catch((error) => {
-          if (error?.code !== 10008) logFailure(error);
-        });
-      }
-    } else {
-      message = await channel.send(buildPayload());
+    let saved = await fetchSaved(channel);
+    if (saved && !isPanel(saved)) saved = null;
+    const recent = await findExisting(channel);
+    let previous = saved;
+    if (recent && (!previous || recent.createdTimestamp > previous.createdTimestamp)) {
+      previous = recent;
     }
+
+    // Recreate on startup instead of merely editing the old message. This
+    // removes legacy buttons and guarantees the canonical panel is at bottom.
+    const message = await channel.send(buildPayload());
     currentMessage = message;
     store.set(key, message.id);
+    if (previous) {
+      await previous.delete().catch((error) => {
+        if (error?.code !== 10008) logFailure(error);
+      });
+    }
+    if (saved && previous?.id !== saved.id) {
+      await saved.delete().catch((error) => {
+        if (error?.code !== 10008) logFailure(error);
+      });
+    }
     await pin(message);
     return message;
   }
@@ -111,10 +112,8 @@ export function attachStickyPanel(client, {
       await ensure();
       return;
     }
-    if (previous.createdTimestamp >= triggerMessage.createdTimestamp) {
-      currentMessage = previous;
-      return;
-    }
+    // Every non-bot message must put the panel after it. Do not rely only on
+    // timestamps: Discord can deliver events close together or out of order.
 
     // Publish first, then retire the old message so a send failure never loses the panel.
     const next = await channel.send(buildPayload());
