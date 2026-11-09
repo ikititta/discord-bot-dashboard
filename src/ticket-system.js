@@ -68,7 +68,13 @@ export function buildTicketPermissionOverwrites({ guild, openerId, moderatorRole
       allow: [...MEMBER_PERMISSIONS, PermissionFlagsBits.ManageChannels, PermissionFlagsBits.ManageMessages],
     },
   ];
-  for (const roleId of moderatorRoleIds) {
+  const staffRoleIds = new Set(moderatorRoleIds);
+  for (const role of guild.roles.cache.values()) {
+    if (role.permissions.has(PermissionFlagsBits.ManageChannels) || role.permissions.has(PermissionFlagsBits.ManageMessages)) {
+      staffRoleIds.add(role.id);
+    }
+  }
+  for (const roleId of staffRoleIds) {
     if (guild.roles.cache.has(roleId)) {
       overwrites.push({
         id: roleId,
@@ -191,6 +197,7 @@ async function createTicketFromModal(interaction, { client, settings, panelChann
     return interaction.editReply("Please provide at least 10 characters describing your request.");
   }
 
+  await guild.channels.fetch();
   const existing = guild.channels.cache.find((channel) => {
     const ticket = parseTicketTopic(channel.topic);
     return channel.type === ChannelType.GuildText && ticket?.openerId === interaction.user.id && ticket.guildId === guild.id;
