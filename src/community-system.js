@@ -1084,8 +1084,12 @@ async function handleSuggestionVote(interaction, { suggestionStore, messageId, d
   const original = interaction.message.embeds[0];
   const embed = EmbedBuilder.from(original);
   embed.setFields((original.fields ?? []).map((field) => {
-    if (field.name === "⬆️ Upvotes") return { ...field, value: String(counts.up) };
-    if (field.name === "⬇️ Downvotes") return { ...field, value: String(counts.down) };
+    if (field.name === "↑ Upvotes" || field.name === "⬆️ Upvotes") {
+      return { ...field, name: "⬆️ Upvotes", value: String(counts.up) };
+    }
+    if (field.name === "↓ Downvotes" || field.name === "⬇️ Downvotes") {
+      return { ...field, name: "⬇️ Downvotes", value: String(counts.down) };
+    }
     return field;
   }));
   return interaction.update({ embeds: [embed], components: buildSuggestionComponents(messageId) });
