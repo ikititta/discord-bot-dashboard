@@ -35,7 +35,7 @@ function reportButton(kind, messageId) {
   return button(`report:${kind}:${messageId}`, "Report", ButtonStyle.Danger);
 }
 
-function postComponents(kind, messageId) {
+export function buildCommunityPostComponents(kind, messageId) {
   const buttons = [];
   if (kind === "confession" || kind === "letter") buttons.push(replyButton(kind, messageId));
   if (kind === "confession") buttons.push(button("confess-new", "Confess ♡", ButtonStyle.Primary));
@@ -511,10 +511,10 @@ async function handleCommunityModal(interaction, {
     const message = await channel.send({
       content,
       embeds: [embed],
-      components: postComponents("confession", "0"),
+      components: buildCommunityPostComponents("confession", "0"),
       allowedMentions,
     });
-    await message.edit({ components: postComponents("confession", message.id) });
+    await message.edit({ components: buildCommunityPostComponents("confession", message.id) });
     await refreshConfessionsPanel();
     return interaction.editReply("Your confession has been published ♡");
   }
@@ -539,10 +539,10 @@ async function handleCommunityModal(interaction, {
     const message = await channel.send({
       content,
       embeds: [embed],
-      components: postComponents("letter", "0"),
+      components: buildCommunityPostComponents("letter", "0"),
       allowedMentions: { parse: [], users: [...new Set(mentions)] },
     });
-    await message.edit({ components: postComponents("letter", message.id) });
+    await message.edit({ components: buildCommunityPostComponents("letter", message.id) });
     await refreshLoveLettersPanel();
     return interaction.editReply("Your love letter has been published ♡");
   }
