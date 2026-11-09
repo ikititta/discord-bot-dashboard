@@ -461,7 +461,7 @@ async function handleCommunityModal(interaction, {
     const embed = new EmbedBuilder()
       .setColor(COLOR)
       .setTitle(formatEmbedTitle("Community Poll"))
-      .setDescription(`**${question}**\\n\\n${options.map((option, index) => `${CONFESSION_REACTIONS[index]}  ${option}`).join("\\n")}\\n\\n*React to vote!*`);
+      .setDescription(`**${question}**\n\n${options.map((option, index) => `${CONFESSION_REACTIONS[index]}  ${option}`).join("\n")}\n\n*React to vote!*`);
     if (mode === "named") {
       embed.setAuthor({
         name: interaction.member?.displayName ?? interaction.user.username,
