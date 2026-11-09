@@ -51,7 +51,7 @@ export function buildConfessionsPanelPayload() {
     .setDescription("Share a confession or create a poll. Choose how you want your post to appear.");
   const row = new ActionRowBuilder().addComponents(
     button("confess-start", "Submit a Confession ♡"),
-    button("poll-start", "Create a Poll ♡", ButtonStyle.Secondary),
+    button("poll-start", "Create Poll ♡", ButtonStyle.Secondary),
   );
   return { embeds: [embed], components: [row] };
 }
@@ -621,6 +621,10 @@ async function publishThreadReply(interaction, channel, kind, mode, parentId) {
   });
   await reply.edit({
     components: [new ActionRowBuilder().addComponents(reportButton(`${kind}-reply`, reply.id))],
+  }).catch((error) => {
+    // The reply is already published; a button refresh failure must not report
+    // the whole publication as failed.
+    console.error(`[community] reply report button update failed (reply=${reply.id}):`, error);
   });
   return interaction.editReply("Your reply has been added to the thread ♡");
   } catch (error) {
