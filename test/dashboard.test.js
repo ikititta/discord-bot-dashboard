@@ -167,6 +167,7 @@ test("a guild nobody configured gets the defaults", () => {
 });
 
 test("a channel id that is not a snowflake means off", () => {
+  const clean = cleanSettings({ logChannelId: "<script>" });
   assert.equal(clean.logChannelId, null);
 });
 
@@ -210,6 +211,29 @@ test("nothing outside the three known fields is stored", () => {
     "moderatorRoleIds",
     "vipRoleIds",
   ]);
+});
+
+test("legacy welcome fields are ignored without rewriting persistent settings", () => {
+  const dir = tempDir();
+  const file = path.join(dir, "settings.json");
+  const legacy = JSON.stringify({
+    "941800000000000001": {
+      welcomeChannelId: "941800000000000002",
+      welcomeMessage: "Old welcome",
+      logChannelId: "941800000000000003",
+      vipRoleIds: [],
+      moderatorRoleIds: [],
+    },
+  });
+  fs.writeFileSync(file, legacy);
+
+  const settings = new SettingsStore(dir);
+  assert.deepEqual(settings.get("941800000000000001"), {
+    logChannelId: "941800000000000003",
+    vipRoleIds: [],
+    moderatorRoleIds: [],
+  });
+  assert.equal(fs.readFileSync(file, "utf8"), legacy);
 });
 
 test("corrupt settings stop loading without changing the file", () => {
@@ -296,6 +320,7 @@ test("production storage failure does not create or fall back from DATA_DIR", ()
 test("a server name cannot inject markup into the settings page", () => {
   const html = guildPage({
     guild: { id: "1", name: "<script>alert(1)</script>" },
+    settings: cleanSettings({}),
     channels: [{ id: "2", name: "general" }],
     csrf: "token",
   });
@@ -308,6 +333,7 @@ test("a server name cannot inject markup into the settings page", () => {
 test("the selected channel is the one that comes back selected", () => {
   const html = guildPage({
     guild: { id: "1", name: "Emberfell" },
+    settings: cleanSettings({}),
     channels: [
       { id: "2", name: "general" },
       { id: "3", name: "logs" },
