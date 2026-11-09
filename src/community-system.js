@@ -578,7 +578,7 @@ async function publishThreadReply(interaction, channel, kind, mode, parentId) {
   // already exist for this message, and trying to create a second one fails.
   let thread;
   try {
-    thread = await channel.threads.fetch({ message: parent.id, force: true });
+    thread = await channel.threads.fetch(parent.id, { force: true });
   } catch (error) {
     // Discord reports an unknown channel when no thread exists for this message.
     if (error?.code !== 10003 && error?.code !== 10008) throw error;
