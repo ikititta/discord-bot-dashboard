@@ -137,15 +137,12 @@ export async function ensureTicketPanel(client, panelChannelId = TICKET_PANEL_CH
   );
   if (existing) {
     await existing.edit(buildTicketPanelPayload());
+    if (existing.pinned) await existing.unpin().catch((error) => {
+      console.error(`[tickets] panel could not be unpinned: ${error.message}`);
+    });
     return existing;
   }
-  const message = await channel.send(buildTicketPanelPayload());
-  try {
-    await message.pin();
-  } catch (error) {
-    console.error(`[tickets] panel posted but could not be pinned: ${error.message}`);
-  }
-  return message;
+  return channel.send(buildTicketPanelPayload());
 }
 
 async function handleTicketButton(interaction, context) {
