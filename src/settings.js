@@ -123,9 +123,12 @@ export class SettingsStore {
    * @param {object} settings
    */
   set(guildId, settings) {
-    this.data[guildId] = cleanSettings(settings);
+    this.data[guildId] = {
+      ...(this.data[guildId] ?? {}),
+      ...cleanSettings(settings),
+    };
     this.#write();
-    return this.data[guildId];
+    return cleanSettings(this.data[guildId]);
   }
 
   /** @returns {string[]} the guilds that have been configured */

@@ -236,6 +236,32 @@ test("legacy welcome fields are ignored without rewriting persistent settings", 
   assert.equal(fs.readFileSync(file, "utf8"), legacy);
 });
 
+test("saving unrelated settings preserves legacy fields without exposing them", () => {
+  const dir = tempDir();
+  const file = path.join(dir, "settings.json");
+  fs.writeFileSync(file, JSON.stringify({
+    "941800000000000001": {
+      welcomeChannelId: "941800000000000002",
+      welcomeMessage: "Legacy text",
+      logChannelId: null,
+      vipRoleIds: [],
+      moderatorRoleIds: [],
+    },
+  }));
+
+  const settings = new SettingsStore(dir);
+  settings.set("941800000000000001", { logChannelId: "941800000000000003" });
+
+  assert.deepEqual(settings.get("941800000000000001"), {
+    logChannelId: "941800000000000003",
+    vipRoleIds: [],
+    moderatorRoleIds: [],
+  });
+  const stored = JSON.parse(fs.readFileSync(file, "utf8"))["941800000000000001"];
+  assert.equal(stored.welcomeChannelId, "941800000000000002");
+  assert.equal(stored.welcomeMessage, "Legacy text");
+});
+
 test("corrupt settings stop loading without changing the file", () => {
   const dir = tempDir();
   const file = path.join(dir, "settings.json");

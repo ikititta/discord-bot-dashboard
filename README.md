@@ -44,7 +44,7 @@ Production uses an existing writable persistent directory (normally `/data`). Pr
 - `private-chats.json` — private-chat owners, invitees, and lobby guide IDs
 - `moderation-logs.json` — moderation deletion records
 
-Older installations may still contain data files from retired modules. The code no longer reads or modifies those legacy files; keep them in backups until you explicitly decide they can be archived or removed. Startup never resets persistent data.
+Older installations may still contain settings and data from retired modules. The runtime ignores retired settings fields and preserves them when unrelated settings are saved. Keep legacy data files in backups until you explicitly decide they can be archived or removed. Startup never resets persistent data.
 
 ## Backup and recovery
 
