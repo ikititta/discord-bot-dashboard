@@ -251,7 +251,7 @@ async function handleCommunityModal(interaction, { store }) {
 
   if (isLetter) {
     const recipientId = parts[2];
-    if (!/^\\d{17,20}$/.test(recipientId ?? "")) return interaction.editReply("Please select a recipient before writing your letter.");
+    if (!/^\d{17,20}$/.test(recipientId ?? "")) return interaction.editReply("Please select a recipient before writing your letter.");
     const embed = new EmbedBuilder()
       .setColor(COLOR)
       .setTitle(formatEmbedTitle("Love Letter"))
