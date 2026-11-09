@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 
 import { CommunityStore } from "../src/community-store.js";
-import { buildConfessionsPanelPayload, buildLoveLettersPanelPayload } from "../src/community-system.js";
+import { buildConfessionsPanelPayload, buildLoveLettersPanelPayload, buildLoveLetterRecipientPicker } from "../src/community-system.js";
 import { buildTicketPanelPayload } from "../src/ticket-system.js";
 
 test("community counters persist and increment independently", () => {
@@ -50,6 +50,16 @@ test("love letters panel offers anonymous and named public submissions", () => {
     "sugar-community:letter:anonymous",
     "sugar-community:letter:named",
   ]);
+});
+
+test("love letter starts by privately asking for one recipient", () => {
+  const payload = buildLoveLetterRecipientPicker("anonymous");
+  assert.match(payload.content, /who would you like to tag/i);
+  const picker = payload.components[0].toJSON().components[0];
+  assert.equal(picker.type, 5);
+  assert.equal(picker.custom_id, "sugar-community:letter-recipient:anonymous");
+  assert.equal(picker.min_values, 1);
+  assert.equal(picker.max_values, 1);
 });
 
 test("ticket panel offers the five support categories", () => {

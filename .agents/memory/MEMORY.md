@@ -1,1 +1,0 @@
-- [FadeHost DeepSeek setup](fadehost-deepseek.md) — the project API key was reported configured in FadeHost; never request or expose its value.
