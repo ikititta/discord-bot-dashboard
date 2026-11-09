@@ -101,7 +101,7 @@ export function loginPage({ botName, error = null, ready = true, redirectUri = n
   return layout({
     title: botName ? `${botName} dashboard` : "Bot dashboard",
     body: `<h1>${escapeHtml(botName || "Bot")} dashboard</h1>
-<p class="sub">Welcome messages and a channel log, set up here instead of with slash commands.</p>
+<p class="sub">Message logs and deletion permissions, set up here.</p>
 ${error ? `<div class="banner bad">${escapeHtml(error)}</div>` : ""}
 ${body}
 ${redirectUri ? `<p class="tokens">Redirect URL for the Developer Portal: <code>${escapeHtml(redirectUri)}</code></p>` : ""}`,
@@ -167,19 +167,6 @@ ${saved ? `<div class="banner ok">Saved.</div>` : ""}
 ${warning ? `<div class="banner bad">${escapeHtml(warning)}</div>` : ""}
 <form method="post" action="/g/${escapeHtml(guild.id)}">
   <input type="hidden" name="csrf" value="${escapeHtml(csrf)}">
-  <div class="card">
-    <h2>Welcome</h2>
-    <div class="field">
-      <label for="welcomeChannelId">Channel <span class="hint">where new members are greeted</span></label>
-      <select id="welcomeChannelId" name="welcomeChannelId">${options(settings.welcomeChannelId)}</select>
-    </div>
-    <div class="field">
-      <label for="welcomeMessage">Message</label>
-      <textarea id="welcomeMessage" name="welcomeMessage" maxlength="1500">${escapeHtml(settings.welcomeMessage)}</textarea>
-      <p class="tokens"><code>{user}</code> mentions them · <code>{username}</code> their name ·
-        <code>{server}</code> this server · <code>{count}</code> how many members there are now</p>
-    </div>
-  </div>
   <div class="card">
     <h2>Log</h2>
     <div class="field">

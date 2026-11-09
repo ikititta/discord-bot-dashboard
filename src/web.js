@@ -221,8 +221,6 @@ export function createWeb({ client, settings, config, version, startedAt }) {
     }
 
     const saved = settings.set(found.guild.id, {
-      welcomeChannelId: pick(req.body?.welcomeChannelId),
-      welcomeMessage: req.body?.welcomeMessage,
       logChannelId: pick(req.body?.logChannelId),
       vipRoleIds: vipRoleIds.ids,
       moderatorRoleIds: moderatorRoleIds.ids,
@@ -230,7 +228,7 @@ export function createWeb({ client, settings, config, version, startedAt }) {
 
     console.log(
       `[web] ${found.session.user.username} saved ${found.guild.name}: ` +
-        `welcome ${saved.welcomeChannelId ?? "off"}, log ${saved.logChannelId ?? "off"}, ` +
+        `log ${saved.logChannelId ?? "off"}, ` +
         `VIP roles ${saved.vipRoleIds.length}, moderator roles ${saved.moderatorRoleIds.length}`,
     );
 

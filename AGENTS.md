@@ -51,16 +51,16 @@ Do not move production hosting to Replit. Do not change deployment settings, env
 - README.md — current setup and feature documentation.
 - index.js — validates startup configuration and starts the settings store, Discord bot, and HTTP server in one Node process.
 - package.json and package-lock.json — runtime requirements, scripts, and locked dependencies.
-- src/bot.js — Discord client, member and message event handlers, welcome messages, log embeds, and postable-channel selection.
+- src/bot.js — Discord client, community event and moderation log handlers, and postable-channel selection.
 - src/deepseek.js — bounded requests to DeepSeek's official chat-completions API.
 - src/message-handler.js — local message routing, duplicate suppression, concurrency limits, and safe Discord replies.
 - src/message-trigger.js — local-only detection and cleanup of direct Sugar mentions/name addresses.
 - src/oauth.js — Discord OAuth URLs and callback helpers, signed state, token exchange, and guild authorization filtering.
 - src/session.js — in-memory login sessions, signed cookies, CSRF tokens, and cookie helpers.
-- src/settings.js — defaults, settings validation, welcome-template rendering, data-directory selection, and JSON persistence.
+- src/settings.js — settings validation, data-directory selection, and JSON persistence.
 - src/views.js — server-rendered HTML for the current login, server-list, settings, and error pages.
 - src/web.js — Express routes for login, OAuth callback, server settings, logout, and health status.
-- test/dashboard.test.js — unit tests for OAuth helpers, authorization, sessions, settings, templates, and HTML rendering.
+- test/dashboard.test.js — unit tests for OAuth helpers, authorization, sessions, settings, and HTML rendering.
 - test/deepseek.test.js and test/message-handler.test.js — mocked provider, local trigger, duplicate, timeout, and limit tests.
 - test/web.test.js — HTTP route tests using a stub Discord client rather than production credentials.
 
@@ -68,7 +68,7 @@ Keep new functionality in the module that owns that responsibility. Avoid turnin
 
 ## Existing functionality and current gaps
 
-The current bot greets new members in a configured channel and logs member joins, departures, edited messages, and deleted messages. Welcome templates support user, username, server, and member-count placeholders. Per-server welcome and log channel settings are managed through the existing web dashboard and stored in a JSON file. The dashboard uses Discord OAuth and limits access to servers the signed-in user can manage where the bot is present. A health endpoint reports bot and dashboard status.
+The current bot logs member joins, departures, edited messages, and deleted messages. Per-server log-channel and message-deletion role settings are managed through the existing web dashboard and stored in a JSON file. The dashboard uses Discord OAuth and limits access to servers the signed-in user can manage where the bot is present. A health endpoint reports bot and dashboard status.
 
 The bot uses Discord's Server Members and Message Content privileged intents; the corresponding intents must remain enabled in the existing Discord application for the documented events to work. The optional DeepSeek feature responds only after a local detector identifies a bot mention or direct address by name; ordinary messages are never sent to DeepSeek for intent detection. It uses bounded message input, API response size, timeout, and concurrent request limits. If `DEEPSEEK_API_KEY` is absent, the bot continues without AI replies.
 
@@ -88,4 +88,4 @@ Write durable data atomically, validate it when loading, and keep formats backwa
 
 Before editing, inspect this AGENTS.md and the relevant source, tests, and current Git diff. Keep changes scoped to the request and list every changed file. Ask for explicit approval before deleting existing functionality, removing or migrating the current dashboard, changing deployment or hosting configuration, changing the existing Discord application or token, or performing a deployment. Do not infer approval for any of those actions from a request to make an unrelated code or documentation change.
 
-Webhook deployment test.
+Legacy welcome/onboarding, automatic join-role assignment, self-role panels, and self-role-linked age/NSFW visibility controls have been retired from the active application. Do not reintroduce them or assume a verification flow exists. The user will define a replacement verification system in a separate task.
