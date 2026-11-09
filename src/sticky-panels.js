@@ -1,7 +1,7 @@
 import { ChannelType, Events } from "discord.js";
 
 /**
- * Keep one primary panel at the bottom of its channel.
+ * Keep one primary, unpinned panel at the bottom of its channel.
  * New messages move the panel; deleting it causes it to be recreated.
  */
 export function attachStickyPanel(client, {
@@ -10,7 +10,6 @@ export function attachStickyPanel(client, {
   channelId,
   titles,
   buildPayload,
-  pinOnCreate = true,
   logger = "sticky-panels",
 }) {
   if (!store || typeof store.get !== "function" || typeof store.set !== "function") {
@@ -67,14 +66,6 @@ export function attachStickyPanel(client, {
     return selected;
   }
 
-  async function pin(message) {
-    if (!message.pinned) {
-      await message.pin().catch((error) => {
-        console.error(`[${logger}] sticky panel ${key} could not be pinned: ${error.message}`);
-      });
-    }
-  }
-
   async function ensure() {
     const channel = await getChannel();
     let saved = await fetchSaved(channel);
@@ -100,7 +91,6 @@ export function attachStickyPanel(client, {
         if (error?.code !== 10008) logFailure(error);
       });
     }
-    if (pinOnCreate) await pin(message);
     return message;
   }
 
@@ -123,7 +113,6 @@ export function attachStickyPanel(client, {
     await previous.delete().catch((error) => {
       if (error?.code !== 10008) logFailure(error);
     });
-    if (pinOnCreate) await pin(next);
   }
 
   async function refresh() {
@@ -141,7 +130,6 @@ export function attachStickyPanel(client, {
     await previous.delete().catch((error) => {
       if (error?.code !== 10008) logFailure(error);
     });
-    if (pinOnCreate) await pin(next);
     return next;
   }
 

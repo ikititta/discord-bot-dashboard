@@ -251,12 +251,10 @@ async function ensureLobbyGuide(lobby, client, store) {
   }
 
   store.setLobbyGuideMessageId(lobby.id, guide.id);
-  if (!guide.pinned) {
-    try {
-      await guide.pin();
-    } catch (error) {
-      console.error(`[private-chats] guide was posted but could not be pinned: ${error.message}`);
-    }
+  if (guide.pinned) {
+    await guide.unpin().catch((error) => {
+      console.error(`[private-chats] guide could not be unpinned: ${error.message}`);
+    });
   }
 }
 
