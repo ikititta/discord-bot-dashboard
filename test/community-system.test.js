@@ -11,6 +11,7 @@ import {
   buildLoveLetterRecipientPicker,
   buildConfessionRecipientPicker,
   buildReplyModePicker,
+  buildConfessionModePicker,
 } from "../src/community-system.js";
 import { buildTicketPanelPayload } from "../src/ticket-system.js";
 
@@ -75,6 +76,15 @@ test("confession recipient picker makes tagging optional", () => {
   assert.equal(payload.components[1].toJSON().components[0].custom_id, "sugar-community:confess-skip:named");
 });
 
+test("standalone confess picker offers anonymous and named confessions", () => {
+  const payload = buildConfessionModePicker();
+  const buttons = payload.components[0].toJSON().components;
+  assert.deepEqual(buttons.map((item) => item.custom_id), [
+    "sugar-community:confess:anonymous",
+    "sugar-community:confess:named",
+  ]);
+});
+
 test("community post reply picker offers anonymous and named thread replies", () => {
   const payload = buildReplyModePicker("confession", "123456789012345678");
   const buttons = payload.components[0].toJSON().components;
@@ -82,8 +92,15 @@ test("community post reply picker offers anonymous and named thread replies", ()
   assert.ok(buttons.every((item) => item.custom_id.includes(":123456789012345678")));
 });
 
-test("ticket panel offers the five support categories", () => {
+test("ticket panel offers the five support categories as buttons", () => {
   const payload = buildTicketPanelPayload();
-  const options = payload.components[0].toJSON().components[0].options;
-  assert.deepEqual(options.map((item) => item.value), ["general", "appeal", "roles", "technical", "other"]);
+  const buttons = payload.components[0].toJSON().components;
+  assert.deepEqual(buttons.map((item) => item.custom_id), [
+    "sugar-ticket:category:general",
+    "sugar-ticket:category:appeal",
+    "sugar-ticket:category:roles",
+    "sugar-ticket:category:technical",
+    "sugar-ticket:category:other",
+  ]);
+  assert.ok(buttons.every((item) => item.type === 2));
 });
