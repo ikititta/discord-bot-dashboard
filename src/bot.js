@@ -134,7 +134,7 @@ export function createBot({
   });
   attachMessageDeletionSystem(client, { settings, moderationLogs });
   attachTicketSystem(client, { settings, stickyPanels });
-  attachCommunitySystem(client, { store: communityStore, stickyPanels });
+  attachCommunitySystem(client, { store: communityStore, stickyPanels, settings });
   attachQuoteSystem(client, { token, applicationId });
 
   client.login(token).catch((error) => {
