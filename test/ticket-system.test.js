@@ -14,4 +14,6 @@ test("support panel offers every category as a button", () => {
     "sugar-ticket:category:other",
   ]);
   assert.ok(buttons.every((item) => item.type === 2));
+  assert.ok(buttons.every((item) => item.style === 1));
+  assert.ok(buttons.every((item) => item.label.endsWith(" ♡")));
 });
