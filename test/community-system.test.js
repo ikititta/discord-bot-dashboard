@@ -10,6 +10,7 @@ import {
   buildLoveLettersPanelPayload,
   buildSuggestionsPanelPayload,
   buildSuggestionComponents,
+  buildSuggestionModePicker,
   buildLoveLetterRecipientPicker,
   buildConfessionRecipientPicker,
   buildPublicationModePicker,
@@ -62,14 +63,19 @@ test("confessions panel offers anonymous, named, and poll actions", () => {
   assert.equal(payload.embeds[0].toJSON().title, "୨୧ 𝒄𝒐𝒏𝒇𝒆𝒔𝒔ions ♡");
 });
 
-test("Suggestions panel has a submission button and each suggestion has green up, red down, grey report", () => {
+test("Suggestions panel offers anonymous or named submissions and emoji-only voting/report buttons", () => {
   const panel = buildSuggestionsPanelPayload();
   assert.equal(panel.embeds[0].toJSON().title, "୨୧ Suggestions ♡");
   assert.equal(panel.components[0].toJSON().components[0].custom_id, "sugar-community:suggestion-start");
 
+  const modes = buildSuggestionModePicker();
+  assert.equal(modes.ephemeral, true);
+  assert.deepEqual(modes.components[0].toJSON().components.map((item) => item.label), [
+    "Anonymously ♡", "With My Name ♡",
+  ]);
   const buttons = buildSuggestionComponents("123456789012345678")[0].toJSON().components;
-  assert.deepEqual(buttons.map((item) => item.label), ["↑", "↓", "⚑"]);
-  assert.deepEqual(buttons.map((item) => item.style), [3, 4, 2]);
+  assert.deepEqual(buttons.map((item) => item.label), ["⬆️", "⬇️", "⚠️"]);
+  assert.deepEqual(buttons.map((item) => item.style), [1, 1, 4]);
   assert.deepEqual(buttons.map((item) => item.custom_id), [
     "sugar-community:suggestion-vote:123456789012345678:up",
     "sugar-community:suggestion-vote:123456789012345678:down",
@@ -211,4 +217,13 @@ test("community reports ping all configured moderation roles without broad menti
     ],
   });
   assert.deepEqual(payload.embeds, [embed]);
+});
+
+
+test("suggestion publication mode is validated and suggestion embeds omit timestamps", () => {
+  const source = fs.readFileSync(new URL("../src/community-system.js", import.meta.url), "utf8");
+  assert.match(source, /suggestion:submit:\$\{mode\}/);
+  assert.match(source, /if \(mode === "named"\)/);
+  const publish = source.slice(source.indexOf("async function publishSuggestion"), source.indexOf("async function handleSuggestionVote"));
+  assert.doesNotMatch(publish, /\.setTimestamp\(\)/);
 });

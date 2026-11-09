@@ -79,10 +79,21 @@ export function buildSuggestionsPanelPayload() {
 export function buildSuggestionComponents(messageId) {
   if (!/^(?:0|\d{17,20})$/.test(messageId ?? "")) throw new Error("Invalid suggestion message ID.");
   return [new ActionRowBuilder().addComponents(
-    button(`suggestion-vote:${messageId}:up`, "↑", ButtonStyle.Success),
-    button(`suggestion-vote:${messageId}:down`, "↓", ButtonStyle.Danger),
-    button(`report:suggestion:${messageId}`, "⚑", ButtonStyle.Secondary),
+    button(`suggestion-vote:${messageId}:up`, "⬆️", ButtonStyle.Primary),
+    button(`suggestion-vote:${messageId}:down`, "⬇️", ButtonStyle.Primary),
+    button(`report:suggestion:${messageId}`, "⚠️", ButtonStyle.Danger),
   )];
+}
+
+export function buildSuggestionModePicker() {
+  return {
+    content: "Would you like to publish anonymously or with your name?",
+    components: [new ActionRowBuilder().addComponents(
+      button("suggestion-mode:anonymous", "Anonymously ♡", ButtonStyle.Secondary),
+      button("suggestion-mode:named", "With My Name ♡", ButtonStyle.Primary),
+    )],
+    ephemeral: true,
+  };
 }
 
 export function buildCommunityPostComponents(kind, messageId) {
@@ -341,7 +352,15 @@ async function handleCommunityButton(interaction) {
     if (!interaction.inGuild() || interaction.channelId !== SUGGESTIONS_CHANNEL_ID) {
       return replyEphemeral(interaction, "Please use the Suggestions channel.");
     }
-    return interaction.showModal(buildSuggestionModal());
+    return interaction.reply(buildSuggestionModePicker());
+  }
+
+  if (id.startsWith("suggestion-mode:")) {
+    const mode = id.slice("suggestion-mode:".length);
+    if (!validMode(mode) || !interaction.inGuild() || interaction.channelId !== SUGGESTIONS_CHANNEL_ID) {
+      return replyEphemeral(interaction, "Please choose a valid publication option.");
+    }
+    return interaction.showModal(buildSuggestionModal(mode));
   }
 
   if (id.startsWith("suggestion-vote:")) {
@@ -493,9 +512,10 @@ async function handleCommunityUserSelect(interaction) {
   return interaction.showModal(buildConfessionModal(isPublication ? publicationMode : mode, recipientId));
 }
 
-function buildSuggestionModal() {
+function buildSuggestionModal(mode) {
+  if (!validMode(mode)) throw new Error("Invalid suggestion publication mode.");
   const modal = new ModalBuilder()
-    .setCustomId(`${PREFIX}suggestion:submit`)
+    .setCustomId(`${PREFIX}suggestion:submit:${mode}`)
     .setTitle("Submit a Suggestion");
   const input = new TextInputBuilder()
     .setCustomId("body")
@@ -606,7 +626,7 @@ async function handleCommunityModal(interaction, {
   const isPoll = id.startsWith("poll:");
   const isConfession = id.startsWith("confess:");
   const isLetter = id.startsWith("letter:");
-  const isSuggestion = id === "suggestion:submit";
+  const isSuggestion = id.startsWith("suggestion:submit:");
   const isReply = id.startsWith("reply:");
   const isThreadReply = id.startsWith("thread-reply:");
   const isReport = id.startsWith("report:");
@@ -637,7 +657,9 @@ async function handleCommunityModal(interaction, {
     });
   }
   if (isSuggestion) {
-    return publishSuggestion(interaction, suggestionStore, refreshSuggestionsPanel);
+    const mode = id.split(":")[2];
+    if (!validMode(mode)) return interaction.editReply("Invalid suggestion publication option.");
+    return publishSuggestion(interaction, suggestionStore, refreshSuggestionsPanel, mode);
   }
   if (isThreadReply) {
     const [, kind, mode, targetId] = id.split(":");
@@ -1022,7 +1044,8 @@ function hasSuggestionButtons(message, messageId) {
   return [...expected].every((id) => actual.has(id));
 }
 
-async function publishSuggestion(interaction, suggestionStore, refreshSuggestionsPanel) {
+async function publishSuggestion(interaction, suggestionStore, refreshSuggestionsPanel, mode) {
+  if (!validMode(mode)) return interaction.editReply("Invalid suggestion publication option.");
   const body = cleanText(interaction.fields.getTextInputValue("body"), 1800);
   if (body.length < 5) return interaction.editReply("Please write a little more before submitting.");
   const channel = await interaction.guild.channels.fetch(SUGGESTIONS_CHANNEL_ID).catch(() => null);
@@ -1033,15 +1056,16 @@ async function publishSuggestion(interaction, suggestionStore, refreshSuggestion
     .setColor(COLOR)
     .setTitle(formatEmbedTitle("Suggestion"))
     .setDescription(body)
-    .setAuthor({
+    .addFields(
+      { name: "⬆️ Upvotes", value: "0", inline: true },
+      { name: "⬇️ Downvotes", value: "0", inline: true },
+    );
+  if (mode === "named") {
+    embed.setAuthor({
       name: interaction.member?.displayName ?? interaction.user.globalName ?? interaction.user.username,
       iconURL: interaction.user.displayAvatarURL(),
-    })
-    .addFields(
-      { name: "↑ Upvotes", value: "0", inline: true },
-      { name: "↓ Downvotes", value: "0", inline: true },
-    )
-    .setTimestamp();
+    });
+  }
   const message = await channel.send({
     embeds: [embed],
     components: buildSuggestionComponents("0"),
@@ -1060,8 +1084,12 @@ async function handleSuggestionVote(interaction, { suggestionStore, messageId, d
   const original = interaction.message.embeds[0];
   const embed = EmbedBuilder.from(original);
   embed.setFields((original.fields ?? []).map((field) => {
-    if (field.name === "↑ Upvotes") return { ...field, value: String(counts.up) };
-    if (field.name === "↓ Downvotes") return { ...field, value: String(counts.down) };
+    if (field.name === "↑ Upvotes" || field.name === "⬆️ Upvotes") {
+      return { ...field, name: "⬆️ Upvotes", value: String(counts.up) };
+    }
+    if (field.name === "↓ Downvotes" || field.name === "⬇️ Downvotes") {
+      return { ...field, name: "⬇️ Downvotes", value: String(counts.down) };
+    }
     return field;
   }));
   return interaction.update({ embeds: [embed], components: buildSuggestionComponents(messageId) });
