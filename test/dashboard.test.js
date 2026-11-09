@@ -145,6 +145,7 @@ test("settings survive a new store over the same directory, like a redeploy", ()
   const dir = tempDir();
   new SettingsStore(dir, { allowMissing: true }).set("941800000000000001", {
     logChannelId: "941800000000000003",
+    reportsChannelId: "941800000000000006",
     vipRoleIds: ["941800000000000004"],
     moderatorRoleIds: ["941800000000000005"],
   });
@@ -152,6 +153,7 @@ test("settings survive a new store over the same directory, like a redeploy", ()
   const after = new SettingsStore(dir);
   assert.deepEqual(after.get("941800000000000001"), {
     logChannelId: "941800000000000003",
+    reportsChannelId: "941800000000000006",
     vipRoleIds: ["941800000000000004"],
     moderatorRoleIds: ["941800000000000005"],
   });
@@ -161,6 +163,7 @@ test("a guild nobody configured gets the defaults", () => {
   const settings = new SettingsStore(tempDir(), { allowMissing: true });
   assert.deepEqual(settings.get("999"), {
     logChannelId: null,
+    reportsChannelId: null,
     vipRoleIds: [],
     moderatorRoleIds: [],
   });
@@ -196,6 +199,7 @@ test("the dashboard renders VIP and moderator role-ID settings", () => {
 
   assert.match(html, /name="vipRoleIds"/);
   assert.match(html, /name="moderatorRoleIds"/);
+  assert.match(html, /name="reportsChannelId"/);
   assert.match(html, /941800000000000010/);
   assert.match(html, /941800000000000011/);
 });
@@ -209,6 +213,7 @@ test("nothing outside the three known fields is stored", () => {
   assert.deepEqual(Object.keys(saved).sort(), [
     "logChannelId",
     "moderatorRoleIds",
+    "reportsChannelId",
     "vipRoleIds",
   ]);
 });
@@ -230,6 +235,7 @@ test("legacy welcome fields are ignored without rewriting persistent settings", 
   const settings = new SettingsStore(dir);
   assert.deepEqual(settings.get("941800000000000001"), {
     logChannelId: "941800000000000003",
+    reportsChannelId: null,
     vipRoleIds: [],
     moderatorRoleIds: [],
   });
@@ -254,6 +260,7 @@ test("saving unrelated settings preserves legacy fields without exposing them", 
 
   assert.deepEqual(settings.get("941800000000000001"), {
     logChannelId: "941800000000000003",
+    reportsChannelId: null,
     vipRoleIds: [],
     moderatorRoleIds: [],
   });
@@ -286,6 +293,7 @@ test("development may initialize empty settings when the file is missing", () =>
 
   assert.deepEqual(settings.get("941800000000000001"), {
     logChannelId: null,
+    reportsChannelId: null,
     vipRoleIds: [],
     moderatorRoleIds: [],
   });
@@ -359,7 +367,7 @@ test("a server name cannot inject markup into the settings page", () => {
 test("the selected channel is the one that comes back selected", () => {
   const html = guildPage({
     guild: { id: "1", name: "Emberfell" },
-    settings: cleanSettings({ logChannelId: "123456789012345678" }),
+    settings: cleanSettings({ logChannelId: "123456789012345678", reportsChannelId: "123456789012345679" }),
     channels: [
       { id: "123456789012345678", name: "general" },
       { id: "123456789012345679", name: "logs" },
@@ -368,7 +376,7 @@ test("the selected channel is the one that comes back selected", () => {
   });
 
   assert.match(html, /<option value="123456789012345678" selected>#general<\/option>/);
-  assert.match(html, /<option value="123456789012345679">#logs<\/option>/);
+  assert.match(html, /<option value="123456789012345679" selected>#logs<\/option>/);
 });
 
 test("escapeHtml covers the characters that matter", () => {

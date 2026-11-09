@@ -48,6 +48,7 @@ export function resolveDataDir(preferred = process.env.DATA_DIR) {
 export function blankSettings() {
   return {
     logChannelId: null,
+    reportsChannelId: null,
     vipRoleIds: [],
     moderatorRoleIds: [],
   };
@@ -63,6 +64,7 @@ export function blankSettings() {
 export function cleanSettings(input = {}) {
   return {
     logChannelId: channelId(input.logChannelId),
+    reportsChannelId: channelId(input.reportsChannelId),
     vipRoleIds: parseRoleIds(input.vipRoleIds).ids,
     moderatorRoleIds: parseRoleIds(input.moderatorRoleIds).ids,
   };
@@ -201,6 +203,9 @@ function isStoredSettings(settings) {
     (settings.logChannelId === undefined ||
       settings.logChannelId === null ||
       typeof settings.logChannelId === "string") &&
+    (settings.reportsChannelId === undefined ||
+      settings.reportsChannelId === null ||
+      typeof settings.reportsChannelId === "string") &&
     isStoredRoleIds(settings.vipRoleIds) &&
     isStoredRoleIds(settings.moderatorRoleIds)
   );

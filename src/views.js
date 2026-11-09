@@ -173,6 +173,10 @@ ${warning ? `<div class="banner bad">${escapeHtml(warning)}</div>` : ""}
       <label for="logChannelId">Channel <span class="hint">joins, leaves, edited and deleted messages</span></label>
       <select id="logChannelId" name="logChannelId">${options(settings.logChannelId)}</select>
     </div>
+    <div class="field">
+      <label for="reportsChannelId">Reports channel <span class="hint">private staff-only destination for community reports</span></label>
+      <select id="reportsChannelId" name="reportsChannelId">${options(settings.reportsChannelId)}</select>
+    </div>
   </div>
   <div class="card">
     <h2>Message deletion roles</h2>
