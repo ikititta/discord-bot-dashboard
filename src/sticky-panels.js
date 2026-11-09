@@ -1,8 +1,8 @@
 import { ChannelType, Events } from "discord.js";
 
 /**
- * Keep one primary, unpinned panel at the bottom of its channel.
- * New messages move the panel; deleting it causes it to be recreated.
+ * Keep one independent panel at the bottom of its own channel.
+ * Only a new message in that exact channel moves it; panel messages are ignored.
  */
 export function attachStickyPanel(client, {
   store,
@@ -59,11 +59,7 @@ export function attachStickyPanel(client, {
     const recent = await channel.messages.fetch({ limit: 100 });
     const matches = [...recent.values()].filter(isPanel)
       .sort((a, b) => b.createdTimestamp - a.createdTimestamp);
-    const selected = matches[0] ?? null;
-    for (const duplicate of matches.slice(1)) {
-      await duplicate.delete().catch((error) => logFailure(error));
-    }
-    return selected;
+    return matches[0] ?? null;
   }
 
   async function ensure() {
@@ -76,21 +72,16 @@ export function attachStickyPanel(client, {
       previous = recent;
     }
 
-    // Recreate on startup instead of merely editing the old message. This
-    // removes legacy buttons and guarantees the canonical panel is at bottom.
+    // Preserve an existing panel exactly as it is on startup. It only moves
+    // after a new message is posted in this channel.
+    if (previous) {
+      currentMessage = previous;
+      if (store.get(key) !== previous.id) store.set(key, previous.id);
+      return previous;
+    }
     const message = await channel.send(buildPayload());
     currentMessage = message;
     store.set(key, message.id);
-    if (previous) {
-      await previous.delete().catch((error) => {
-        if (error?.code !== 10008) logFailure(error);
-      });
-    }
-    if (saved && previous?.id !== saved.id) {
-      await saved.delete().catch((error) => {
-        if (error?.code !== 10008) logFailure(error);
-      });
-    }
     return message;
   }
 
@@ -115,30 +106,15 @@ export function attachStickyPanel(client, {
     });
   }
 
-  async function refresh() {
-    const channel = await getChannel();
-    let previous = currentMessage;
-    if (!previous) previous = await fetchSaved(channel);
-    if (!previous) previous = await findExisting(channel);
-    if (!previous) return ensure();
-
-    // Explicitly refresh after Sugar publishes a community post; bot-authored
-    // messages are intentionally ignored by the generic MessageCreate hook.
-    const next = await channel.send(buildPayload());
-    currentMessage = next;
-    store.set(key, next.id);
-    await previous.delete().catch((error) => {
-      if (error?.code !== 10008) logFailure(error);
-    });
-    return next;
-  }
-
   client.once(Events.ClientReady, () => {
     void enqueue(ensure);
   });
 
   client.on(Events.MessageCreate, (message) => {
-    if (message.channelId !== channelId || message.author?.id === client.user?.id) return;
+    if (message.channelId !== channelId) return;
+    // Ignore this sticky panel only. Any other message, including another
+    // bot's post, is activity local to this channel.
+    if (message.id === currentMessage?.id || message.id === store.get(key) || isPanel(message)) return;
     void enqueue(() => moveAfter(message));
   });
 
@@ -149,5 +125,5 @@ export function attachStickyPanel(client, {
     void enqueue(ensure);
   });
 
-  return { refresh: () => enqueue(refresh) };
+  return { channelId, key };
 }
