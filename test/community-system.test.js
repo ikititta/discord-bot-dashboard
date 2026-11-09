@@ -93,13 +93,16 @@ test("confession and poll recipient pickers allow tagging someone or skipping", 
   }
 });
 
-test("confession and love letter posts have red report buttons", () => {
+test("community posts use green reply and red report buttons with a heart", () => {
   for (const kind of ["confession", "letter"]) {
     const components = buildCommunityPostComponents(kind, "123456789012345678");
     const buttons = components[0].toJSON().components;
     const report = buttons.at(-1);
     assert.equal(report.custom_id, `sugar-community:report:${kind}:123456789012345678`);
+    assert.equal(buttons[0].style, 3);
+    assert.equal(buttons[0].label, "Reply ♡");
     assert.equal(report.style, 4);
+    assert.equal(report.label, "Report ♡");
   }
 });
 
