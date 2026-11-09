@@ -72,13 +72,16 @@ test("love letter starts by privately asking for one recipient", () => {
   assert.equal(picker.max_values, 1);
 });
 
-test("confession and poll mode pickers use a selector for anonymous or named posting", () => {
+test("confession and poll mode pickers use two buttons for anonymous or named posting", () => {
   for (const kind of ["confess", "poll"]) {
     const payload = buildPublicationModePicker(kind);
-    const selector = payload.components[0].toJSON().components[0];
-    assert.equal(selector.type, 3);
-    assert.equal(selector.custom_id, `sugar-community:publication-mode:${kind}`);
-    assert.deepEqual(selector.options.map((option) => option.value), ["anonymous", "named"]);
+    const buttons = payload.components[0].toJSON().components;
+    assert.deepEqual(buttons.map((item) => item.custom_id), [
+      `sugar-community:publication-mode:${kind}:anonymous`,
+      `sugar-community:publication-mode:${kind}:named`,
+    ]);
+    assert.deepEqual(buttons.map((item) => item.label), ["Anonymously ♡", "With My Name ♡"]);
+    assert.ok(buttons.every((item) => item.type === 2));
   }
 });
 
@@ -106,11 +109,14 @@ test("Love Letters posts use green Reply and red Report buttons with an empty he
   assert.equal(confessionButtons.at(-1).label, "Report");
 });
 
-test("legacy standalone confess picker now opens the anonymous-or-named selector", () => {
+test("legacy standalone confess picker now opens two anonymous-or-named buttons", () => {
   const payload = buildConfessionModePicker();
-  const selector = payload.components[0].toJSON().components[0];
-  assert.equal(selector.custom_id, "sugar-community:publication-mode:confess");
-  assert.deepEqual(selector.options.map((option) => option.value), ["anonymous", "named"]);
+  const buttons = payload.components[0].toJSON().components;
+  assert.deepEqual(buttons.map((item) => item.custom_id), [
+    "sugar-community:publication-mode:confess:anonymous",
+    "sugar-community:publication-mode:confess:named",
+  ]);
+  assert.ok(buttons.every((item) => item.type === 2));
 });
 
 test("community post reply picker offers anonymous and named thread replies", () => {
