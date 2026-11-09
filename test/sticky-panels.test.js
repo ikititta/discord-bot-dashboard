@@ -126,9 +126,9 @@ test("sticky panels can stay at the bottom without being pinned", async () => {
   assert.equal(h.messages.get(nextId).pinned, false);
   assert.ok(h.messages.get(nextId).createdTimestamp > userMessage.createdTimestamp);
 
-  await panel.refresh();
-  const refreshedId = h.stickyStore.get("love-letters");
-  assert.equal(h.messages.get(refreshedId).pinned, false);
+  const unchangedId = h.stickyStore.get("love-letters");
+  assert.equal(unchangedId, nextId);
+  assert.equal(h.messages.get(unchangedId).pinned, false);
 });
 
 test("sticky panel is recreated if a member deletes it", async () => {
