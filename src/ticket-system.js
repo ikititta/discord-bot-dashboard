@@ -7,7 +7,6 @@ import {
   Events,
   ModalBuilder,
   PermissionFlagsBits,
-  StringSelectMenuBuilder,
   TextInputBuilder,
   TextInputStyle,
 } from "discord.js";
@@ -37,12 +36,12 @@ export function buildTicketPanelPayload() {
       "Please describe your situation clearly. Only you and the moderation team can see your ticket.",
     );
   const row = new ActionRowBuilder().addComponents(
-    new StringSelectMenuBuilder()
-      .setCustomId(`${PREFIX}category`)
-      .setPlaceholder("Choose what you need help with...")
-      .addOptions(...[...TICKET_CATEGORIES].map(([value, label]) => ({
-        label, value, description: `Open a private ${label.toLowerCase()} ticket`,
-      }))),
+    ...[...TICKET_CATEGORIES].map(([value, label]) =>
+      new ButtonBuilder()
+        .setCustomId(`${PREFIX}category:${value}`)
+        .setLabel(label)
+        .setStyle(ButtonStyle.Secondary),
+    ),
   );
   return { embeds: [embed], components: [row] };
 }
@@ -112,9 +111,7 @@ export function attachTicketSystem(client, { settings, stickyPanels, panelChanne
   }
 
   client.on(Events.InteractionCreate, (interaction) => {
-    if (interaction.isStringSelectMenu() && interaction.customId === `${PREFIX}category`) {
-      void handleTicketCategory(interaction, panelChannelId).catch(async () => replyEphemeral(interaction, "The ticket form could not be opened. Please try again."));
-    } else if (interaction.isButton() && interaction.customId.startsWith(PREFIX)) {
+    if (interaction.isButton() && interaction.customId.startsWith(PREFIX)) {
       void handleTicketButton(interaction, { client, settings, panelChannelId }).catch(async (error) => {
         console.error(`[tickets] interaction failed: ${error.message}`);
         await replyEphemeral(interaction, error.message || "The ticket action failed. Please try again.");
@@ -153,6 +150,9 @@ export async function ensureTicketPanel(client, panelChannelId = TICKET_PANEL_CH
 
 async function handleTicketButton(interaction, context) {
   const action = interaction.customId.slice(PREFIX.length);
+  if (action.startsWith("category:")) {
+    return handleTicketCategory(interaction, panelChannelId, action.slice("category:".length));
+  }
   if (action === "close") {
     if (!interaction.inGuild() || interaction.channel?.type !== ChannelType.GuildText) {
       return replyEphemeral(interaction, "This action is only available inside a ticket.");
@@ -185,9 +185,8 @@ async function handleTicketButton(interaction, context) {
   }
 }
 
-async function handleTicketCategory(interaction, panelChannelId) {
+async function handleTicketCategory(interaction, panelChannelId, category) {
   if (!interaction.inGuild() || interaction.channelId !== panelChannelId) return replyEphemeral(interaction, `Open tickets in <#${panelChannelId}>.`);
-  const category = interaction.values[0];
   const label = TICKET_CATEGORIES.get(category);
   if (!label) return replyEphemeral(interaction, "Please choose a valid ticket category.");
   const modal = new ModalBuilder().setCustomId(`${PREFIX}reason:${category}`).setTitle(label.slice(0, 45));
