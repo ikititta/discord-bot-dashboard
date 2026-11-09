@@ -20,6 +20,8 @@ import {
   buildThreadReplyModePicker,
   buildReplyModePicker,
   buildConfessionModePicker,
+  buildReportNotificationPayload,
+  REPORT_NOTIFICATION_ROLE_IDS,
 } from "../src/community-system.js";
 import { buildTicketPanelPayload } from "../src/ticket-system.js";
 
@@ -193,4 +195,20 @@ test("ticket panel offers the five support categories as buttons", () => {
     "sugar-ticket:category:other",
   ]);
   assert.ok(buttons.every((item) => item.type === 2));
+});
+
+
+test("community reports ping all configured moderation roles without broad mentions", () => {
+  const embed = { toJSON: () => ({ title: "Community Report" }) };
+  const payload = buildReportNotificationPayload(embed);
+  assert.equal(payload.content, REPORT_NOTIFICATION_ROLE_IDS.map((id) => `<@&${id}>`).join(" "));
+  assert.deepEqual(payload.allowedMentions, {
+    parse: [],
+    roles: [
+      "1567796193268858950",
+      "1568188570890403910",
+      "1568188595171500123",
+    ],
+  });
+  assert.deepEqual(payload.embeds, [embed]);
 });
