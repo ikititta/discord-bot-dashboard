@@ -205,5 +205,5 @@ test("startup replaces the existing panel with the current canonical payload", a
   const currentId = h.stickyStore.get("main-panel");
   assert.notEqual(currentId, oldPanel.id);
   assert.equal(h.messages.has(oldPanel.id), false);
-  assert.ok(h.messages.get(currentId).createdTimestamp > oldPanel.createdTimestamp);
+  assert.deepEqual(h.messages.get(currentId).embeds, h.payload().embeds);
 });
