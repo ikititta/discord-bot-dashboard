@@ -18,12 +18,13 @@ import { attachStickyPanel } from "./sticky-panels.js";
 
 export const CONFESSIONS_CHANNEL_ID = "1568179046209028106";
 export const LOVE_LETTERS_CHANNEL_ID = "1568179044900409418";
-export const SUGGESTENCES_CHANNEL_ID = "1569164719309328455";
+export const SUGGESTIONS_CHANNEL_ID = "1569164719309328455";
 const PREFIX = "sugar-community:";
 const COLOR = 0xffd9ff;
 const CONFESSION_PANEL_TITLE = "୨୧ 𝒄𝒐𝒏𝒇𝒆𝒔𝒔ions ♡";
 const LOVE_PANEL_TITLE = "୨୧ Love Letters ♡";
-const SUGGESTENCES_PANEL_TITLE = "୨୧ Suggestences ♡";
+const SUGGESTIONS_PANEL_TITLE = "୨୧ Suggestions ♡";
+const LEGACY_SUGGESTIONS_PANEL_TITLE = "୨୧ Suggestences ♡";
 const CONFESSION_REACTIONS = ["1️⃣", "2️⃣", "3️⃣", "4️⃣"];
 
 function button(id, label, style = ButtonStyle.Primary) {
@@ -56,10 +57,10 @@ export function buildLoveLetterReplyComponents(messageId) {
   return buildCommunityThreadReplyComponents("letter", messageId);
 }
 
-export function buildSuggestencesPanelPayload() {
+export function buildSuggestionsPanelPayload() {
   const embed = new EmbedBuilder()
     .setColor(COLOR)
-    .setTitle(SUGGESTENCES_PANEL_TITLE)
+    .setTitle(SUGGESTIONS_PANEL_TITLE)
     .setDescription("Have an idea to make the server better? Share it with everyone and let the community vote ♡");
   return {
     embeds: [embed],
@@ -201,8 +202,13 @@ export function attachCommunitySystem(client, { store, stickyPanels, settings, s
   }
   let refreshConfessionsPanel = async () => {};
   let refreshLoveLettersPanel = async () => {};
-  let refreshSuggestencesPanel = async () => {};
+  let refreshSuggestionsPanel = async () => {};
   if (stickyPanels) {
+    const legacyPanelMessageId = stickyPanels.get("suggestences");
+    if (legacyPanelMessageId && !stickyPanels.get("suggestions")) {
+      stickyPanels.set("suggestions", legacyPanelMessageId);
+    }
+    if (legacyPanelMessageId) stickyPanels.set("suggestences", null);
     refreshConfessionsPanel = attachStickyPanel(client, {
       store: stickyPanels,
       key: "confessions",
@@ -221,12 +227,17 @@ export function attachCommunitySystem(client, { store, stickyPanels, settings, s
       pinOnCreate: false,
       logger: "community",
     }).refresh;
-    refreshSuggestencesPanel = attachStickyPanel(client, {
+    client.once(Events.ClientReady, () => {
+      void renameSuggestionsChannel(client).catch((error) => {
+        console.error(`[community] suggestions channel rename failed: ${error.message}`);
+      });
+    });
+    refreshSuggestionsPanel = attachStickyPanel(client, {
       store: stickyPanels,
-      key: "suggestences",
-      channelId: SUGGESTENCES_CHANNEL_ID,
-      titles: [SUGGESTENCES_PANEL_TITLE],
-      buildPayload: buildSuggestencesPanelPayload,
+      key: "suggestions",
+      channelId: SUGGESTIONS_CHANNEL_ID,
+      titles: [SUGGESTIONS_PANEL_TITLE, LEGACY_SUGGESTIONS_PANEL_TITLE],
+      buildPayload: buildSuggestionsPanelPayload,
       pinOnCreate: false,
       logger: "community",
     }).refresh;
@@ -256,7 +267,7 @@ export function attachCommunitySystem(client, { store, stickyPanels, settings, s
     } else if (interaction.isModalSubmit() && interaction.customId.startsWith(PREFIX)) {
       void handleCommunityModal(interaction, {
         store, settings, suggestionStore, refreshConfessionsPanel, refreshLoveLettersPanel,
-        refreshSuggestencesPanel,
+        refreshSuggestionsPanel,
       }).catch(async (error) => {
         console.error("[community] submission failed:", error);
         await replyEphemeral(interaction, "Sugar couldn't publish that reply. Please try again, or contact a moderator if it keeps happening.");
@@ -265,11 +276,29 @@ export function attachCommunitySystem(client, { store, stickyPanels, settings, s
   });
 }
 
+async function renameSuggestionsChannel(client) {
+  const channel = await client.channels.fetch(SUGGESTIONS_CHANNEL_ID).catch(() => null);
+  if (!channel || channel.type !== ChannelType.GuildText || channel.name === "suggestions") return;
+  const botMember = channel.guild.members.me;
+  if (!botMember?.permissions.has(PermissionFlagsBits.ManageChannels)) {
+    console.warn("[community] Sugar needs Manage Channels permission to rename the suggestions channel.");
+    return;
+  }
+  await channel.setName("suggestions", "Use the correct English spelling for the Suggestions channel");
+}
+
 export async function ensureCommunityPanels(client) {
   const confessions = await upsertPanel(client, CONFESSIONS_CHANNEL_ID, CONFESSION_PANEL_TITLE, buildConfessionsPanelPayload(), { pinOnCreate: false });
   const letters = await upsertPanel(client, LOVE_LETTERS_CHANNEL_ID, LOVE_PANEL_TITLE, buildLoveLettersPanelPayload(), { pinOnCreate: false });
-  const suggestences = await upsertPanel(client, SUGGESTENCES_CHANNEL_ID, SUGGESTENCES_PANEL_TITLE, buildSuggestencesPanelPayload(), { pinOnCreate: false });
-  return { confessions, letters, suggestences };
+  const suggestionsChannel = await client.channels.fetch(SUGGESTIONS_CHANNEL_ID).catch(() => null);
+  if (suggestionsChannel?.type === ChannelType.GuildText && suggestionsChannel.name !== "suggestions") {
+    const botMember = suggestionsChannel.guild.members.me;
+    if (botMember?.permissions.has(PermissionFlagsBits.ManageChannels)) {
+      await suggestionsChannel.setName("suggestions", "Use the correct English spelling for the Suggestions channel");
+    }
+  }
+  const suggestions = await upsertPanel(client, SUGGESTIONS_CHANNEL_ID, SUGGESTIONS_PANEL_TITLE, buildSuggestionsPanelPayload(), { pinOnCreate: false });
+  return { confessions, letters, suggestions };
 }
 
 async function upsertPanel(client, channelId, title, payload, { pinOnCreate = true } = {}) {
@@ -300,8 +329,8 @@ async function upsertPanel(client, channelId, title, payload, { pinOnCreate = tr
 async function handleCommunityButton(interaction) {
   const id = interaction.customId.slice(PREFIX.length);
   if (id === "suggestion-start") {
-    if (!interaction.inGuild() || interaction.channelId !== SUGGESTENCES_CHANNEL_ID) {
-      return replyEphemeral(interaction, "Please use the Suggestences channel.");
+    if (!interaction.inGuild() || interaction.channelId !== SUGGESTIONS_CHANNEL_ID) {
+      return replyEphemeral(interaction, "Please use the Suggestions channel.");
     }
     return interaction.showModal(buildSuggestionModal());
   }
@@ -309,7 +338,7 @@ async function handleCommunityButton(interaction) {
   if (id.startsWith("suggestion-vote:")) {
     const [, messageId, direction] = id.split(":");
     if (!["up", "down"].includes(direction) || !/^\d{17,20}$/.test(messageId ?? "") ||
-        !interaction.inGuild() || interaction.channelId !== SUGGESTENCES_CHANNEL_ID ||
+        !interaction.inGuild() || interaction.channelId !== SUGGESTIONS_CHANNEL_ID ||
         interaction.message?.id !== messageId || !hasSuggestionButtons(interaction.message, messageId)) {
       return replyEphemeral(interaction, "This suggestion vote is no longer valid.");
     }
@@ -561,7 +590,7 @@ function buildPollModal(mode, recipientId) {
 
 async function handleCommunityModal(interaction, {
   store, settings, suggestionStore, refreshConfessionsPanel, refreshLoveLettersPanel,
-  refreshSuggestencesPanel,
+  refreshSuggestionsPanel,
 }) {
   if (!interaction.inGuild()) return replyEphemeral(interaction, "This feature is only available in the server.");
   const id = interaction.customId.slice(PREFIX.length);
@@ -575,7 +604,7 @@ async function handleCommunityModal(interaction, {
   const reportParts = isReport ? id.split(":") : [];
   const reportKind = reportParts[1];
   const expectedChannel = isReport ? reportChannelForKind(reportKind)
-    : isSuggestion ? SUGGESTENCES_CHANNEL_ID
+    : isSuggestion ? SUGGESTIONS_CHANNEL_ID
       : isConfession || isPoll || id.startsWith("reply:confession:")
         ? CONFESSIONS_CHANNEL_ID
         : isLetter || id.startsWith("reply:letter:") ? LOVE_LETTERS_CHANNEL_ID : null;
@@ -599,7 +628,7 @@ async function handleCommunityModal(interaction, {
     });
   }
   if (isSuggestion) {
-    return publishSuggestion(interaction, suggestionStore, refreshSuggestencesPanel);
+    return publishSuggestion(interaction, suggestionStore, refreshSuggestionsPanel);
   }
   if (isThreadReply) {
     const [, kind, mode, targetId] = id.split(":");
@@ -870,7 +899,7 @@ function validReportKind(kind) {
 function reportChannelForKind(kind) {
   if (kind === "confession" || kind === "poll" || kind === "confession-reply") return CONFESSIONS_CHANNEL_ID;
   if (kind === "letter" || kind === "letter-reply") return LOVE_LETTERS_CHANNEL_ID;
-  if (kind === "suggestion") return SUGGESTENCES_CHANNEL_ID;
+  if (kind === "suggestion") return SUGGESTIONS_CHANNEL_ID;
   return null;
 }
 
@@ -895,7 +924,7 @@ function hasReportButton(message, kind, messageId) {
 async function getConfiguredReportsChannel(interaction, settings) {
   const configuredId = settings?.get(interaction.guildId)?.reportsChannelId;
   if (/^\d{17,20}$/.test(configuredId ?? "") &&
-      ![CONFESSIONS_CHANNEL_ID, LOVE_LETTERS_CHANNEL_ID, SUGGESTENCES_CHANNEL_ID].includes(configuredId)) {
+      ![CONFESSIONS_CHANNEL_ID, LOVE_LETTERS_CHANNEL_ID, SUGGESTIONS_CHANNEL_ID].includes(configuredId)) {
     const configured = await interaction.guild.channels.fetch(configuredId).catch(() => null);
     if (configured?.type === ChannelType.GuildText) {
       const everyone = configured.permissionsFor(interaction.guild.roles.everyone);
@@ -981,12 +1010,12 @@ function hasSuggestionButtons(message, messageId) {
   return [...expected].every((id) => actual.has(id));
 }
 
-async function publishSuggestion(interaction, suggestionStore, refreshSuggestencesPanel) {
+async function publishSuggestion(interaction, suggestionStore, refreshSuggestionsPanel) {
   const body = cleanText(interaction.fields.getTextInputValue("body"), 1800);
   if (body.length < 5) return interaction.editReply("Please write a little more before submitting.");
-  const channel = await interaction.guild.channels.fetch(SUGGESTENCES_CHANNEL_ID).catch(() => null);
+  const channel = await interaction.guild.channels.fetch(SUGGESTIONS_CHANNEL_ID).catch(() => null);
   if (!channel || channel.type !== ChannelType.GuildText) {
-    return interaction.editReply("The Suggestences channel is unavailable.");
+    return interaction.editReply("The Suggestions channel is unavailable.");
   }
   const embed = new EmbedBuilder()
     .setColor(COLOR)
@@ -1007,7 +1036,7 @@ async function publishSuggestion(interaction, suggestionStore, refreshSuggestenc
     allowedMentions: { parse: [] },
   });
   await message.edit({ components: buildSuggestionComponents(message.id) });
-  await refreshSuggestencesPanel?.();
+  await refreshSuggestionsPanel?.();
   return interaction.editReply("Your suggestion has been published ♡");
 }
 
