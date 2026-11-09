@@ -413,10 +413,7 @@ async function handleCommunityModal(interaction, { store }) {
 
 async function publishThreadReply(interaction, channel, kind, mode, parentId) {
   const parent = await channel.messages.fetch(parentId).catch(() => null);
-  if (!parent || parent.author.id === interaction.client.user.id &&
-      !parent.embeds.some((embed) => embed.title?.includes(kind === "confession" ? "Confession #" : "Love Letter #"))) {
-    return interaction.editReply("The original post could not be found.");
-  }
+  if (!parent) return interaction.editReply("The original post could not be found.");
   const expectedTitle = kind === "confession" ? "Confession #" : "Love Letter #";
   if (!parent.embeds.some((embed) => embed.title?.includes(expectedTitle))) {
     return interaction.editReply("This message is not a replyable community post.");
