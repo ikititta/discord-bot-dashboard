@@ -802,8 +802,8 @@ function isExpectedCommunityLocation(interaction, expectedChannelId) {
   return interaction.channelId === expectedChannelId || interaction.channel?.parentId === expectedChannelId;
 }
 
-function hasThreadReplyButton(message, messageId) {
-  const expectedId = `${PREFIX}thread-reply:letter:${messageId}`;
+function hasThreadReplyButton(message, kind, messageId) {
+  const expectedId = `${PREFIX}thread-reply:${kind}:${messageId}`;
   return message?.components?.some((row) =>
     row.components.some((component) => component.customId === expectedId),
   ) ?? false;
