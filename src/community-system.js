@@ -193,8 +193,8 @@ export function attachCommunitySystem(client, { store, stickyPanels, settings })
       void handleCommunityModal(interaction, {
         store, settings, refreshConfessionsPanel, refreshLoveLettersPanel,
       }).catch(async (error) => {
-        console.error(`[community] submission failed: ${error.message}`);
-        await replyEphemeral(interaction, "Your post could not be published. Please try again.");
+        console.error("[community] submission failed:", error);
+        await replyEphemeral(interaction, "Sugar couldn't publish that reply. Please try again, or contact a moderator if it keeps happening.");
       });
     }
   });
@@ -561,21 +561,36 @@ async function publishThreadReply(interaction, channel, kind, mode, parentId) {
   if (parent.author?.id !== interaction.client.user.id || !hasMatchingReplyButton || !parent.embeds.length) {
     return interaction.editReply("This message is not a replyable community post.");
   }
-  let thread = parent.hasThread ? await parent.fetchThread().catch(() => null) : null;
+  // Fetch even when Discord reports no active thread: an archived thread may
+  // already exist for this message, and trying to create a second one fails.
+  let thread = await parent.fetchThread().catch(() => null);
+  if (thread?.locked) await thread.setLocked(false, "Reopening community replies");
+  if (thread?.archived) await thread.setArchived(false, "Reopening community replies");
   if (!thread) {
+    const botMember = interaction.guild.members.me ?? await interaction.guild.members.fetchMe();
+    const permissions = channel.permissionsFor(botMember);
+    if (!permissions?.has(PermissionFlagsBits.CreatePublicThreads)) {
+      return interaction.editReply("Sugar needs permission to create public reply threads in this channel.");
+    }
     thread = await parent.startThread({
       name: `${kind === "confession" ? "Confession" : "Love Letter"} replies`,
       autoArchiveDuration: 1440,
       reason: "Community post replies",
     });
   }
+  const botMember = interaction.guild.members.me ?? await interaction.guild.members.fetchMe();
+  if (!thread.permissionsFor(botMember)?.has(PermissionFlagsBits.SendMessagesInThreads)) {
+    return interaction.editReply("Sugar needs permission to send messages in reply threads.");
+  }
+  const replyBody = cleanText(interaction.fields.getTextInputValue("body"), 1800);
+  if (!replyBody) return interaction.editReply("Please write a reply before submitting.");
   const embed = new EmbedBuilder()
     .setColor(COLOR)
     .setTitle(formatEmbedTitle(mode === "anonymous" ? "Anonymous Reply" : "Reply"))
-    .setDescription(cleanText(interaction.fields.getTextInputValue("body"), 1800));
+    .setDescription(replyBody);
   if (mode === "named") {
     embed.setAuthor({
-      name: interaction.member?.displayName ?? interaction.user.username,
+      name: interaction.member?.nick ?? interaction.user.globalName ?? interaction.user.username,
       iconURL: interaction.user.displayAvatarURL(),
     });
   }
