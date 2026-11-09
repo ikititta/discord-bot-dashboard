@@ -39,8 +39,8 @@ export function buildTicketPanelPayload() {
     ...[...TICKET_CATEGORIES].map(([value, label]) =>
       new ButtonBuilder()
         .setCustomId(`${PREFIX}category:${value}`)
-        .setLabel(label)
-        .setStyle(ButtonStyle.Secondary),
+        .setLabel(`${label} ♡`)
+        .setStyle(ButtonStyle.Primary),
     ),
   );
   return { embeds: [embed], components: [row] };
