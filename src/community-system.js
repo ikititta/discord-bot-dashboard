@@ -8,6 +8,7 @@ import {
   ModalBuilder,
   TextInputBuilder,
   TextInputStyle,
+  UserSelectMenuBuilder,
 } from "discord.js";
 
 import { formatEmbedTitle } from "./embed-format.js";
@@ -49,6 +50,20 @@ export function buildLoveLettersPanelPayload() {
   return { embeds: [embed], components: [row] };
 }
 
+export function buildLoveLetterRecipientPicker(mode) {
+  if (mode !== "anonymous" && mode !== "named") throw new Error("Invalid love letter mode.");
+  const picker = new UserSelectMenuBuilder()
+    .setCustomId(`${PREFIX}letter-recipient:${mode}`)
+    .setPlaceholder("Choose who this letter is for ♡")
+    .setMinValues(1)
+    .setMaxValues(1);
+  return {
+    content: "Who would you like to tag in your love letter?",
+    components: [new ActionRowBuilder().addComponents(picker)],
+    ephemeral: true,
+  };
+}
+
 export function attachCommunitySystem(client, { store }) {
   if (!store || typeof store.nextNumber !== "function") {
     throw new Error("The community system requires a persistent community store.");
@@ -63,6 +78,11 @@ export function attachCommunitySystem(client, { store }) {
       void handleCommunityButton(interaction).catch(async (error) => {
         console.error(`[community] interaction failed: ${error.message}`);
         await replyEphemeral(interaction, "Something went wrong. Please try again.");
+      });
+    } else if (interaction.isUserSelectMenu() && interaction.customId.startsWith(`${PREFIX}letter-recipient:`)) {
+      void handleLoveLetterRecipient(interaction).catch(async (error) => {
+        console.error(`[community] recipient selection failed: ${error.message}`);
+        await replyEphemeral(interaction, "Please choose a server member and try again.");
       });
     } else if (interaction.isModalSubmit() && interaction.customId.startsWith(PREFIX)) {
       void handleCommunityModal(interaction, { store }).catch(async (error) => {
@@ -109,21 +129,50 @@ async function handleCommunityButton(interaction) {
   }
 
   if (kind === "poll") return interaction.showModal(buildPollModal());
+  if (kind === "letter") return interaction.reply(buildLoveLetterRecipientPicker(mode));
 
-  const isLetter = kind === "letter";
   const modal = new ModalBuilder()
-    .setCustomId(isLetter ? `${PREFIX}letter:${mode}` : `${PREFIX}confess:${mode}`)
-    .setTitle(isLetter ? "Write a Love Letter" : "Submit a Confession");
+    .setCustomId(`${PREFIX}confess:${mode}`)
+    .setTitle("Submit a Confession");
   const input = new TextInputBuilder()
     .setCustomId("body")
-    .setLabel(isLetter ? "Your letter" : "Your confession")
-    .setPlaceholder(isLetter ? "Write something sweet..." : "Share what's on your mind...")
+    .setLabel("Your confession")
+    .setPlaceholder("Share what's on your mind...")
     .setStyle(TextInputStyle.Paragraph)
     .setMinLength(1)
     .setMaxLength(1800)
     .setRequired(true);
   modal.addComponents(new ActionRowBuilder().addComponents(input));
   return interaction.showModal(modal);
+}
+
+async function handleLoveLetterRecipient(interaction) {
+  if (!interaction.inGuild() || interaction.channelId !== LOVE_LETTERS_CHANNEL_ID) {
+    return replyEphemeral(interaction, "Please use the Love Letters panel in its designated channel.");
+  }
+  const mode = interaction.customId.slice(`${PREFIX}letter-recipient:`.length);
+  if (mode !== "anonymous" && mode !== "named") return replyEphemeral(interaction, "Invalid publication option.");
+  const recipientId = interaction.values[0];
+  if (!recipientId) return replyEphemeral(interaction, "Please choose someone first.");
+  const member = await interaction.guild.members.fetch(recipientId).catch(() => null);
+  if (!member) return replyEphemeral(interaction, "That user is not available in this server.");
+  return interaction.showModal(buildLoveLetterModal(mode, recipientId));
+}
+
+function buildLoveLetterModal(mode, recipientId) {
+  const modal = new ModalBuilder()
+    .setCustomId(`${PREFIX}letter:${mode}:${recipientId}`)
+    .setTitle("Write a Love Letter");
+  const input = new TextInputBuilder()
+    .setCustomId("body")
+    .setLabel("Your letter")
+    .setPlaceholder("Write something sweet...")
+    .setStyle(TextInputStyle.Paragraph)
+    .setMinLength(1)
+    .setMaxLength(1800)
+    .setRequired(true);
+  modal.addComponents(new ActionRowBuilder().addComponents(input));
+  return modal;
 }
 
 function buildPollModal() {
@@ -174,7 +223,7 @@ async function handleCommunityModal(interaction, { store }) {
     const embed = new EmbedBuilder()
       .setColor(COLOR)
       .setTitle(formatEmbedTitle("Community Poll"))
-      .setDescription(`**${question}**\n\n${options.map((option, index) => `${CONFESSION_REACTIONS[index]}  ${option}`).join("\n")}\n\n*React to vote!* `)
+      .setDescription(`**${question}**\\n\\n${options.map((option, index) => `${CONFESSION_REACTIONS[index]}  ${option}`).join("\\n")}\\n\\n*React to vote!* `)
       .setFooter({ text: `Created by ${interaction.user.username}` });
     const message = await channel.send({ embeds: [embed], allowedMentions: { parse: [] } });
     for (let index = 0; index < options.length; index += 1) {
@@ -185,7 +234,8 @@ async function handleCommunityModal(interaction, { store }) {
 
   const body = cleanText(interaction.fields.getTextInputValue("body"), 1800);
   if (!body) return interaction.editReply("Please write something before submitting.");
-  const mode = id.split(":")[1];
+  const parts = id.split(":");
+  const mode = parts[1];
   const anonymous = mode === "anonymous";
   if (mode !== "anonymous" && mode !== "named") return interaction.editReply("Invalid publication option.");
 
@@ -200,12 +250,18 @@ async function handleCommunityModal(interaction, { store }) {
   }
 
   if (isLetter) {
+    const recipientId = parts[2];
+    if (!/^\\d{17,20}$/.test(recipientId ?? "")) return interaction.editReply("Please select a recipient before writing your letter.");
     const embed = new EmbedBuilder()
       .setColor(COLOR)
       .setTitle(formatEmbedTitle("Love Letter"))
       .setDescription(body);
     if (!anonymous) embed.setAuthor({ name: interaction.member?.displayName ?? interaction.user.username, iconURL: interaction.user.displayAvatarURL() });
-    await channel.send({ embeds: [embed], allowedMentions: { parse: [] } });
+    await channel.send({
+      content: `<@${recipientId}>`,
+      embeds: [embed],
+      allowedMentions: { parse: [], users: [recipientId] },
+    });
     return interaction.editReply("Your love letter has been published ♡");
   }
   return interaction.editReply("Invalid submission.");
