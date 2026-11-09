@@ -17,7 +17,8 @@ import { MAX_PRIVATE_CHAT_MEMBERS } from "./private-chat-store.js";
 import { buildMessageDeletionCommands } from "./message-deletion.js";
 import { registerApplicationCommands } from "./command-registry.js";
 import { formatEmbedTitle, toRoyalBold } from "./embed-format.js";
-import { formatPrivateChatChannelName, normalizeCategoryName } from "./private-chat-format.js";
+import { formatPrivateChatChannelName, normalizeCategoryName, PRIVATE_CHAT_LOBBY_CHANNEL_ID } from "./private-chat-format.js";
+import { attachStickyPanel } from "./sticky-panels.js";
 
 const PREFIX = "private-chat:";
 const COMMAND_NAME = "priv-chat";
@@ -114,8 +115,23 @@ export function buildPrivateChatPermissionOverwrites({ everyoneId, ownerId, memb
  * @param {import("discord.js").Client} client
  * @param {{token: string, applicationId: string, store: import("./private-chat-store.js").PrivateChatStore, lobbyChannelId: string}} options
  */
-export function attachPrivateChatSystem(client, { token, applicationId, store, lobbyChannelId }) {
+export function attachPrivateChatSystem(client, { token, applicationId, store, lobbyChannelId, stickyPanels }) {
   if (!store) throw new Error("A private-chat store is required.");
+
+  if (stickyPanels) {
+    const previousGuideId = store.getLobbyGuideMessageId(lobbyChannelId);
+    if (previousGuideId && !stickyPanels.get("private-chat-lobby")) {
+      stickyPanels.set("private-chat-lobby", previousGuideId);
+    }
+    attachStickyPanel(client, {
+      store: stickyPanels,
+      key: "private-chat-lobby",
+      channelId: lobbyChannelId,
+      titles: [GUIDE_TITLE, LEGACY_GUIDE_TITLE],
+      buildPayload: buildPrivateChatLobbyGuidePayload,
+      logger: "private-chats",
+    });
+  }
 
   let readyHandled = false;
   client.once(Events.ClientReady, () => {
@@ -192,10 +208,12 @@ async function initializePrivateChatLobby(client, { token, applicationId, store,
     );
   }
 
-  try {
-    await ensureLobbyGuide(lobby, client, store);
-  } catch (error) {
-    console.error(`[private-chats] could not ensure the lobby guide: ${error.message}`);
+  if (!stickyPanels) {
+    try {
+      await ensureLobbyGuide(lobby, client, store);
+    } catch (error) {
+      console.error(`[private-chats] could not ensure the lobby guide: ${error.message}`);
+    }
   }
 
   try {
