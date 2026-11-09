@@ -29,11 +29,11 @@ function button(id, label, style = ButtonStyle.Primary) {
 }
 
 function replyButton(kind, messageId) {
-  return button(`reply:${kind}:${messageId}`, "Reply ♡", ButtonStyle.Success);
+  return button(`reply:${kind}:${messageId}`, "Reply ♡", kind === "letter" ? ButtonStyle.Success : ButtonStyle.Secondary);
 }
 
 function reportButton(kind, messageId) {
-  return button(`report:${kind}:${messageId}`, "Report ♡", ButtonStyle.Danger);
+  return button(`report:${kind}:${messageId}`, kind === "letter" || kind === "letter-reply" ? "Report ♡" : "Report", ButtonStyle.Danger);
 }
 
 export function buildCommunityPostComponents(kind, messageId) {
