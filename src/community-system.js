@@ -653,12 +653,17 @@ async function getConfiguredReportsChannel(interaction, settings) {
   if (/^\d{17,20}$/.test(configuredId ?? "") &&
       ![CONFESSIONS_CHANNEL_ID, LOVE_LETTERS_CHANNEL_ID].includes(configuredId)) {
     const configured = await interaction.guild.channels.fetch(configuredId).catch(() => null);
-    if (configured?.type === ChannelType.GuildText) return configured;
+    if (configured?.type === ChannelType.GuildText) {
+      const everyone = configured.permissionsFor(interaction.guild.roles.everyone);
+      if (everyone && !everyone.has(PermissionFlagsBits.ViewChannel)) return configured;
+    }
   }
 
-  const existing = interaction.guild.channels.cache.find((channel) =>
-    channel.type === ChannelType.GuildText && channel.name === "moderation-reports",
-  );
+  const existing = interaction.guild.channels.cache.find((channel) => {
+    if (channel.type !== ChannelType.GuildText || channel.name !== "moderation-reports") return false;
+    const everyone = channel.permissionsFor(interaction.guild.roles.everyone);
+    return everyone && !everyone.has(PermissionFlagsBits.ViewChannel);
+  });
   if (existing) {
     if (settings && typeof settings.set === "function") {
       settings.set(interaction.guildId, {
@@ -702,7 +707,9 @@ async function createPrivateReportsChannel(interaction, settings) {
   }
 
   const channel = await guild.channels.create({
-    name: "moderation-reports",
+    name: guild.channels.cache.some((channel) => channel.name === "moderation-reports")
+      ? "moderation-reports-private"
+      : "moderation-reports",
     type: ChannelType.GuildText,
     topic: "Private reports submitted through Sugar's community buttons.",
     permissionOverwrites,
@@ -736,7 +743,6 @@ async function submitCommunityReport(interaction, { reportKind, messageId, setti
       return interaction.editReply("Sugar couldn't access a private reports channel. Please ask a moderator to give Sugar Manage Channels permission or configure a reports channel in the server settings.");
     }
   }
-  const reportChannelId = reportChannel.id;
   const everyonePermissions = reportChannel.permissionsFor(interaction.guild.roles.everyone);
   if (!everyonePermissions || everyonePermissions.has(PermissionFlagsBits.ViewChannel)) {
     return interaction.editReply("The moderation reports channel must be private. Please ask a moderator to restrict @everyone access.");
