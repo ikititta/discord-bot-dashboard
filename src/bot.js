@@ -131,6 +131,7 @@ export function createBot({
     applicationId,
     store: privateChats,
     lobbyChannelId: PRIVATE_CHAT_LOBBY_CHANNEL_ID,
+    stickyPanels,
   });
   attachMessageDeletionSystem(client, { settings, moderationLogs });
   attachTicketSystem(client, { settings, stickyPanels });

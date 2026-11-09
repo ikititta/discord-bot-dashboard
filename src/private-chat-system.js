@@ -17,7 +17,7 @@ import { MAX_PRIVATE_CHAT_MEMBERS } from "./private-chat-store.js";
 import { buildMessageDeletionCommands } from "./message-deletion.js";
 import { registerApplicationCommands } from "./command-registry.js";
 import { formatEmbedTitle, toRoyalBold } from "./embed-format.js";
-import { formatPrivateChatChannelName, normalizeCategoryName, PRIVATE_CHAT_LOBBY_CHANNEL_ID } from "./private-chat-format.js";
+import { formatPrivateChatChannelName, normalizeCategoryName } from "./private-chat-format.js";
 import { attachStickyPanel } from "./sticky-panels.js";
 
 const PREFIX = "private-chat:";
@@ -136,7 +136,7 @@ export function attachPrivateChatSystem(client, { token, applicationId, store, l
   let readyHandled = false;
   client.once(Events.ClientReady, () => {
     readyHandled = true;
-    void initializePrivateChatLobby(client, { token, applicationId, store, lobbyChannelId }).catch((error) => {
+    void initializePrivateChatLobby(client, { token, applicationId, store, lobbyChannelId, stickyPanels }).catch((error) => {
       console.error(`[private-chats] setup failed: ${error.message}`);
     });
   });
@@ -171,7 +171,7 @@ export function attachPrivateChatSystem(client, { token, applicationId, store, l
   });
 }
 
-async function initializePrivateChatLobby(client, { token, applicationId, store, lobbyChannelId }) {
+async function initializePrivateChatLobby(client, { token, applicationId, store, lobbyChannelId, stickyPanels }) {
   let lobby = null;
   let lobbyError = null;
   try {
