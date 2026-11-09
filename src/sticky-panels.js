@@ -66,15 +66,22 @@ export function attachStickyPanel(client, {
     const channel = await getChannel();
     let saved = await fetchSaved(channel);
     if (saved && !isPanel(saved)) saved = null;
-    const recent = await findExisting(channel);
+    const recentMessages = await channel.messages.fetch({ limit: 100 });
+    const recentPanels = [...recentMessages.values()].filter(isPanel)
+      .sort((a, b) => b.createdTimestamp - a.createdTimestamp);
+    const recent = recentPanels[0] ?? null;
     let previous = saved;
     if (recent && (!previous || recent.createdTimestamp > previous.createdTimestamp)) {
       previous = recent;
     }
 
-    // Preserve an existing panel exactly as it is on startup. It only moves
-    // after a new message is posted in this channel.
-    if (previous) {
+    const latestActivity = [...recentMessages.values()]
+      .filter((message) => !isPanel(message))
+      .sort((a, b) => b.createdTimestamp - a.createdTimestamp)[0] ?? null;
+
+    // Preserve an existing panel unless this channel received a newer
+    // message while Sugar was offline. In that case, move it after that activity.
+    if (previous && (!latestActivity || latestActivity.createdTimestamp <= previous.createdTimestamp)) {
       currentMessage = previous;
       if (store.get(key) !== previous.id) store.set(key, previous.id);
       return previous;
@@ -82,6 +89,11 @@ export function attachStickyPanel(client, {
     const message = await channel.send(buildPayload());
     currentMessage = message;
     store.set(key, message.id);
+    if (previous) {
+      await previous.delete().catch((error) => {
+        if (error?.code !== 10008) logFailure(error);
+      });
+    }
     return message;
   }
 
