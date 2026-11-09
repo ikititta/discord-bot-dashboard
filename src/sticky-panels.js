@@ -81,6 +81,18 @@ export function attachStickyPanel(client, {
     if (!message) message = await findExisting(channel);
     if (message) {
       await message.edit(buildPayload());
+      const recent = await channel.messages.fetch({ limit: 100 });
+      const newestOtherMessage = [...recent.values()]
+        .filter((candidate) => candidate.id !== message.id)
+        .sort((a, b) => b.createdTimestamp - a.createdTimestamp)[0];
+      if (newestOtherMessage && newestOtherMessage.createdTimestamp > message.createdTimestamp) {
+        const previous = message;
+        message = await channel.send(buildPayload());
+        store.set(key, message.id);
+        await previous.delete().catch((error) => {
+          if (error?.code !== 10008) logFailure(error);
+        });
+      }
     } else {
       message = await channel.send(buildPayload());
     }
