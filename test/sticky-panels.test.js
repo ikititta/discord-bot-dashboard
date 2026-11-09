@@ -98,6 +98,40 @@ test("sticky panel moves to the bottom after a new channel message", async () =>
   assert.ok(h.messages.get(nextId).createdTimestamp > userMessage.createdTimestamp);
 });
 
+test("sticky panels can stay at the bottom without being pinned", async () => {
+  const h = makeHarness();
+  const panel = attachStickyPanel(h.client, {
+    store: h.stickyStore,
+    key: "love-letters",
+    channelId: h.channel.id,
+    titles: ["Primary Panel"],
+    buildPayload: h.payload,
+    pinOnCreate: false,
+  });
+  h.client.emit(Events.ClientReady);
+  await settle();
+  const firstId = h.stickyStore.get("love-letters");
+  assert.equal(h.messages.get(firstId).pinned, false);
+
+  const userMessage = {
+    id: "323456789012345678",
+    channelId: h.channel.id,
+    author: { id: "323456789012345678", bot: false },
+    createdTimestamp: h.nextTimestamp(),
+  };
+  h.messages.set(userMessage.id, userMessage);
+  h.client.emit(Events.MessageCreate, userMessage);
+  await settle();
+  const nextId = h.stickyStore.get("love-letters");
+  assert.notEqual(nextId, firstId);
+  assert.equal(h.messages.get(nextId).pinned, false);
+  assert.ok(h.messages.get(nextId).createdTimestamp > userMessage.createdTimestamp);
+
+  await panel.refresh();
+  const refreshedId = h.stickyStore.get("love-letters");
+  assert.equal(h.messages.get(refreshedId).pinned, false);
+});
+
 test("sticky panel is recreated if a member deletes it", async () => {
   const h = makeHarness();
   attachStickyPanel(h.client, {

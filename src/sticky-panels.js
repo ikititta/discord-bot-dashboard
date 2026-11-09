@@ -10,6 +10,7 @@ export function attachStickyPanel(client, {
   channelId,
   titles,
   buildPayload,
+  pinOnCreate = true,
   logger = "sticky-panels",
 }) {
   if (!store || typeof store.get !== "function" || typeof store.set !== "function") {
@@ -99,7 +100,7 @@ export function attachStickyPanel(client, {
         if (error?.code !== 10008) logFailure(error);
       });
     }
-    await pin(message);
+    if (pinOnCreate) await pin(message);
     return message;
   }
 
@@ -122,7 +123,7 @@ export function attachStickyPanel(client, {
     await previous.delete().catch((error) => {
       if (error?.code !== 10008) logFailure(error);
     });
-    await pin(next);
+    if (pinOnCreate) await pin(next);
   }
 
   async function refresh() {
@@ -140,7 +141,7 @@ export function attachStickyPanel(client, {
     await previous.delete().catch((error) => {
       if (error?.code !== 10008) logFailure(error);
     });
-    await pin(next);
+    if (pinOnCreate) await pin(next);
     return next;
   }
 

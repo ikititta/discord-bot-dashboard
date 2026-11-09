@@ -93,14 +93,17 @@ test("confession and poll recipient pickers allow tagging someone or skipping", 
   }
 });
 
-test("confession and love letter posts have red report buttons", () => {
-  for (const kind of ["confession", "letter"]) {
-    const components = buildCommunityPostComponents(kind, "123456789012345678");
-    const buttons = components[0].toJSON().components;
-    const report = buttons.at(-1);
-    assert.equal(report.custom_id, `sugar-community:report:${kind}:123456789012345678`);
-    assert.equal(report.style, 4);
-  }
+test("Love Letters posts use green Reply and red Report buttons with an empty heart", () => {
+  const letterButtons = buildCommunityPostComponents("letter", "123456789012345678")[0].toJSON().components;
+  assert.equal(letterButtons[0].style, 3);
+  assert.equal(letterButtons[0].label, "Reply ♡");
+  assert.equal(letterButtons.at(-1).style, 4);
+  assert.equal(letterButtons.at(-1).label, "Report ♡");
+
+  const confessionButtons = buildCommunityPostComponents("confession", "123456789012345678")[0].toJSON().components;
+  assert.equal(confessionButtons[0].style, 2);
+  assert.equal(confessionButtons.at(-1).style, 4);
+  assert.equal(confessionButtons.at(-1).label, "Report");
 });
 
 test("legacy standalone confess picker now opens the anonymous-or-named selector", () => {
