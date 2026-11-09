@@ -9,6 +9,7 @@ import {
   TextInputBuilder,
   TextInputStyle,
   UserSelectMenuBuilder,
+  StringSelectMenuBuilder,
 } from "discord.js";
 
 import { formatEmbedTitle } from "./embed-format.js";
@@ -30,9 +31,15 @@ function replyButton(kind, messageId) {
   return button(`reply:${kind}:${messageId}`, "Reply ♡", ButtonStyle.Secondary);
 }
 
+function reportButton(kind, messageId) {
+  return button(`report:${kind}:${messageId}`, "Report", ButtonStyle.Danger);
+}
+
 function postComponents(kind, messageId) {
-  const buttons = [replyButton(kind, messageId)];
+  const buttons = [];
+  if (kind === "confession" || kind === "letter") buttons.push(replyButton(kind, messageId));
   if (kind === "confession") buttons.push(button("confess-new", "Confess ♡", ButtonStyle.Primary));
+  buttons.push(reportButton(kind, messageId));
   return [new ActionRowBuilder().addComponents(...buttons)];
 }
 
@@ -42,9 +49,8 @@ export function buildConfessionsPanelPayload() {
     .setTitle(CONFESSION_PANEL_TITLE)
     .setDescription("Share a confession or create a poll. Choose how you want your post to appear.");
   const row = new ActionRowBuilder().addComponents(
-    button("confess:anonymous", "Submit a Confession ♡"),
-    button("confess:named", "With My Name ♡", ButtonStyle.Secondary),
-    button("poll", "Create a Poll ♡", ButtonStyle.Success),
+    button("confess-start", "Submit a Confession ♡"),
+    button("poll-start", "Create a Poll ♡", ButtonStyle.Success),
   );
   return { embeds: [embed], components: [row] };
 }
@@ -75,15 +81,33 @@ export function buildLoveLetterRecipientPicker(mode) {
   };
 }
 
-export function buildConfessionRecipientPicker(mode) {
-  if (!validMode(mode)) throw new Error("Invalid confession mode.");
+export function buildPublicationModePicker(kind) {
+  if (!["confess", "poll"].includes(kind)) throw new Error("Invalid publication type.");
+  const picker = new StringSelectMenuBuilder()
+    .setCustomId(`${PREFIX}publication-mode:${kind}`)
+    .setPlaceholder("Choose how your post appears ♡")
+    .addOptions(
+      { label: "Anonymously", value: "anonymous", description: "Your name will stay hidden." },
+      { label: "With my name", value: "named", description: "Your Discord name will be shown." },
+    );
+  return {
+    content: "Would you like to publish anonymously or with your name?",
+    components: [new ActionRowBuilder().addComponents(picker)],
+    ephemeral: true,
+  };
+}
+
+export function buildPublicationRecipientPicker(kind, mode) {
+  if (!["confess", "poll"].includes(kind) || !validMode(mode)) {
+    throw new Error("Invalid publication options.");
+  }
   const picker = new UserSelectMenuBuilder()
-    .setCustomId(`${PREFIX}confess-recipient:${mode}`)
+    .setCustomId(`${PREFIX}publication-recipient:${kind}:${mode}`)
     .setPlaceholder("Tag someone (optional) ♡")
     .setMinValues(1)
     .setMaxValues(1);
   const skip = new ActionRowBuilder().addComponents(
-    button(`confess-skip:${mode}`, "Skip ♡", ButtonStyle.Secondary),
+    button(`publication-skip:${kind}:${mode}`, "Skip ♡", ButtonStyle.Secondary),
   );
   return {
     content: "Would you like to tag someone? This is optional.",
@@ -92,19 +116,16 @@ export function buildConfessionRecipientPicker(mode) {
   };
 }
 
+export function buildConfessionRecipientPicker(mode) {
+  return buildPublicationRecipientPicker("confess", mode);
+}
+
 function validMode(mode) {
   return mode === "anonymous" || mode === "named";
 }
 
 export function buildConfessionModePicker() {
-  return {
-    content: "How would you like to confess?",
-    components: [new ActionRowBuilder().addComponents(
-      button("confess:anonymous", "Anonymously ♡"),
-      button("confess:named", "With My Name ♡", ButtonStyle.Secondary),
-    )],
-    ephemeral: true,
-  };
+  return buildPublicationModePicker("confess");
 }
 
 export function buildReplyModePicker(kind, messageId) {
@@ -121,27 +142,29 @@ export function buildReplyModePicker(kind, messageId) {
   };
 }
 
-export function attachCommunitySystem(client, { store, stickyPanels }) {
+export function attachCommunitySystem(client, { store, stickyPanels, settings }) {
   if (!store || typeof store.nextNumber !== "function") {
     throw new Error("The community system requires a persistent community store.");
   }
+  let refreshConfessionsPanel = async () => {};
+  let refreshLoveLettersPanel = async () => {};
   if (stickyPanels) {
-    attachStickyPanel(client, {
+    refreshConfessionsPanel = attachStickyPanel(client, {
       store: stickyPanels,
       key: "confessions",
       channelId: CONFESSIONS_CHANNEL_ID,
       titles: [CONFESSION_PANEL_TITLE],
       buildPayload: buildConfessionsPanelPayload,
       logger: "community",
-    });
-    attachStickyPanel(client, {
+    }).refresh;
+    refreshLoveLettersPanel = attachStickyPanel(client, {
       store: stickyPanels,
       key: "love-letters",
       channelId: LOVE_LETTERS_CHANNEL_ID,
       titles: [LOVE_PANEL_TITLE],
       buildPayload: buildLoveLettersPanelPayload,
       logger: "community",
-    });
+    }).refresh;
   } else {
     client.once(Events.ClientReady, () => {
       void ensureCommunityPanels(client).catch((error) => {
@@ -155,13 +178,20 @@ export function attachCommunitySystem(client, { store, stickyPanels }) {
         console.error(`[community] interaction failed: ${error.message}`);
         await replyEphemeral(interaction, "Something went wrong. Please try again.");
       });
+    } else if (interaction.isStringSelectMenu() && interaction.customId.startsWith(PREFIX)) {
+      void handleCommunityStringSelect(interaction).catch(async (error) => {
+        console.error(`[community] mode selection failed: ${error.message}`);
+        await replyEphemeral(interaction, "Please choose a valid publication option.");
+      });
     } else if (interaction.isUserSelectMenu() && interaction.customId.startsWith(PREFIX)) {
       void handleCommunityUserSelect(interaction).catch(async (error) => {
         console.error(`[community] user selection failed: ${error.message}`);
         await replyEphemeral(interaction, "Please choose a server member and try again.");
       });
     } else if (interaction.isModalSubmit() && interaction.customId.startsWith(PREFIX)) {
-      void handleCommunityModal(interaction, { store }).catch(async (error) => {
+      void handleCommunityModal(interaction, {
+        store, settings, refreshConfessionsPanel, refreshLoveLettersPanel,
+      }).catch(async (error) => {
         console.error(`[community] submission failed: ${error.message}`);
         await replyEphemeral(interaction, "Your post could not be published. Please try again.");
       });
@@ -197,11 +227,23 @@ async function upsertPanel(client, channelId, title, payload) {
 
 async function handleCommunityButton(interaction) {
   const id = interaction.customId.slice(PREFIX.length);
-  if (id === "confess-new") {
+  if (id === "confess-new" || id === "confess-start" || id === "poll-start") {
+    const kind = id === "poll-start" ? "poll" : "confess";
     if (!interaction.inGuild() || interaction.channelId !== CONFESSIONS_CHANNEL_ID) {
       return replyEphemeral(interaction, "Please use the Confessions channel.");
     }
-    return interaction.reply(buildConfessionModePicker());
+    return interaction.reply(buildPublicationModePicker(kind));
+  }
+
+  if (id.startsWith("report:")) {
+    const [, kind, messageId] = id.split(":");
+    if (!validReportKind(kind) || !/^\d{17,20}$/.test(messageId ?? "") ||
+        interaction.message?.id !== messageId ||
+        !hasReportButton(interaction.message, kind, messageId) ||
+        !isExpectedCommunityLocation(interaction, reportChannelForKind(kind))) {
+      return replyEphemeral(interaction, "This report button is no longer valid.");
+    }
+    return interaction.showModal(buildReportModal(kind, messageId));
   }
 
   if (id.startsWith("reply:")) {
@@ -224,12 +266,15 @@ async function handleCommunityButton(interaction) {
     return interaction.showModal(buildReplyModal(kind, mode, messageId));
   }
 
-  if (id.startsWith("confess-skip:")) {
-    const mode = id.slice("confess-skip:".length);
-    if (!validMode(mode) || !interaction.inGuild() || interaction.channelId !== CONFESSIONS_CHANNEL_ID) {
+  if (id.startsWith("publication-skip:")) {
+    const [, kind, mode] = id.split(":");
+    if (!["confess", "poll"].includes(kind) || !validMode(mode) ||
+        !interaction.inGuild() || interaction.channelId !== CONFESSIONS_CHANNEL_ID) {
       return replyEphemeral(interaction, "Please use the Confessions panel.");
     }
-    return interaction.showModal(buildConfessionModal(mode, null));
+    return interaction.showModal(kind === "poll"
+      ? buildPollModal(mode, null)
+      : buildConfessionModal(mode, null));
   }
 
   const [kind, mode] = id.split(":");
@@ -240,7 +285,6 @@ async function handleCommunityButton(interaction) {
     return replyEphemeral(interaction, "Please use the panel in its designated channel.");
   }
 
-  if (kind === "poll") return interaction.showModal(buildPollModal());
   if (kind === "letter") return interaction.reply(buildLoveLetterRecipientPicker(mode));
   if (kind === "confess" && validMode(mode)) {
     return interaction.reply(buildConfessionRecipientPicker(mode));
@@ -248,13 +292,28 @@ async function handleCommunityButton(interaction) {
   return replyEphemeral(interaction, "Invalid publication option.");
 }
 
+async function handleCommunityStringSelect(interaction) {
+  if (!interaction.inGuild()) return replyEphemeral(interaction, "This feature is only available in the server.");
+  const [action, kind] = interaction.customId.slice(PREFIX.length).split(":");
+  const mode = interaction.values[0];
+  if (action !== "publication-mode" || !["confess", "poll"].includes(kind) ||
+      !validMode(mode) || interaction.channelId !== CONFESSIONS_CHANNEL_ID) {
+    return replyEphemeral(interaction, "Please use the correct community panel.");
+  }
+  return interaction.reply(buildPublicationRecipientPicker(kind, mode));
+}
+
 async function handleCommunityUserSelect(interaction) {
   if (!interaction.inGuild()) return replyEphemeral(interaction, "This feature is only available in the server.");
-  const id = interaction.customId.slice(PREFIX.length);
-  const [kind, mode] = id.split(":");
+  const parts = interaction.customId.slice(PREFIX.length).split(":");
+  const [kind, mode, extra] = parts;
+  const isPublication = kind === "publication-recipient";
+  const publicationKind = isPublication ? mode : null;
+  const publicationMode = isPublication ? extra : mode;
   const expectedChannel = kind === "letter-recipient" ? LOVE_LETTERS_CHANNEL_ID
-    : kind === "confess-recipient" ? CONFESSIONS_CHANNEL_ID : null;
-  if (!expectedChannel || interaction.channelId !== expectedChannel || !validMode(mode)) {
+    : kind === "confess-recipient" || isPublication ? CONFESSIONS_CHANNEL_ID : null;
+  if (!expectedChannel || interaction.channelId !== expectedChannel || !validMode(publicationMode) ||
+      (isPublication && !["confess", "poll"].includes(publicationKind))) {
     return replyEphemeral(interaction, "Please use the correct community panel.");
   }
   const recipientId = interaction.values[0];
@@ -266,7 +325,10 @@ async function handleCommunityUserSelect(interaction) {
   if (kind === "letter-recipient") {
     return interaction.showModal(buildLoveLetterModal(mode, recipientId));
   }
-  return interaction.showModal(buildConfessionModal(mode, recipientId));
+  if (isPublication && publicationKind === "poll") {
+    return interaction.showModal(buildPollModal(publicationMode, recipientId));
+  }
+  return interaction.showModal(buildConfessionModal(isPublication ? publicationMode : mode, recipientId));
 }
 
 function buildConfessionModal(mode, recipientId) {
@@ -317,8 +379,13 @@ function buildReplyModal(kind, mode, messageId) {
   return modal;
 }
 
-function buildPollModal() {
-  const modal = new ModalBuilder().setCustomId(`${PREFIX}poll`).setTitle("Create a Poll");
+function buildPollModal(mode, recipientId) {
+  if (!validMode(mode) || (recipientId !== null && recipientId !== undefined && !/^\d{17,20}$/.test(recipientId))) {
+    throw new Error("Invalid poll options.");
+  }
+  const modal = new ModalBuilder()
+    .setCustomId(`${PREFIX}poll:${mode}:${recipientId ?? "none"}`)
+    .setTitle("Create a Poll");
   const fields = [
     ["question", "Poll question", "What should everyone vote on?", true],
     ["option1", "Option 1", "First option", true],
@@ -336,21 +403,34 @@ function buildPollModal() {
   return modal;
 }
 
-async function handleCommunityModal(interaction, { store }) {
+async function handleCommunityModal(interaction, {
+  store, settings, refreshConfessionsPanel, refreshLoveLettersPanel,
+}) {
   if (!interaction.inGuild()) return replyEphemeral(interaction, "This feature is only available in the server.");
   const id = interaction.customId.slice(PREFIX.length);
-  const isPoll = id === "poll";
+  const isPoll = id.startsWith("poll:");
   const isConfession = id.startsWith("confess:");
   const isLetter = id.startsWith("letter:");
   const isReply = id.startsWith("reply:");
-  const expectedChannel = isConfession || isPoll || id.startsWith("reply:confession:")
-    ? CONFESSIONS_CHANNEL_ID
-    : isLetter || id.startsWith("reply:letter:") ? LOVE_LETTERS_CHANNEL_ID : null;
-  if (!expectedChannel || interaction.channelId !== expectedChannel) {
-    return replyEphemeral(interaction, "Please submit this from the correct channel panel.");
+  const isReport = id.startsWith("report:");
+  const reportParts = isReport ? id.split(":") : [];
+  const reportKind = reportParts[1];
+  const expectedChannel = isReport ? reportChannelForKind(reportKind)
+    : isConfession || isPoll || id.startsWith("reply:confession:")
+      ? CONFESSIONS_CHANNEL_ID
+      : isLetter || id.startsWith("reply:letter:") ? LOVE_LETTERS_CHANNEL_ID : null;
+  if (!expectedChannel || (isReport
+    ? !isExpectedCommunityLocation(interaction, expectedChannel)
+    : interaction.channelId !== expectedChannel)) {
+    return replyEphemeral(interaction, "Please submit this from the correct community channel.");
   }
 
   await interaction.deferReply({ ephemeral: true });
+  if (isReport) {
+    return submitCommunityReport(interaction, {
+      reportKind, messageId: reportParts[2], settings,
+    });
+  }
   const channel = await interaction.guild.channels.fetch(expectedChannel);
   if (!channel || channel.type !== ChannelType.GuildText) {
     return interaction.editReply("The publication channel is unavailable.");
@@ -365,6 +445,11 @@ async function handleCommunityModal(interaction, { store }) {
   }
 
   if (isPoll) {
+    const [, mode, recipientValue] = id.split(":");
+    const recipientId = recipientValue && recipientValue !== "none" ? recipientValue : null;
+    if (!validMode(mode) || (recipientId && !/^\d{17,20}$/.test(recipientId))) {
+      return interaction.editReply("Invalid poll options.");
+    }
     const question = cleanText(interaction.fields.getTextInputValue("question"), 100);
     const options = ["option1", "option2", "option3", "option4"]
       .map((key) => interaction.fields.getTextInputValue(key).trim())
@@ -376,12 +461,24 @@ async function handleCommunityModal(interaction, { store }) {
     const embed = new EmbedBuilder()
       .setColor(COLOR)
       .setTitle(formatEmbedTitle("Community Poll"))
-      .setDescription(`**${question}**\\n\\n${options.map((option, index) => `${CONFESSION_REACTIONS[index]}  ${option}`).join("\\n")}\\n\\n*React to vote!*`)
-      .setFooter({ text: `Created by ${interaction.user.username}` });
-    const message = await channel.send({ embeds: [embed], allowedMentions: { parse: [] } });
+      .setDescription(`**${question}**\\n\\n${options.map((option, index) => `${CONFESSION_REACTIONS[index]}  ${option}`).join("\\n")}\\n\\n*React to vote!*`);
+    if (mode === "named") {
+      embed.setAuthor({
+        name: interaction.member?.displayName ?? interaction.user.username,
+        iconURL: interaction.user.displayAvatarURL(),
+      });
+    }
+    const message = await channel.send({
+      content: recipientId ? `<@${recipientId}> ♡` : undefined,
+      embeds: [embed],
+      components: [new ActionRowBuilder().addComponents(reportButton("poll", "0"))],
+      allowedMentions: { parse: [], users: recipientId ? [recipientId] : [] },
+    });
+    await message.edit({ components: [new ActionRowBuilder().addComponents(reportButton("poll", message.id))] });
     for (let index = 0; index < options.length; index += 1) {
       await message.react(CONFESSION_REACTIONS[index]);
     }
+    await refreshConfessionsPanel();
     return interaction.editReply("Your poll has been published ♡");
   }
 
@@ -418,6 +515,7 @@ async function handleCommunityModal(interaction, { store }) {
       allowedMentions,
     });
     await message.edit({ components: postComponents("confession", message.id) });
+    await refreshConfessionsPanel();
     return interaction.editReply("Your confession has been published ♡");
   }
 
@@ -445,6 +543,7 @@ async function handleCommunityModal(interaction, { store }) {
       allowedMentions: { parse: [], users: [...new Set(mentions)] },
     });
     await message.edit({ components: postComponents("letter", message.id) });
+    await refreshLoveLettersPanel();
     return interaction.editReply("Your love letter has been published ♡");
   }
 
@@ -479,8 +578,88 @@ async function publishThreadReply(interaction, channel, kind, mode, parentId) {
       iconURL: interaction.user.displayAvatarURL(),
     });
   }
-  await thread.send({ embeds: [embed], allowedMentions: { parse: [] } });
+  const reply = await thread.send({
+    embeds: [embed],
+    components: [new ActionRowBuilder().addComponents(reportButton(`${kind}-reply`, "0"))],
+    allowedMentions: { parse: [] },
+  });
+  await reply.edit({
+    components: [new ActionRowBuilder().addComponents(reportButton(`${kind}-reply`, reply.id))],
+  });
   return interaction.editReply("Your reply has been added to the thread ♡");
+}
+
+function buildReportModal(kind, messageId) {
+  const modal = new ModalBuilder()
+    .setCustomId(`${PREFIX}report:${kind}:${messageId}`)
+    .setTitle("Report Community Post");
+  const reason = new TextInputBuilder()
+    .setCustomId("reason")
+    .setLabel("Why are you reporting this?")
+    .setPlaceholder("Tell the moderation team what happened...")
+    .setStyle(TextInputStyle.Paragraph)
+    .setMinLength(5)
+    .setMaxLength(500)
+    .setRequired(true);
+  modal.addComponents(new ActionRowBuilder().addComponents(reason));
+  return modal;
+}
+
+function validReportKind(kind) {
+  return ["confession", "letter", "poll", "confession-reply", "letter-reply"].includes(kind);
+}
+
+function reportChannelForKind(kind) {
+  if (kind === "confession" || kind === "poll" || kind === "confession-reply") return CONFESSIONS_CHANNEL_ID;
+  if (kind === "letter" || kind === "letter-reply") return LOVE_LETTERS_CHANNEL_ID;
+  return null;
+}
+
+function isExpectedCommunityLocation(interaction, expectedChannelId) {
+  return interaction.channelId === expectedChannelId || interaction.channel?.parentId === expectedChannelId;
+}
+
+function hasReportButton(message, kind, messageId) {
+  const expectedId = `${PREFIX}report:${kind}:${messageId}`;
+  return message?.components?.some((row) =>
+    row.components.some((component) => component.customId === expectedId),
+  ) ?? false;
+}
+
+async function submitCommunityReport(interaction, { reportKind, messageId, settings }) {
+  if (!validReportKind(reportKind) || !/^\d{17,20}$/.test(messageId ?? "")) {
+    return interaction.editReply("This report is invalid.");
+  }
+  const target = await interaction.channel.messages.fetch(messageId).catch(() => null);
+  if (!target || target.author?.id !== interaction.client.user.id ||
+      !hasReportButton(target, reportKind, messageId)) {
+    return interaction.editReply("This post can no longer be reported.");
+  }
+  const reportChannelId = settings?.get(interaction.guildId)?.logChannelId;
+  if (!/^\d{17,20}$/.test(reportChannelId ?? "")) {
+    return interaction.editReply("Reports are temporarily unavailable. Please contact a moderator.");
+  }
+  const reportChannel = await interaction.guild.channels.fetch(reportChannelId).catch(() => null);
+  if (!reportChannel || reportChannel.type !== ChannelType.GuildText) {
+    return interaction.editReply("The moderation report channel is unavailable. Please contact a moderator.");
+  }
+  const reason = cleanText(interaction.fields.getTextInputValue("reason"), 500);
+  if (reason.length < 5) return interaction.editReply("Please provide a little more detail for the report.");
+  const targetEmbed = target.embeds[0];
+  const report = new EmbedBuilder()
+    .setColor(0xef4444)
+    .setTitle(formatEmbedTitle("Community Report"))
+    .setDescription(reason)
+    .addFields(
+      { name: "Type", value: reportKind.replaceAll("-", " "), inline: true },
+      { name: "Reported by", value: `<@${interaction.user.id}>`, inline: true },
+      { name: "Reported post", value: `[Jump to message](https://discord.com/channels/${interaction.guildId}/${target.channelId}/${target.id})` },
+      ...(targetEmbed?.title ? [{ name: "Post title", value: cleanText(targetEmbed.title, 200) }] : []),
+      ...(targetEmbed?.description ? [{ name: "Post content", value: cleanText(targetEmbed.description, 900) }] : []),
+    )
+    .setTimestamp();
+  await reportChannel.send({ embeds: [report], allowedMentions: { parse: [] } });
+  return interaction.editReply("Your report has been sent privately to the moderation team. Thank you.");
 }
 
 function validReplyKind(kind) {
