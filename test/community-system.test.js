@@ -14,6 +14,8 @@ import {
   buildPublicationRecipientPicker,
   buildCommunityPostComponents,
   buildLoveLetterReplyComponents,
+  buildCommunityThreadReplyComponents,
+  buildThreadReplyModePicker,
   buildReplyModePicker,
   buildConfessionModePicker,
 } from "../src/community-system.js";
@@ -113,14 +115,31 @@ test("Love Letters posts use green Reply and red Report buttons with an empty he
   assert.equal(confessionButtons.at(-1).label, "Report ♡");
 });
 
-test("Love Letter thread replies show green Reply before red Report, both with empty hearts", () => {
-  const buttons = buildLoveLetterReplyComponents("123456789012345678")[0].toJSON().components;
-  assert.deepEqual(buttons.map((item) => item.label), ["Reply ♡", "Report ♡"]);
-  assert.deepEqual(buttons.map((item) => item.style), [3, 4]);
-  assert.deepEqual(buttons.map((item) => item.custom_id), [
-    "sugar-community:thread-reply:letter:123456789012345678",
-    "sugar-community:report:letter-reply:123456789012345678",
-  ]);
+test("Confession and Love Letter thread replies show green Reply before red Report", () => {
+  for (const kind of ["confession", "letter"]) {
+    const buttons = buildCommunityThreadReplyComponents(kind, "123456789012345678")[0].toJSON().components;
+    assert.deepEqual(buttons.map((item) => item.label), ["Reply ♡", "Report ♡"]);
+    assert.deepEqual(buttons.map((item) => item.style), [3, 4]);
+    assert.deepEqual(buttons.map((item) => item.custom_id), [
+      `sugar-community:thread-reply:${kind}:123456789012345678`,
+      `sugar-community:report:${kind}-reply:123456789012345678`,
+    ]);
+  }
+});
+
+test("thread reply picker preserves anonymous and named choices", () => {
+  for (const kind of ["confession", "letter"]) {
+    const buttons = buildThreadReplyModePicker(kind, "123456789012345678").components[0].toJSON().components;
+    assert.deepEqual(buttons.map((item) => item.label), ["Anonymously ♡", "With My Name ♡"]);
+    assert.ok(buttons.every((item) => item.custom_id.includes(`:${kind}:`)));
+  }
+});
+
+test("named thread replies show who replied to whom only when both are named", async () => {
+  const source = (await import("node:fs")).readFileSync(new URL("../src/community-system.js", import.meta.url), "utf8");
+  assert.match(source, /function formatReplyDescription/);
+  assert.match(source, /if \(replyName && targetName\)/);
+  assert.match(source, /replied to/);
 });
 
 test("legacy standalone confess picker now opens two anonymous-or-named buttons", () => {
