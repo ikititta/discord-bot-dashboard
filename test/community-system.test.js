@@ -10,6 +10,9 @@ import {
   buildLoveLettersPanelPayload,
   buildLoveLetterRecipientPicker,
   buildConfessionRecipientPicker,
+  buildPublicationModePicker,
+  buildPublicationRecipientPicker,
+  buildCommunityPostComponents,
   buildReplyModePicker,
   buildConfessionModePicker,
 } from "../src/community-system.js";
@@ -43,10 +46,10 @@ test("confessions panel offers anonymous, named, and poll actions", () => {
   const payload = buildConfessionsPanelPayload();
   const buttons = payload.components[0].toJSON().components;
   assert.deepEqual(buttons.map((item) => item.custom_id), [
-    "sugar-community:confess:anonymous",
-    "sugar-community:confess:named",
-    "sugar-community:poll",
+    "sugar-community:confess-start",
+    "sugar-community:poll-start",
   ]);
+  assert.ok(buttons.every((item) => !item.label.toLowerCase().includes("with my name")));
   assert.equal(payload.embeds[0].toJSON().title, "୨୧ 𝒄𝒐𝒏𝒇𝒆𝒔𝒔ions ♡");
 });
 
@@ -69,20 +72,42 @@ test("love letter starts by privately asking for one recipient", () => {
   assert.equal(picker.max_values, 1);
 });
 
-test("confession recipient picker makes tagging optional", () => {
-  const payload = buildConfessionRecipientPicker("named");
-  assert.match(payload.content, /optional/i);
-  assert.equal(payload.components[0].toJSON().components[0].custom_id, "sugar-community:confess-recipient:named");
-  assert.equal(payload.components[1].toJSON().components[0].custom_id, "sugar-community:confess-skip:named");
+test("confession and poll mode pickers use a selector for anonymous or named posting", () => {
+  for (const kind of ["confess", "poll"]) {
+    const payload = buildPublicationModePicker(kind);
+    const selector = payload.components[0].toJSON().components[0];
+    assert.equal(selector.type, 3);
+    assert.equal(selector.custom_id, `sugar-community:publication-mode:${kind}`);
+    assert.deepEqual(selector.options.map((option) => option.value), ["anonymous", "named"]);
+  }
 });
 
-test("standalone confess picker offers anonymous and named confessions", () => {
+test("confession and poll recipient pickers allow tagging someone or skipping", () => {
+  for (const kind of ["confess", "poll"]) {
+    const payload = buildPublicationRecipientPicker(kind, "named");
+    assert.match(payload.content, /optional/i);
+    assert.equal(payload.components[0].toJSON().components[0].custom_id,
+      `sugar-community:publication-recipient:${kind}:named`);
+    assert.equal(payload.components[1].toJSON().components[0].custom_id,
+      `sugar-community:publication-skip:${kind}:named`);
+  }
+});
+
+test("confession and love letter posts have red report buttons", () => {
+  for (const kind of ["confession", "letter"]) {
+    const components = buildCommunityPostComponents(kind, "123456789012345678");
+    const buttons = components[0].toJSON().components;
+    const report = buttons.at(-1);
+    assert.equal(report.custom_id, `sugar-community:report:${kind}:123456789012345678`);
+    assert.equal(report.style, 4);
+  }
+});
+
+test("legacy standalone confess picker now opens the anonymous-or-named selector", () => {
   const payload = buildConfessionModePicker();
-  const buttons = payload.components[0].toJSON().components;
-  assert.deepEqual(buttons.map((item) => item.custom_id), [
-    "sugar-community:confess:anonymous",
-    "sugar-community:confess:named",
-  ]);
+  const selector = payload.components[0].toJSON().components[0];
+  assert.equal(selector.custom_id, "sugar-community:publication-mode:confess");
+  assert.deepEqual(selector.options.map((option) => option.value), ["anonymous", "named"]);
 });
 
 test("community post reply picker offers anonymous and named thread replies", () => {
