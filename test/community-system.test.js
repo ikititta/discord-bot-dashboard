@@ -92,8 +92,15 @@ test("community post reply picker offers anonymous and named thread replies", ()
   assert.ok(buttons.every((item) => item.custom_id.includes(":123456789012345678")));
 });
 
-test("ticket panel offers the five support categories", () => {
+test("ticket panel offers the five support categories as buttons", () => {
   const payload = buildTicketPanelPayload();
-  const options = payload.components[0].toJSON().components[0].options;
-  assert.deepEqual(options.map((item) => item.value), ["general", "appeal", "roles", "technical", "other"]);
+  const buttons = payload.components[0].toJSON().components;
+  assert.deepEqual(buttons.map((item) => item.custom_id), [
+    "sugar-ticket:category:general",
+    "sugar-ticket:category:appeal",
+    "sugar-ticket:category:roles",
+    "sugar-ticket:category:technical",
+    "sugar-ticket:category:other",
+  ]);
+  assert.ok(buttons.every((item) => item.type === 2));
 });
