@@ -969,13 +969,72 @@ async function createPrivateReportsChannel(interaction, settings) {
   return channel;
 }
 
+function hasSuggestionButtons(message, messageId) {
+  const expected = new Set([
+    `${PREFIX}suggestion-vote:${messageId}:up`,
+    `${PREFIX}suggestion-vote:${messageId}:down`,
+    `${PREFIX}report:suggestion:${messageId}`,
+  ]);
+  const actual = new Set(message?.components?.flatMap((row) =>
+    row.components.map((component) => component.customId),
+  ) ?? []);
+  return [...expected].every((id) => actual.has(id));
+}
+
+async function publishSuggestion(interaction, suggestionStore, refreshSuggestencesPanel) {
+  const body = cleanText(interaction.fields.getTextInputValue("body"), 1800);
+  if (body.length < 5) return interaction.editReply("Please write a little more before submitting.");
+  const channel = await interaction.guild.channels.fetch(SUGGESTENCES_CHANNEL_ID).catch(() => null);
+  if (!channel || channel.type !== ChannelType.GuildText) {
+    return interaction.editReply("The Suggestences channel is unavailable.");
+  }
+  const embed = new EmbedBuilder()
+    .setColor(COLOR)
+    .setTitle(formatEmbedTitle("Suggestion"))
+    .setDescription(body)
+    .setAuthor({
+      name: interaction.member?.displayName ?? interaction.user.globalName ?? interaction.user.username,
+      iconURL: interaction.user.displayAvatarURL(),
+    })
+    .addFields(
+      { name: "↑ Upvotes", value: "0", inline: true },
+      { name: "↓ Downvotes", value: "0", inline: true },
+    )
+    .setTimestamp();
+  const message = await channel.send({
+    embeds: [embed],
+    components: buildSuggestionComponents("0"),
+    allowedMentions: { parse: [] },
+  });
+  await message.edit({ components: buildSuggestionComponents(message.id) });
+  await refreshSuggestencesPanel?.();
+  return interaction.editReply("Your suggestion has been published ♡");
+}
+
+async function handleSuggestionVote(interaction, { suggestionStore, messageId, direction }) {
+  if (!suggestionStore || typeof suggestionStore.vote !== "function") {
+    return replyEphemeral(interaction, "Suggestion voting is temporarily unavailable.");
+  }
+  const counts = suggestionStore.vote(messageId, interaction.user.id, direction);
+  const original = interaction.message.embeds[0];
+  const embed = EmbedBuilder.from(original);
+  embed.setFields((original.fields ?? []).map((field) => {
+    if (field.name === "↑ Upvotes") return { ...field, value: String(counts.up) };
+    if (field.name === "↓ Downvotes") return { ...field, value: String(counts.down) };
+    return field;
+  }));
+  return interaction.update({ embeds: [embed], components: buildSuggestionComponents(messageId) });
+}
+
 async function submitCommunityReport(interaction, { reportKind, messageId, settings }) {
   if (!validReportKind(reportKind) || !/^\d{17,20}$/.test(messageId ?? "")) {
     return interaction.editReply("This report is invalid.");
   }
   const target = await interaction.channel.messages.fetch(messageId).catch(() => null);
-  if (!target || target.author?.id !== interaction.client.user.id ||
-      !hasReportButton(target, reportKind, messageId)) {
+  const validTargetButton = reportKind === "suggestion"
+    ? hasSuggestionButtons(target, messageId)
+    : hasReportButton(target, reportKind, messageId);
+  if (!target || target.author?.id !== interaction.client.user.id || !validTargetButton) {
     return interaction.editReply("This post can no longer be reported.");
   }
   let reportChannel = await getConfiguredReportsChannel(interaction, settings);
