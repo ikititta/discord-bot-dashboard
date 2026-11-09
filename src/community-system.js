@@ -29,11 +29,11 @@ function button(id, label, style = ButtonStyle.Primary) {
 }
 
 function replyButton(kind, messageId) {
-  return button(`reply:${kind}:${messageId}`, "Reply ♡", ButtonStyle.Secondary);
+  return button(`reply:${kind}:${messageId}`, "Reply ♡", ButtonStyle.Success);
 }
 
 function reportButton(kind, messageId) {
-  return button(`report:${kind}:${messageId}`, "Report", ButtonStyle.Danger);
+  return button(`report:${kind}:${messageId}`, "Report ♡", ButtonStyle.Danger);
 }
 
 export function buildCommunityPostComponents(kind, messageId) {
@@ -164,6 +164,7 @@ export function attachCommunitySystem(client, { store, stickyPanels, settings })
       channelId: LOVE_LETTERS_CHANNEL_ID,
       titles: [LOVE_PANEL_TITLE],
       buildPayload: buildLoveLettersPanelPayload,
+      pinOnCreate: false,
       logger: "community",
     }).refresh;
   } else {
@@ -202,11 +203,11 @@ export function attachCommunitySystem(client, { store, stickyPanels, settings })
 
 export async function ensureCommunityPanels(client) {
   const confessions = await upsertPanel(client, CONFESSIONS_CHANNEL_ID, CONFESSION_PANEL_TITLE, buildConfessionsPanelPayload());
-  const letters = await upsertPanel(client, LOVE_LETTERS_CHANNEL_ID, LOVE_PANEL_TITLE, buildLoveLettersPanelPayload());
+  const letters = await upsertPanel(client, LOVE_LETTERS_CHANNEL_ID, LOVE_PANEL_TITLE, buildLoveLettersPanelPayload(), { pinOnCreate: false });
   return { confessions, letters };
 }
 
-async function upsertPanel(client, channelId, title, payload) {
+async function upsertPanel(client, channelId, title, payload, { pinOnCreate = true } = {}) {
   const channel = await client.channels.fetch(channelId);
   if (!channel || channel.type !== ChannelType.GuildText) {
     throw new Error(`Community panel channel ${channelId} is not an accessible text channel.`);
@@ -217,11 +218,16 @@ async function upsertPanel(client, channelId, title, payload) {
   );
   if (existing) {
     await existing.edit(payload);
+    if (!pinOnCreate && existing.pinned) await existing.unpin().catch((error) => {
+      console.error(`[community] panel in ${channelId} could not be unpinned: ${error.message}`);
+    });
     return existing;
   }
   const message = await channel.send(payload);
-  try { await message.pin(); } catch (error) {
-    console.error(`[community] panel posted in ${channelId} but could not be pinned: ${error.message}`);
+  if (pinOnCreate) {
+    try { await message.pin(); } catch (error) {
+      console.error(`[community] panel posted in ${channelId} but could not be pinned: ${error.message}`);
+    }
   }
   return message;
 }
@@ -651,18 +657,19 @@ async function submitCommunityReport(interaction, { reportKind, messageId, setti
       !hasReportButton(target, reportKind, messageId)) {
     return interaction.editReply("This post can no longer be reported.");
   }
-  const reportChannelId = settings?.get(interaction.guildId)?.reportsChannelId;
-  if (!/^\d{17,20}$/.test(reportChannelId ?? "")) {
-    return interaction.editReply("Reports are temporarily unavailable. Please contact a moderator.");
+  let reportChannel = await getConfiguredReportsChannel(interaction, settings);
+  if (!reportChannel) {
+    try {
+      reportChannel = await createPrivateReportsChannel(interaction, settings);
+    } catch (error) {
+      console.error(`[community] could not prepare the private reports channel: ${error.message}`);
+      return interaction.editReply("Sugar couldn't access a private reports channel. Please ask a moderator to give Sugar Manage Channels permission or configure a reports channel in the server settings.");
+    }
   }
-  const reportChannel = await interaction.guild.channels.fetch(reportChannelId).catch(() => null);
-  if (!reportChannel || reportChannel.type !== ChannelType.GuildText ||
-      [CONFESSIONS_CHANNEL_ID, LOVE_LETTERS_CHANNEL_ID].includes(reportChannelId)) {
-    return interaction.editReply("The moderation report channel is unavailable. Please contact a moderator.");
-  }
+  const reportChannelId = reportChannel.id;
   const everyonePermissions = reportChannel.permissionsFor(interaction.guild.roles.everyone);
   if (!everyonePermissions || everyonePermissions.has(PermissionFlagsBits.ViewChannel)) {
-    return interaction.editReply("Reports require a private moderation log channel. Please contact a moderator.");
+    return interaction.editReply("The moderation reports channel must be private. Please ask a moderator to restrict @everyone access.");
   }
   const reason = cleanText(interaction.fields.getTextInputValue("reason"), 500);
   if (reason.length < 5) return interaction.editReply("Please provide a little more detail for the report.");
