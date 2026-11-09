@@ -22,11 +22,11 @@ const LOVE_PANEL_TITLE = "୨୧ Love Letters ♡";
 const CONFESSION_REACTIONS = ["1️⃣", "2️⃣", "3️⃣", "4️⃣"];
 
 function button(id, label, style = ButtonStyle.Primary) {
-  return new ButtonBuilder().setCustomId(\`\${PREFIX}\${id}\`).setLabel(label).setStyle(style);
+  return new ButtonBuilder().setCustomId(`${PREFIX}${id}`).setLabel(label).setStyle(style);
 }
 
 function replyButton(kind, messageId) {
-  return button(\`reply:\${kind}:\${messageId}\`, "Reply ♡", ButtonStyle.Secondary);
+  return button(`reply:${kind}:${messageId}`, "Reply ♡", ButtonStyle.Secondary);
 }
 
 function postComponents(kind, messageId) {
@@ -61,7 +61,7 @@ export function buildLoveLettersPanelPayload() {
 export function buildLoveLetterRecipientPicker(mode) {
   if (!validMode(mode)) throw new Error("Invalid love letter mode.");
   const picker = new UserSelectMenuBuilder()
-    .setCustomId(\`\${PREFIX}letter-recipient:\${mode}\`)
+    .setCustomId(`${PREFIX}letter-recipient:${mode}`)
     .setPlaceholder("Choose who this letter is for ♡")
     .setMinValues(1)
     .setMaxValues(1);
@@ -75,12 +75,12 @@ export function buildLoveLetterRecipientPicker(mode) {
 export function buildConfessionRecipientPicker(mode) {
   if (!validMode(mode)) throw new Error("Invalid confession mode.");
   const picker = new UserSelectMenuBuilder()
-    .setCustomId(\`\${PREFIX}confess-recipient:\${mode}\`)
+    .setCustomId(`${PREFIX}confess-recipient:${mode}`)
     .setPlaceholder("Tag someone (optional) ♡")
     .setMinValues(1)
     .setMaxValues(1);
   const skip = new ActionRowBuilder().addComponents(
-    button(\`confess-skip:\${mode}\`, "Skip ♡", ButtonStyle.Secondary),
+    button(`confess-skip:${mode}`, "Skip ♡", ButtonStyle.Secondary),
   );
   return {
     content: "Would you like to tag someone? This is optional.",
@@ -100,8 +100,8 @@ export function buildReplyModePicker(kind, messageId) {
   return {
     content: "How would you like to reply?",
     components: [new ActionRowBuilder().addComponents(
-      button(\`reply-mode:\${kind}:anonymous:\${messageId}\`, "Anonymously ♡"),
-      button(\`reply-mode:\${kind}:named:\${messageId}\`, "With My Name ♡", ButtonStyle.Secondary),
+      button(`reply-mode:${kind}:anonymous:${messageId}`, "Anonymously ♡"),
+      button(`reply-mode:${kind}:named:${messageId}`, "With My Name ♡", ButtonStyle.Secondary),
     )],
     ephemeral: true,
   };
@@ -113,23 +113,23 @@ export function attachCommunitySystem(client, { store }) {
   }
   client.once(Events.ClientReady, () => {
     void ensureCommunityPanels(client).catch((error) => {
-      console.error(\`[community] panel setup failed: \${error.message}\`);
+      console.error(`[community] panel setup failed: ${error.message}`);
     });
   });
   client.on(Events.InteractionCreate, (interaction) => {
     if (interaction.isButton() && interaction.customId.startsWith(PREFIX)) {
       void handleCommunityButton(interaction).catch(async (error) => {
-        console.error(\`[community] interaction failed: \${error.message}\`);
+        console.error(`[community] interaction failed: ${error.message}`);
         await replyEphemeral(interaction, "Something went wrong. Please try again.");
       });
     } else if (interaction.isUserSelectMenu() && interaction.customId.startsWith(PREFIX)) {
       void handleCommunityUserSelect(interaction).catch(async (error) => {
-        console.error(\`[community] user selection failed: \${error.message}\`);
+        console.error(`[community] user selection failed: ${error.message}`);
         await replyEphemeral(interaction, "Please choose a server member and try again.");
       });
     } else if (interaction.isModalSubmit() && interaction.customId.startsWith(PREFIX)) {
       void handleCommunityModal(interaction, { store }).catch(async (error) => {
-        console.error(\`[community] submission failed: \${error.message}\`);
+        console.error(`[community] submission failed: ${error.message}`);
         await replyEphemeral(interaction, "Your post could not be published. Please try again.");
       });
     }
@@ -145,7 +145,7 @@ export async function ensureCommunityPanels(client) {
 async function upsertPanel(client, channelId, title, payload) {
   const channel = await client.channels.fetch(channelId);
   if (!channel || channel.type !== ChannelType.GuildText) {
-    throw new Error(\`Community panel channel \${channelId} is not an accessible text channel.\`);
+    throw new Error(`Community panel channel ${channelId} is not an accessible text channel.`);
   }
   const recent = await channel.messages.fetch({ limit: 50 });
   const existing = recent.find((message) =>
@@ -157,7 +157,7 @@ async function upsertPanel(client, channelId, title, payload) {
   }
   const message = await channel.send(payload);
   try { await message.pin(); } catch (error) {
-    console.error(\`[community] panel posted in \${channelId} but could not be pinned: \${error.message}\`);
+    console.error(`[community] panel posted in ${channelId} but could not be pinned: ${error.message}`);
   }
   return message;
 }
@@ -231,7 +231,7 @@ async function handleCommunityUserSelect(interaction) {
 
 function buildConfessionModal(mode, recipientId) {
   const modal = new ModalBuilder()
-    .setCustomId(\`\${PREFIX}confess:\${mode}:\${recipientId ?? "none"}\`)
+    .setCustomId(`${PREFIX}confess:${mode}:${recipientId ?? "none"}`)
     .setTitle("Submit a Confession");
   const input = new TextInputBuilder()
     .setCustomId("body")
@@ -247,7 +247,7 @@ function buildConfessionModal(mode, recipientId) {
 
 function buildLoveLetterModal(mode, recipientId) {
   const modal = new ModalBuilder()
-    .setCustomId(\`\${PREFIX}letter:\${mode}:\${recipientId}\`)
+    .setCustomId(`${PREFIX}letter:${mode}:${recipientId}`)
     .setTitle("Write a Love Letter");
   const input = new TextInputBuilder()
     .setCustomId("body")
@@ -263,7 +263,7 @@ function buildLoveLetterModal(mode, recipientId) {
 
 function buildReplyModal(kind, mode, messageId) {
   const modal = new ModalBuilder()
-    .setCustomId(\`\${PREFIX}reply:\${kind}:\${mode}:\${messageId}\`)
+    .setCustomId(`${PREFIX}reply:${kind}:${mode}:${messageId}`)
     .setTitle(kind === "confession" ? "Reply to Confession" : "Reply to Love Letter");
   const input = new TextInputBuilder()
     .setCustomId("body")
@@ -278,7 +278,7 @@ function buildReplyModal(kind, mode, messageId) {
 }
 
 function buildPollModal() {
-  const modal = new ModalBuilder().setCustomId(\`\${PREFIX}poll\`).setTitle("Create a Poll");
+  const modal = new ModalBuilder().setCustomId(`${PREFIX}poll`).setTitle("Create a Poll");
   const fields = [
     ["question", "Poll question", "What should everyone vote on?", true],
     ["option1", "Option 1", "First option", true],
@@ -336,8 +336,8 @@ async function handleCommunityModal(interaction, { store }) {
     const embed = new EmbedBuilder()
       .setColor(COLOR)
       .setTitle(formatEmbedTitle("Community Poll"))
-      .setDescription(\`**\${question}**\\n\\n\${options.map((option, index) => \`\${CONFESSION_REACTIONS[index]}  \${option}\`).join("\\n")}\\n\\n*React to vote!*\`)
-      .setFooter({ text: \`Created by \${interaction.user.username}\` });
+      .setDescription(`**${question}**\\n\\n${options.map((option, index) => `${CONFESSION_REACTIONS[index]}  ${option}`).join("\\n")}\\n\\n*React to vote!*`)
+      .setFooter({ text: `Created by ${interaction.user.username}` });
     const message = await channel.send({ embeds: [embed], allowedMentions: { parse: [] } });
     for (let index = 0; index < options.length; index += 1) {
       await message.react(CONFESSION_REACTIONS[index]);
@@ -357,11 +357,11 @@ async function handleCommunityModal(interaction, { store }) {
     if (recipientId && !/^\d{17,20}$/.test(recipientId)) {
       return interaction.editReply("The selected mention is invalid.");
     }
-    const number = store.nextNumber(\`confessions:\${expectedChannel}\`);
+    const number = store.nextNumber(`confessions:${expectedChannel}`);
     const serial = String(number).padStart(3, "0");
     const embed = new EmbedBuilder()
       .setColor(COLOR)
-      .setTitle(formatEmbedTitle(\`Confession #\${serial}\`))
+      .setTitle(formatEmbedTitle(`Confession #${serial}`))
       .setDescription(body);
     if (!anonymous) {
       embed.setAuthor({
@@ -369,7 +369,7 @@ async function handleCommunityModal(interaction, { store }) {
         iconURL: interaction.user.displayAvatarURL(),
       });
     }
-    const content = recipientId ? \`<@\${recipientId}> ♡\` : undefined;
+    const content = recipientId ? `<@${recipientId}> ♡` : undefined;
     const allowedMentions = { parse: [], users: recipientId ? [recipientId] : [] };
     const message = await channel.send({
       content,
@@ -388,7 +388,7 @@ async function handleCommunityModal(interaction, { store }) {
     }
     const embed = new EmbedBuilder()
       .setColor(COLOR)
-      .setTitle(formatEmbedTitle(\`Love Letter #\${String(store.nextNumber(\`letters:\${expectedChannel}\`)).padStart(3, "0")}\`))
+      .setTitle(formatEmbedTitle(`Love Letter #${String(store.nextNumber(`letters:${expectedChannel}`)).padStart(3, "0")}`))
       .setDescription(body);
     if (!anonymous) {
       embed.setAuthor({
@@ -397,7 +397,7 @@ async function handleCommunityModal(interaction, { store }) {
       });
     }
     const mentions = anonymous ? [recipientId] : [interaction.user.id, recipientId];
-    const content = anonymous ? \`<@\${recipientId}> ♡\` : \`<@\${interaction.user.id}> & <@\${recipientId}> ♡\`;
+    const content = anonymous ? `<@${recipientId}> ♡` : `<@${interaction.user.id}> & <@${recipientId}> ♡`;
     const message = await channel.send({
       content,
       embeds: [embed],
@@ -421,7 +421,7 @@ async function publishThreadReply(interaction, channel, kind, mode, parentId) {
   let thread = parent.hasThread ? await parent.fetchThread().catch(() => null) : null;
   if (!thread) {
     thread = await parent.startThread({
-      name: \`\${kind === "confession" ? "Confession" : "Love Letter"} replies\`,
+      name: `${kind === "confession" ? "Confession" : "Love Letter"} replies`,
       autoArchiveDuration: 1440,
       reason: "Community post replies",
     });
