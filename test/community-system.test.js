@@ -8,6 +8,8 @@ import { CommunityStore } from "../src/community-store.js";
 import {
   buildConfessionsPanelPayload,
   buildLoveLettersPanelPayload,
+  buildSuggestencesPanelPayload,
+  buildSuggestionComponents,
   buildLoveLetterRecipientPicker,
   buildConfessionRecipientPicker,
   buildPublicationModePicker,
@@ -56,6 +58,21 @@ test("confessions panel offers anonymous, named, and poll actions", () => {
   assert.equal(buttons[1].label, "Create Poll ♡");
   assert.equal(buttons[1].style, 2);
   assert.equal(payload.embeds[0].toJSON().title, "୨୧ 𝒄𝒐𝒏𝒇𝒆𝒔𝒔ions ♡");
+});
+
+test("Suggestences panel has a submission button and each suggestion has green up, red down, grey report", () => {
+  const panel = buildSuggestencesPanelPayload();
+  assert.equal(panel.embeds[0].toJSON().title, "୨୧ Suggestences ♡");
+  assert.equal(panel.components[0].toJSON().components[0].custom_id, "sugar-community:suggestion-start");
+
+  const buttons = buildSuggestionComponents("123456789012345678")[0].toJSON().components;
+  assert.deepEqual(buttons.map((item) => item.label), ["↑", "↓", "⚑"]);
+  assert.deepEqual(buttons.map((item) => item.style), [3, 4, 2]);
+  assert.deepEqual(buttons.map((item) => item.custom_id), [
+    "sugar-community:suggestion-vote:123456789012345678:up",
+    "sugar-community:suggestion-vote:123456789012345678:down",
+    "sugar-community:report:suggestion:123456789012345678",
+  ]);
 });
 
 test("love letters panel offers anonymous and named public submissions", () => {
