@@ -11,6 +11,7 @@ import {
   buildLoveLetterRecipientPicker,
   buildConfessionRecipientPicker,
   buildReplyModePicker,
+  buildConfessionModePicker,
 } from "../src/community-system.js";
 import { buildTicketPanelPayload } from "../src/ticket-system.js";
 
@@ -73,6 +74,15 @@ test("confession recipient picker makes tagging optional", () => {
   assert.match(payload.content, /optional/i);
   assert.equal(payload.components[0].toJSON().components[0].custom_id, "sugar-community:confess-recipient:named");
   assert.equal(payload.components[1].toJSON().components[0].custom_id, "sugar-community:confess-skip:named");
+});
+
+test("standalone confess picker offers anonymous and named confessions", () => {
+  const payload = buildConfessionModePicker();
+  const buttons = payload.components[0].toJSON().components;
+  assert.deepEqual(buttons.map((item) => item.custom_id), [
+    "sugar-community:confess:anonymous",
+    "sugar-community:confess:named",
+  ]);
 });
 
 test("community post reply picker offers anonymous and named thread replies", () => {
