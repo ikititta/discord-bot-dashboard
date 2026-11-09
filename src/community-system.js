@@ -36,6 +36,17 @@ function reportButton(kind, messageId) {
   return button(`report:${kind}:${messageId}`, "Report ♡", ButtonStyle.Danger);
 }
 
+function letterThreadReplyButton(messageId) {
+  return button(`thread-reply:letter:${messageId}`, "Reply ♡", ButtonStyle.Success);
+}
+
+export function buildLoveLetterReplyComponents(messageId) {
+  return [new ActionRowBuilder().addComponents(
+    letterThreadReplyButton(messageId),
+    reportButton("letter-reply", messageId),
+  )];
+}
+
 export function buildCommunityPostComponents(kind, messageId) {
   const buttons = [];
   if (kind === "confession" || kind === "letter") buttons.push(replyButton(kind, messageId));
@@ -259,6 +270,18 @@ async function handleCommunityButton(interaction) {
     return interaction.showModal(buildReportModal(kind, messageId));
   }
 
+  if (id.startsWith("thread-reply:")) {
+    const [, kind, messageId] = id.split(":");
+    const thread = interaction.channel;
+    if (kind !== "letter" || !/^\\d{17,20}$/.test(messageId ?? "") ||
+        interaction.message?.id !== messageId || !interaction.inGuild() ||
+        !thread?.isThread?.() || thread.parentId !== LOVE_LETTERS_CHANNEL_ID ||
+        !hasThreadReplyButton(interaction.message, messageId)) {
+      return replyEphemeral(interaction, "This reply button is no longer valid.");
+    }
+    return interaction.showModal(buildThreadReplyModal(messageId));
+  }
+
   if (id.startsWith("reply:")) {
     const [, kind, messageId] = id.split(":");
     if (!validReplyKind(kind) || !/^\d{17,20}$/.test(messageId ?? "")) {
@@ -392,6 +415,22 @@ function buildReplyModal(kind, mode, messageId) {
   return modal;
 }
 
+function buildThreadReplyModal(messageId) {
+  const modal = new ModalBuilder()
+    .setCustomId(`${PREFIX}thread-reply:letter:${messageId}`)
+    .setTitle("Reply to Love Letter Reply");
+  const input = new TextInputBuilder()
+    .setCustomId("body")
+    .setLabel("Your reply")
+    .setPlaceholder("Write your reply...")
+    .setStyle(TextInputStyle.Paragraph)
+    .setMinLength(1)
+    .setMaxLength(1800)
+    .setRequired(true);
+  modal.addComponents(new ActionRowBuilder().addComponents(input));
+  return modal;
+}
+
 function buildPollModal(mode, recipientId) {
   if (!validMode(mode) || (recipientId !== null && recipientId !== undefined && !/^\d{17,20}$/.test(recipientId))) {
     throw new Error("Invalid poll options.");
@@ -425,6 +464,7 @@ async function handleCommunityModal(interaction, {
   const isConfession = id.startsWith("confess:");
   const isLetter = id.startsWith("letter:");
   const isReply = id.startsWith("reply:");
+  const isThreadReply = id.startsWith("thread-reply:");
   const isReport = id.startsWith("report:");
   const reportParts = isReport ? id.split(":") : [];
   const reportKind = reportParts[1];
@@ -432,9 +472,12 @@ async function handleCommunityModal(interaction, {
     : isConfession || isPoll || id.startsWith("reply:confession:")
       ? CONFESSIONS_CHANNEL_ID
       : isLetter || id.startsWith("reply:letter:") ? LOVE_LETTERS_CHANNEL_ID : null;
-  if (!expectedChannel || (isReport
+  const validThreadReplyLocation = isThreadReply &&
+    interaction.channel?.isThread?.() &&
+    interaction.channel.parentId === LOVE_LETTERS_CHANNEL_ID;
+  if ((!expectedChannel && !validThreadReplyLocation) || (isReport
     ? !isExpectedCommunityLocation(interaction, expectedChannel)
-    : interaction.channelId !== expectedChannel)) {
+    : isThreadReply ? !validThreadReplyLocation : interaction.channelId !== expectedChannel)) {
     return replyEphemeral(interaction, "Please submit this from the correct community channel.");
   }
 
@@ -444,6 +487,14 @@ async function handleCommunityModal(interaction, {
       reportKind, messageId: reportParts[2], settings,
     });
   }
+  if (isThreadReply) {
+    const [, kind, targetId] = id.split(":");
+    if (kind !== "letter" || !/^\\d{17,20}$/.test(targetId ?? "")) {
+      return interaction.editReply("This reply is invalid.");
+    }
+    return publishLoveLetterThreadMessageReply(interaction, targetId);
+  }
+
   const channel = await interaction.guild.channels.fetch(expectedChannel);
   if (!channel || channel.type !== ChannelType.GuildText) {
     return interaction.editReply("The publication channel is unavailable.");
@@ -563,6 +614,37 @@ async function handleCommunityModal(interaction, {
   return interaction.editReply("Invalid submission.");
 }
 
+async function publishLoveLetterThreadMessageReply(interaction, targetId) {
+  const thread = interaction.channel;
+  const target = await thread.messages.fetch(targetId).catch(() => null);
+  if (!target || target.author?.id !== interaction.client.user.id ||
+      !hasThreadReplyButton(target, targetId)) {
+    return interaction.editReply("This reply is no longer available.");
+  }
+  const body = cleanText(interaction.fields.getTextInputValue("body"), 1800);
+  if (!body) return interaction.editReply("Please write a reply before submitting.");
+  const embed = new EmbedBuilder()
+    .setColor(COLOR)
+    .setTitle(formatEmbedTitle("Reply"))
+    .setDescription(body);
+  if (interaction.fields) {
+    // Replies in a love-letter thread are named to keep the conversation clear.
+    embed.setAuthor({
+      name: interaction.member?.displayName ?? interaction.user.username,
+      iconURL: interaction.user.displayAvatarURL(),
+    });
+  }
+  const reply = await thread.send({
+    embeds: [embed],
+    components: buildLoveLetterReplyComponents("0"),
+    allowedMentions: { parse: [] },
+  });
+  await reply.edit({ components: buildLoveLetterReplyComponents(reply.id) }).catch((error) => {
+    console.error(`[community] love-letter reply buttons could not be refreshed (reply=${reply.id}):`, error);
+  });
+  return interaction.editReply("Your reply has been added to the thread ♡");
+}
+
 async function publishThreadReply(interaction, channel, kind, mode, parentId) {
   try {
   const parent = await channel.messages.fetch(parentId).catch(() => null);
@@ -616,11 +698,15 @@ async function publishThreadReply(interaction, channel, kind, mode, parentId) {
   }
   const reply = await thread.send({
     embeds: [embed],
-    components: [new ActionRowBuilder().addComponents(reportButton(`${kind}-reply`, "0"))],
+    components: kind === "letter"
+      ? buildLoveLetterReplyComponents("0")
+      : [new ActionRowBuilder().addComponents(reportButton(`${kind}-reply`, "0"))],
     allowedMentions: { parse: [] },
   });
   await reply.edit({
-    components: [new ActionRowBuilder().addComponents(reportButton(`${kind}-reply`, reply.id))],
+    components: kind === "letter"
+      ? buildLoveLetterReplyComponents(reply.id)
+      : [new ActionRowBuilder().addComponents(reportButton(`${kind}-reply`, reply.id))],
   }).catch((error) => {
     // The reply is already published; a button refresh failure must not report
     // the whole publication as failed.
@@ -664,6 +750,13 @@ function reportChannelForKind(kind) {
 
 function isExpectedCommunityLocation(interaction, expectedChannelId) {
   return interaction.channelId === expectedChannelId || interaction.channel?.parentId === expectedChannelId;
+}
+
+function hasThreadReplyButton(message, messageId) {
+  const expectedId = `${PREFIX}thread-reply:letter:${messageId}`;
+  return message?.components?.some((row) =>
+    row.components.some((component) => component.customId === expectedId),
+  ) ?? false;
 }
 
 function hasReportButton(message, kind, messageId) {
