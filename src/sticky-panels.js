@@ -82,6 +82,9 @@ export function attachStickyPanel(client, {
     // Preserve an existing panel unless this channel received a newer
     // message while Sugar was offline. In that case, move it after that activity.
     if (previous && (!latestActivity || latestActivity.createdTimestamp <= previous.createdTimestamp)) {
+      // Refresh the saved panel too: its buttons/embed may belong to an older
+      // deployment. Editing our own message does not require moving it.
+      await previous.edit(buildPayload());
       currentMessage = previous;
       if (store.get(key) !== previous.id) store.set(key, previous.id);
       return previous;
