@@ -14,7 +14,6 @@ import {
 } from "discord.js";
 
 import { formatEmbedTitle } from "./embed-format.js";
-import { attachStickyPanel } from "./sticky-panels.js";
 
 export const CONFESSIONS_CHANNEL_ID = "1568179046209028106";
 export const LOVE_LETTERS_CHANNEL_ID = "1568179044900409418";
@@ -217,16 +216,13 @@ export function attachCommunitySystem(client, { store, stickyPanels, settings, s
   if (!store || typeof store.nextNumber !== "function") {
     throw new Error("The community system requires a persistent community store.");
   }
-  let refreshConfessionsPanel = async () => {};
-  let refreshLoveLettersPanel = async () => {};
-  let refreshSuggestionsPanel = async () => {};
   if (stickyPanels) {
     const legacyPanelMessageId = stickyPanels.get("suggestences");
     if (legacyPanelMessageId && !stickyPanels.get("suggestions")) {
       stickyPanels.set("suggestions", legacyPanelMessageId);
     }
     if (legacyPanelMessageId) stickyPanels.set("suggestences", null);
-    refreshConfessionsPanel = attachStickyPanel(client, {
+    attachStickyPanel(client, {
       store: stickyPanels,
       key: "confessions",
       channelId: CONFESSIONS_CHANNEL_ID,
@@ -234,8 +230,8 @@ export function attachCommunitySystem(client, { store, stickyPanels, settings, s
       buildPayload: buildConfessionsPanelPayload,
       pinOnCreate: false,
       logger: "community",
-    }).refresh;
-    refreshLoveLettersPanel = attachStickyPanel(client, {
+    });
+    attachStickyPanel(client, {
       store: stickyPanels,
       key: "love-letters",
       channelId: LOVE_LETTERS_CHANNEL_ID,
@@ -243,13 +239,13 @@ export function attachCommunitySystem(client, { store, stickyPanels, settings, s
       buildPayload: buildLoveLettersPanelPayload,
       pinOnCreate: false,
       logger: "community",
-    }).refresh;
+    });
     client.once(Events.ClientReady, () => {
       void renameSuggestionsChannel(client).catch((error) => {
         console.error(`[community] suggestions channel rename failed: ${error.message}`);
       });
     });
-    refreshSuggestionsPanel = attachStickyPanel(client, {
+    attachStickyPanel(client, {
       store: stickyPanels,
       key: "suggestions",
       channelId: SUGGESTIONS_CHANNEL_ID,
@@ -257,7 +253,7 @@ export function attachCommunitySystem(client, { store, stickyPanels, settings, s
       buildPayload: buildSuggestionsPanelPayload,
       pinOnCreate: false,
       logger: "community",
-    }).refresh;
+    });
   } else {
     client.once(Events.ClientReady, () => {
       void ensureCommunityPanels(client).catch((error) => {
@@ -283,8 +279,7 @@ export function attachCommunitySystem(client, { store, stickyPanels, settings, s
       });
     } else if (interaction.isModalSubmit() && interaction.customId.startsWith(PREFIX)) {
       void handleCommunityModal(interaction, {
-        store, settings, suggestionStore, refreshConfessionsPanel, refreshLoveLettersPanel,
-        refreshSuggestionsPanel,
+        store, settings, suggestionStore,
       }).catch(async (error) => {
         console.error("[community] submission failed:", error);
         await replyEphemeral(interaction, "Sugar couldn't publish that reply. Please try again, or contact a moderator if it keeps happening.");
@@ -617,10 +612,7 @@ function buildPollModal(mode, recipientId) {
   return modal;
 }
 
-async function handleCommunityModal(interaction, {
-  store, settings, suggestionStore, refreshConfessionsPanel, refreshLoveLettersPanel,
-  refreshSuggestionsPanel,
-}) {
+async function handleCommunityModal(interaction, { store, settings, suggestionStore }) {
   if (!interaction.inGuild()) return replyEphemeral(interaction, "This feature is only available in the server.");
   const id = interaction.customId.slice(PREFIX.length);
   const isPoll = id.startsWith("poll:");
@@ -659,7 +651,7 @@ async function handleCommunityModal(interaction, {
   if (isSuggestion) {
     const mode = id.split(":")[2];
     if (!validMode(mode)) return interaction.editReply("Invalid suggestion publication option.");
-    return publishSuggestion(interaction, suggestionStore, refreshSuggestionsPanel, mode);
+    return publishSuggestion(interaction, suggestionStore, mode);
   }
   if (isThreadReply) {
     const [, kind, mode, targetId] = id.split(":");
@@ -716,7 +708,6 @@ async function handleCommunityModal(interaction, {
     for (let index = 0; index < options.length; index += 1) {
       await message.react(CONFESSION_REACTIONS[index]);
     }
-    await refreshConfessionsPanel();
     return interaction.editReply("Your poll has been published ♡");
   }
 
@@ -753,7 +744,6 @@ async function handleCommunityModal(interaction, {
       allowedMentions,
     });
     await message.edit({ components: buildCommunityPostComponents("confession", message.id) });
-    await refreshConfessionsPanel();
     return interaction.editReply("Your confession has been published ♡");
   }
 
@@ -781,7 +771,6 @@ async function handleCommunityModal(interaction, {
       allowedMentions: { parse: [], users: [...new Set(mentions)] },
     });
     await message.edit({ components: buildCommunityPostComponents("letter", message.id) });
-    await refreshLoveLettersPanel();
     return interaction.editReply("Your love letter has been published ♡");
   }
 
@@ -1044,7 +1033,7 @@ function hasSuggestionButtons(message, messageId) {
   return [...expected].every((id) => actual.has(id));
 }
 
-async function publishSuggestion(interaction, suggestionStore, refreshSuggestionsPanel, mode) {
+async function publishSuggestion(interaction, suggestionStore, mode) {
   if (!validMode(mode)) return interaction.editReply("Invalid suggestion publication option.");
   const body = cleanText(interaction.fields.getTextInputValue("body"), 1800);
   if (body.length < 5) return interaction.editReply("Please write a little more before submitting.");
@@ -1072,7 +1061,6 @@ async function publishSuggestion(interaction, suggestionStore, refreshSuggestion
     allowedMentions: { parse: [] },
   });
   await message.edit({ components: buildSuggestionComponents(message.id) });
-  await refreshSuggestionsPanel?.();
   return interaction.editReply("Your suggestion has been published ♡");
 }
 
