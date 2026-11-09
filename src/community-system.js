@@ -648,6 +648,76 @@ function hasReportButton(message, kind, messageId) {
   ) ?? false;
 }
 
+async function getConfiguredReportsChannel(interaction, settings) {
+  const configuredId = settings?.get(interaction.guildId)?.reportsChannelId;
+  if (/^\\d{17,20}$/.test(configuredId ?? "") &&
+      ![CONFESSIONS_CHANNEL_ID, LOVE_LETTERS_CHANNEL_ID].includes(configuredId)) {
+    const configured = await interaction.guild.channels.fetch(configuredId).catch(() => null);
+    if (configured?.type === ChannelType.GuildText) return configured;
+  }
+
+  const existing = interaction.guild.channels.cache.find((channel) =>
+    channel.type === ChannelType.GuildText && channel.name === "moderation-reports",
+  );
+  if (existing) {
+    if (settings && typeof settings.set === "function") {
+      settings.set(interaction.guildId, {
+        ...settings.get(interaction.guildId),
+        reportsChannelId: existing.id,
+      });
+    }
+    return existing;
+  }
+  return null;
+}
+
+async function createPrivateReportsChannel(interaction, settings) {
+  const guild = interaction.guild;
+  const botMember = guild.members.me ?? await guild.members.fetch(interaction.client.user.id).catch(() => null);
+  if (!botMember?.permissions.has(PermissionFlagsBits.ManageChannels)) {
+    throw new Error("Sugar needs Manage Channels permission to create the private reports channel.");
+  }
+
+  const viewPermissions = [
+    PermissionFlagsBits.ViewChannel,
+    PermissionFlagsBits.SendMessages,
+    PermissionFlagsBits.EmbedLinks,
+    PermissionFlagsBits.ReadMessageHistory,
+  ];
+  const permissionOverwrites = [
+    {
+      id: guild.roles.everyone.id,
+      deny: [PermissionFlagsBits.ViewChannel],
+    },
+    {
+      id: interaction.client.user.id,
+      allow: [...viewPermissions, PermissionFlagsBits.ManageChannels],
+    },
+  ];
+  const moderatorRoleIds = settings?.get(guild.id)?.moderatorRoleIds ?? [];
+  for (const roleId of moderatorRoleIds) {
+    if (guild.roles.cache.has(roleId)) {
+      permissionOverwrites.push({ id: roleId, allow: viewPermissions });
+    }
+  }
+
+  const channel = await guild.channels.create({
+    name: "moderation-reports",
+    type: ChannelType.GuildText,
+    topic: "Private reports submitted through Sugar's community buttons.",
+    permissionOverwrites,
+    reason: "Create a private channel for Sugar community reports",
+  });
+  if (!settings || typeof settings.set !== "function") {
+    throw new Error("The server settings store is unavailable.");
+  }
+  settings.set(guild.id, {
+    ...settings.get(guild.id),
+    reportsChannelId: channel.id,
+  });
+  return channel;
+}
+
 async function submitCommunityReport(interaction, { reportKind, messageId, settings }) {
   if (!validReportKind(reportKind) || !/^\d{17,20}$/.test(messageId ?? "")) {
     return interaction.editReply("This report is invalid.");
