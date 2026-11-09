@@ -12,6 +12,7 @@ import { attachPrivateChatSystem } from "./private-chat-system.js";
 import { PRIVATE_CHAT_LOBBY_CHANNEL_ID } from "./private-chat-format.js";
 import { attachTicketSystem } from "./ticket-system.js";
 import { attachCommunitySystem } from "./community-system.js";
+import { attachQuoteSystem } from "./quote-system.js";
 
 const COLORS = { join: 0x4ade80, leave: 0xf87171, edit: 0xfbbf24, delete: 0xf87171 };
 
@@ -132,6 +133,7 @@ export function createBot({
   attachMessageDeletionSystem(client, { settings, moderationLogs });
   attachTicketSystem(client, { settings });
   attachCommunitySystem(client, { store: communityStore });
+  attachQuoteSystem(client, { token, applicationId });
 
   client.login(token).catch((error) => {
     if (String(error?.code) === "TokenInvalid" || String(error).includes("TOKEN_INVALID")) {
