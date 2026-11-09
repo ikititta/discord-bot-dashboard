@@ -18,7 +18,6 @@ import { buildMessageDeletionCommands } from "./message-deletion.js";
 import { registerApplicationCommands } from "./command-registry.js";
 import { formatEmbedTitle, toRoyalBold } from "./embed-format.js";
 import { formatPrivateChatChannelName, normalizeCategoryName } from "./private-chat-format.js";
-import { attachStickyPanel } from "./sticky-panels.js";
 
 const PREFIX = "private-chat:";
 const COMMAND_NAME = "priv-chat";
@@ -118,25 +117,10 @@ export function buildPrivateChatPermissionOverwrites({ everyoneId, ownerId, memb
 export function attachPrivateChatSystem(client, { token, applicationId, store, lobbyChannelId, stickyPanels }) {
   if (!store) throw new Error("A private-chat store is required.");
 
-  if (stickyPanels) {
-    const previousGuideId = store.getLobbyGuideMessageId(lobbyChannelId);
-    if (previousGuideId && !stickyPanels.get("private-chat-lobby")) {
-      stickyPanels.set("private-chat-lobby", previousGuideId);
-    }
-    attachStickyPanel(client, {
-      store: stickyPanels,
-      key: "private-chat-lobby",
-      channelId: lobbyChannelId,
-      titles: [GUIDE_TITLE, LEGACY_GUIDE_TITLE],
-      buildPayload: buildPrivateChatLobbyGuidePayload,
-      logger: "private-chats",
-    });
-  }
-
   let readyHandled = false;
   client.once(Events.ClientReady, () => {
     readyHandled = true;
-    void initializePrivateChatLobby(client, { token, applicationId, store, lobbyChannelId, stickyPanels }).catch((error) => {
+    void initializePrivateChatLobby(client, { token, applicationId, store, lobbyChannelId }).catch((error) => {
       console.error(`[private-chats] setup failed: ${error.message}`);
     });
   });
@@ -171,7 +155,7 @@ export function attachPrivateChatSystem(client, { token, applicationId, store, l
   });
 }
 
-async function initializePrivateChatLobby(client, { token, applicationId, store, lobbyChannelId, stickyPanels }) {
+async function initializePrivateChatLobby(client, { token, applicationId, store, lobbyChannelId }) {
   let lobby = null;
   let lobbyError = null;
   try {
@@ -208,12 +192,10 @@ async function initializePrivateChatLobby(client, { token, applicationId, store,
     );
   }
 
-  if (!stickyPanels) {
-    try {
-      await ensureLobbyGuide(lobby, client, store);
-    } catch (error) {
-      console.error(`[private-chats] could not ensure the lobby guide: ${error.message}`);
-    }
+  try {
+    await ensureLobbyGuide(lobby, client, store);
+  } catch (error) {
+    console.error(`[private-chats] could not ensure the lobby guide: ${error.message}`);
   }
 
   try {
