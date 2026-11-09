@@ -50,7 +50,7 @@ test("confessions panel offers anonymous, named, and poll actions", () => {
     "sugar-community:poll-start",
   ]);
   assert.ok(buttons.every((item) => !item.label.toLowerCase().includes("with my name")));
-  assert.equal(buttons[1].label, "Create a Poll ♡");
+  assert.equal(buttons[1].label, "Create Poll ♡");
   assert.equal(buttons[1].style, 2);
   assert.equal(payload.embeds[0].toJSON().title, "୨୧ 𝒄𝒐𝒏𝒇𝒆𝒔𝒔ions ♡");
 });
