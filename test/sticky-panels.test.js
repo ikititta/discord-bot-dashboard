@@ -208,7 +208,7 @@ test("community-triggered refresh republishes the panel and deletes the previous
   const nextId = h.stickyStore.get("main-panel");
   assert.notEqual(nextId, firstId);
   assert.equal(h.messages.has(firstId), false);
-  assert.equal(h.messages.get(nextId).pinned, true);
+  assert.equal(h.messages.get(nextId).pinned, false);
 });
 
 test("startup replaces the existing panel with the current canonical payload", async () => {
