@@ -18,10 +18,12 @@ import { attachStickyPanel } from "./sticky-panels.js";
 
 export const CONFESSIONS_CHANNEL_ID = "1568179046209028106";
 export const LOVE_LETTERS_CHANNEL_ID = "1568179044900409418";
+export const SUGGESTENCES_CHANNEL_ID = "1569164719309328455";
 const PREFIX = "sugar-community:";
 const COLOR = 0xffd9ff;
 const CONFESSION_PANEL_TITLE = "୨୧ 𝒄𝒐𝒏𝒇𝒆𝒔𝒔ions ♡";
 const LOVE_PANEL_TITLE = "୨୧ Love Letters ♡";
+const SUGGESTENCES_PANEL_TITLE = "୨୧ Suggestences ♡";
 const CONFESSION_REACTIONS = ["1️⃣", "2️⃣", "3️⃣", "4️⃣"];
 
 function button(id, label, style = ButtonStyle.Primary) {
@@ -52,6 +54,28 @@ export function buildCommunityThreadReplyComponents(kind, messageId) {
 
 export function buildLoveLetterReplyComponents(messageId) {
   return buildCommunityThreadReplyComponents("letter", messageId);
+}
+
+export function buildSuggestencesPanelPayload() {
+  const embed = new EmbedBuilder()
+    .setColor(COLOR)
+    .setTitle(SUGGESTENCES_PANEL_TITLE)
+    .setDescription("Have an idea to make the server better? Share it with everyone and let the community vote ♡");
+  return {
+    embeds: [embed],
+    components: [new ActionRowBuilder().addComponents(
+      button("suggestion-start", "Submit a Suggestion ♡"),
+    )],
+  };
+}
+
+export function buildSuggestionComponents(messageId) {
+  if (!/^\d{17,20}$/.test(messageId ?? "")) throw new Error("Invalid suggestion message ID.");
+  return [new ActionRowBuilder().addComponents(
+    button(`suggestion-vote:${messageId}:up`, "↑", ButtonStyle.Success),
+    button(`suggestion-vote:${messageId}:down`, "↓", ButtonStyle.Danger),
+    button(`report:suggestion:${messageId}`, "⚑", ButtonStyle.Secondary),
+  )];
 }
 
 export function buildCommunityPostComponents(kind, messageId) {
@@ -171,12 +195,13 @@ export function buildReplyModePicker(kind, messageId) {
   };
 }
 
-export function attachCommunitySystem(client, { store, stickyPanels, settings }) {
+export function attachCommunitySystem(client, { store, stickyPanels, settings, suggestionStore }) {
   if (!store || typeof store.nextNumber !== "function") {
     throw new Error("The community system requires a persistent community store.");
   }
   let refreshConfessionsPanel = async () => {};
   let refreshLoveLettersPanel = async () => {};
+  let refreshSuggestencesPanel = async () => {};
   if (stickyPanels) {
     refreshConfessionsPanel = attachStickyPanel(client, {
       store: stickyPanels,
@@ -193,6 +218,15 @@ export function attachCommunitySystem(client, { store, stickyPanels, settings })
       channelId: LOVE_LETTERS_CHANNEL_ID,
       titles: [LOVE_PANEL_TITLE],
       buildPayload: buildLoveLettersPanelPayload,
+      pinOnCreate: false,
+      logger: "community",
+    }).refresh;
+    refreshSuggestencesPanel = attachStickyPanel(client, {
+      store: stickyPanels,
+      key: "suggestences",
+      channelId: SUGGESTENCES_CHANNEL_ID,
+      titles: [SUGGESTENCES_PANEL_TITLE],
+      buildPayload: buildSuggestencesPanelPayload,
       pinOnCreate: false,
       logger: "community",
     }).refresh;
@@ -221,7 +255,8 @@ export function attachCommunitySystem(client, { store, stickyPanels, settings })
       });
     } else if (interaction.isModalSubmit() && interaction.customId.startsWith(PREFIX)) {
       void handleCommunityModal(interaction, {
-        store, settings, refreshConfessionsPanel, refreshLoveLettersPanel,
+        store, settings, suggestionStore, refreshConfessionsPanel, refreshLoveLettersPanel,
+        refreshSuggestencesPanel,
       }).catch(async (error) => {
         console.error("[community] submission failed:", error);
         await replyEphemeral(interaction, "Sugar couldn't publish that reply. Please try again, or contact a moderator if it keeps happening.");
@@ -233,7 +268,8 @@ export function attachCommunitySystem(client, { store, stickyPanels, settings })
 export async function ensureCommunityPanels(client) {
   const confessions = await upsertPanel(client, CONFESSIONS_CHANNEL_ID, CONFESSION_PANEL_TITLE, buildConfessionsPanelPayload(), { pinOnCreate: false });
   const letters = await upsertPanel(client, LOVE_LETTERS_CHANNEL_ID, LOVE_PANEL_TITLE, buildLoveLettersPanelPayload(), { pinOnCreate: false });
-  return { confessions, letters };
+  const suggestences = await upsertPanel(client, SUGGESTENCES_CHANNEL_ID, SUGGESTENCES_PANEL_TITLE, buildSuggestencesPanelPayload(), { pinOnCreate: false });
+  return { confessions, letters, suggestences };
 }
 
 async function upsertPanel(client, channelId, title, payload, { pinOnCreate = true } = {}) {
@@ -263,6 +299,23 @@ async function upsertPanel(client, channelId, title, payload, { pinOnCreate = tr
 
 async function handleCommunityButton(interaction) {
   const id = interaction.customId.slice(PREFIX.length);
+  if (id === "suggestion-start") {
+    if (!interaction.inGuild() || interaction.channelId !== SUGGESTENCES_CHANNEL_ID) {
+      return replyEphemeral(interaction, "Please use the Suggestences channel.");
+    }
+    return interaction.showModal(buildSuggestionModal());
+  }
+
+  if (id.startsWith("suggestion-vote:")) {
+    const [, messageId, direction] = id.split(":");
+    if (!["up", "down"].includes(direction) || !/^\d{17,20}$/.test(messageId ?? "") ||
+        !interaction.inGuild() || interaction.channelId !== SUGGESTENCES_CHANNEL_ID ||
+        interaction.message?.id !== messageId || !hasSuggestionButtons(interaction.message, messageId)) {
+      return replyEphemeral(interaction, "This suggestion vote is no longer valid.");
+    }
+    return handleSuggestionVote(interaction, { suggestionStore, messageId, direction });
+  }
+
   if (id === "confess-new" || id === "confess-start" || id === "poll-start") {
     const kind = id === "poll-start" ? "poll" : "confess";
     if (!interaction.inGuild() || interaction.channelId !== CONFESSIONS_CHANNEL_ID) {
@@ -402,6 +455,22 @@ async function handleCommunityUserSelect(interaction) {
   return interaction.showModal(buildConfessionModal(isPublication ? publicationMode : mode, recipientId));
 }
 
+function buildSuggestionModal() {
+  const modal = new ModalBuilder()
+    .setCustomId(`${PREFIX}suggestion:submit`)
+    .setTitle("Submit a Suggestion");
+  const input = new TextInputBuilder()
+    .setCustomId("body")
+    .setLabel("Your suggestion")
+    .setPlaceholder("Share your idea for the server...")
+    .setStyle(TextInputStyle.Paragraph)
+    .setMinLength(5)
+    .setMaxLength(1800)
+    .setRequired(true);
+  modal.addComponents(new ActionRowBuilder().addComponents(input));
+  return modal;
+}
+
 function buildConfessionModal(mode, recipientId) {
   const modal = new ModalBuilder()
     .setCustomId(`${PREFIX}confess:${mode}:${recipientId ?? "none"}`)
@@ -491,22 +560,25 @@ function buildPollModal(mode, recipientId) {
 }
 
 async function handleCommunityModal(interaction, {
-  store, settings, refreshConfessionsPanel, refreshLoveLettersPanel,
+  store, settings, suggestionStore, refreshConfessionsPanel, refreshLoveLettersPanel,
+  refreshSuggestencesPanel,
 }) {
   if (!interaction.inGuild()) return replyEphemeral(interaction, "This feature is only available in the server.");
   const id = interaction.customId.slice(PREFIX.length);
   const isPoll = id.startsWith("poll:");
   const isConfession = id.startsWith("confess:");
   const isLetter = id.startsWith("letter:");
+  const isSuggestion = id === "suggestion:submit";
   const isReply = id.startsWith("reply:");
   const isThreadReply = id.startsWith("thread-reply:");
   const isReport = id.startsWith("report:");
   const reportParts = isReport ? id.split(":") : [];
   const reportKind = reportParts[1];
   const expectedChannel = isReport ? reportChannelForKind(reportKind)
-    : isConfession || isPoll || id.startsWith("reply:confession:")
-      ? CONFESSIONS_CHANNEL_ID
-      : isLetter || id.startsWith("reply:letter:") ? LOVE_LETTERS_CHANNEL_ID : null;
+    : isSuggestion ? SUGGESTENCES_CHANNEL_ID
+      : isConfession || isPoll || id.startsWith("reply:confession:")
+        ? CONFESSIONS_CHANNEL_ID
+        : isLetter || id.startsWith("reply:letter:") ? LOVE_LETTERS_CHANNEL_ID : null;
   const threadReplyParts = isThreadReply ? id.split(":") : [];
   const threadReplyKind = threadReplyParts[1];
   const validThreadReplyLocation = isThreadReply &&
@@ -525,6 +597,9 @@ async function handleCommunityModal(interaction, {
     return submitCommunityReport(interaction, {
       reportKind, messageId: reportParts[2], settings,
     });
+  }
+  if (isSuggestion) {
+    return publishSuggestion(interaction, suggestionStore, refreshSuggestencesPanel);
   }
   if (isThreadReply) {
     const [, kind, mode, targetId] = id.split(":");
@@ -789,12 +864,13 @@ function buildReportModal(kind, messageId) {
 }
 
 function validReportKind(kind) {
-  return ["confession", "letter", "poll", "confession-reply", "letter-reply"].includes(kind);
+  return ["confession", "letter", "poll", "confession-reply", "letter-reply", "suggestion"].includes(kind);
 }
 
 function reportChannelForKind(kind) {
   if (kind === "confession" || kind === "poll" || kind === "confession-reply") return CONFESSIONS_CHANNEL_ID;
   if (kind === "letter" || kind === "letter-reply") return LOVE_LETTERS_CHANNEL_ID;
+  if (kind === "suggestion") return SUGGESTENCES_CHANNEL_ID;
   return null;
 }
 
@@ -819,7 +895,7 @@ function hasReportButton(message, kind, messageId) {
 async function getConfiguredReportsChannel(interaction, settings) {
   const configuredId = settings?.get(interaction.guildId)?.reportsChannelId;
   if (/^\d{17,20}$/.test(configuredId ?? "") &&
-      ![CONFESSIONS_CHANNEL_ID, LOVE_LETTERS_CHANNEL_ID].includes(configuredId)) {
+      ![CONFESSIONS_CHANNEL_ID, LOVE_LETTERS_CHANNEL_ID, SUGGESTENCES_CHANNEL_ID].includes(configuredId)) {
     const configured = await interaction.guild.channels.fetch(configuredId).catch(() => null);
     if (configured?.type === ChannelType.GuildText) {
       const everyone = configured.permissionsFor(interaction.guild.roles.everyone);
