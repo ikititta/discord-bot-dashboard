@@ -8,7 +8,7 @@ import { CommunityStore } from "../src/community-store.js";
 import {
   buildConfessionsPanelPayload,
   buildLoveLettersPanelPayload,
-  buildSuggestencesPanelPayload,
+  buildSuggestionsPanelPayload,
   buildSuggestionComponents,
   buildLoveLetterRecipientPicker,
   buildConfessionRecipientPicker,
@@ -60,9 +60,9 @@ test("confessions panel offers anonymous, named, and poll actions", () => {
   assert.equal(payload.embeds[0].toJSON().title, "୨୧ 𝒄𝒐𝒏𝒇𝒆𝒔𝒔ions ♡");
 });
 
-test("Suggestences panel has a submission button and each suggestion has green up, red down, grey report", () => {
-  const panel = buildSuggestencesPanelPayload();
-  assert.equal(panel.embeds[0].toJSON().title, "୨୧ Suggestences ♡");
+test("Suggestions panel has a submission button and each suggestion has green up, red down, grey report", () => {
+  const panel = buildSuggestionsPanelPayload();
+  assert.equal(panel.embeds[0].toJSON().title, "୨୧ Suggestions ♡");
   assert.equal(panel.components[0].toJSON().components[0].custom_id, "sugar-community:suggestion-start");
 
   const buttons = buildSuggestionComponents("123456789012345678")[0].toJSON().components;
