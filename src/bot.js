@@ -37,6 +37,7 @@ export function createBot({
   privateChats,
   moderationLogs,
   communityStore,
+  suggestionStore,
   stickyPanels,
 }) {
   const client = new Client({
@@ -134,7 +135,7 @@ export function createBot({
   });
   attachMessageDeletionSystem(client, { settings, moderationLogs });
   attachTicketSystem(client, { settings, stickyPanels });
-  attachCommunitySystem(client, { store: communityStore, stickyPanels, settings });
+  attachCommunitySystem(client, { store: communityStore, suggestionStore, stickyPanels, settings });
   attachQuoteSystem(client, { token, applicationId });
 
   client.login(token).catch((error) => {
