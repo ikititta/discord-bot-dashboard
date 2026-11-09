@@ -40,7 +40,7 @@ test("confessions panel offers anonymous, named, and poll actions", () => {
     "sugar-community:confess:named",
     "sugar-community:poll",
   ]);
-  assert.match(payload.embeds[0].toJSON().title, /confess/iu);
+  assert.equal(payload.embeds[0].toJSON().title, "୨୧ 𝒄𝒐𝒏𝒇𝒆𝒔𝒔ions ♡");
 });
 
 test("love letters panel offers anonymous and named public submissions", () => {
