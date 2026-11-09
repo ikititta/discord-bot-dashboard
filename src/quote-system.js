@@ -197,12 +197,29 @@ export function attachQuoteSystem(client, { token, applicationId } = {}) {
     }
   });
   client.on(Events.MessageCreate, async (message) => {
-    if (message.author.bot || !message.guild || message.content.trim().toLowerCase() !== COMMAND) return;
+    if (message.author.bot || !message.guild) return;
+
+    const commandText = String(message.content ?? "").trim();
+    if (!/^!quote(?:\\s|$)/i.test(commandText)) return;
+
+    console.info(
+      `[quotes] command received guild=${message.guild.id} channel=${message.channelId} message=${message.id} type=${message.type} hasReference=${Boolean(message.reference?.messageId)}`,
+    );
+
     try {
       await createQuoteFromReply(message);
+      console.info(`[quotes] quote published guild=${message.guild.id} sourceMessage=${message.reference?.messageId ?? "unknown"}`);
     } catch (error) {
-      const content = error instanceof Error ? error.message : "The quote could not be created.";
-      await message.reply({ content, allowedMentions: { repliedUser: false } }).catch(() => {});
+      const detail = error instanceof Error ? error.message : String(error);
+      console.error(
+        `[quotes] command failed guild=${message.guild.id} channel=${message.channelId} code=${error?.code ?? "unknown"}: ${detail}`,
+      );
+      await message.reply({
+        content: detail || "The quote could not be created.",
+        allowedMentions: { repliedUser: false },
+      }).catch((replyError) => {
+        console.error(`[quotes] could not send command error reply: ${replyError?.message ?? replyError}`);
+      });
     }
   });
 }
