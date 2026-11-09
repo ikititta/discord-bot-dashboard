@@ -84,16 +84,12 @@ export function buildLoveLetterRecipientPicker(mode) {
 
 export function buildPublicationModePicker(kind) {
   if (!["confess", "poll"].includes(kind)) throw new Error("Invalid publication type.");
-  const picker = new StringSelectMenuBuilder()
-    .setCustomId(`${PREFIX}publication-mode:${kind}`)
-    .setPlaceholder("Choose how your post appears ♡")
-    .addOptions(
-      { label: "Anonymously", value: "anonymous", description: "Your name will stay hidden." },
-      { label: "With my name", value: "named", description: "Your Discord name will be shown." },
-    );
   return {
     content: "Would you like to publish anonymously or with your name?",
-    components: [new ActionRowBuilder().addComponents(picker)],
+    components: [new ActionRowBuilder().addComponents(
+      button(`publication-mode:${kind}:anonymous`, "Anonymously ♡", ButtonStyle.Secondary),
+      button(`publication-mode:${kind}:named`, "With My Name ♡", ButtonStyle.Primary),
+    )],
     ephemeral: true,
   };
 }
@@ -234,6 +230,15 @@ async function handleCommunityButton(interaction) {
       return replyEphemeral(interaction, "Please use the Confessions channel.");
     }
     return interaction.reply(buildPublicationModePicker(kind));
+  }
+
+  if (id.startsWith("publication-mode:")) {
+    const [, kind, mode] = id.split(":");
+    if (!["confess", "poll"].includes(kind) || !validMode(mode) ||
+        !interaction.inGuild() || interaction.channelId !== CONFESSIONS_CHANNEL_ID) {
+      return replyEphemeral(interaction, "Please use the correct community panel.");
+    }
+    return interaction.reply(buildPublicationRecipientPicker(kind, mode));
   }
 
   if (id.startsWith("report:")) {
