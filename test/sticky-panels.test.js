@@ -137,7 +137,7 @@ test("sticky panel setup restores the panel below messages posted while Sugar wa
     id: "523456789012345678",
     channelId: h.channel.id,
     author: { id: "623456789012345678", bot: false },
-    createdTimestamp: 2_000,
+    createdTimestamp: 1_500,
   };
   h.messages.set(oldPanel.id, oldPanel);
   h.messages.set(laterMessage.id, laterMessage);

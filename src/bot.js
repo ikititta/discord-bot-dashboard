@@ -13,7 +13,6 @@ import { PRIVATE_CHAT_LOBBY_CHANNEL_ID } from "./private-chat-format.js";
 import { attachTicketSystem } from "./ticket-system.js";
 import { attachCommunitySystem } from "./community-system.js";
 import { attachQuoteSystem } from "./quote-system.js";
-import { attachStickyPanel } from "./sticky-panels.js";
 
 const COLORS = { join: 0x4ade80, leave: 0xf87171, edit: 0xfbbf24, delete: 0xf87171 };
 
