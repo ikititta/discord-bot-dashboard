@@ -359,7 +359,7 @@ test("a server name cannot inject markup into the settings page", () => {
 test("the selected channel is the one that comes back selected", () => {
   const html = guildPage({
     guild: { id: "1", name: "Emberfell" },
-    settings: cleanSettings({}),
+    settings: cleanSettings({ logChannelId: "2" }),
     channels: [
       { id: "2", name: "general" },
       { id: "3", name: "logs" },
