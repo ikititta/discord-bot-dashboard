@@ -156,3 +156,24 @@ test("sticky panel setup restores the panel below messages posted while Sugar wa
   assert.equal(h.messages.has(oldPanel.id), false);
   assert.ok(h.messages.get(currentId).createdTimestamp > laterMessage.createdTimestamp);
 });
+
+
+test("community-triggered refresh republishes the panel and deletes the previous message", async () => {
+  const h = makeHarness();
+  const panel = attachStickyPanel(h.client, {
+    store: h.stickyStore,
+    key: "main-panel",
+    channelId: h.channel.id,
+    titles: ["Primary Panel"],
+    buildPayload: h.payload,
+  });
+  h.client.emit(Events.ClientReady);
+  await settle();
+  const firstId = h.stickyStore.get("main-panel");
+
+  await panel.refresh();
+  const nextId = h.stickyStore.get("main-panel");
+  assert.notEqual(nextId, firstId);
+  assert.equal(h.messages.has(firstId), false);
+  assert.equal(h.messages.get(nextId).pinned, true);
+});
