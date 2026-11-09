@@ -3,8 +3,6 @@
 import fs from "node:fs";
 import path from "node:path";
 
-export const DEFAULT_WELCOME = "Welcome to {server}, {user}! You are member number {count}.";
-
 /**
  * Resolve persistent storage without hiding a production mount/config error.
  * Local fallback and directory creation are limited to development.
@@ -49,8 +47,6 @@ export function resolveDataDir(preferred = process.env.DATA_DIR) {
 /** Everything one guild can be configured with. */
 export function blankSettings() {
   return {
-    welcomeChannelId: null,
-    welcomeMessage: DEFAULT_WELCOME,
     logChannelId: null,
     vipRoleIds: [],
     moderatorRoleIds: [],
@@ -62,12 +58,10 @@ export function blankSettings() {
  * posts a form, and a form can say anything.
  *
  * @param {Record<string, unknown>} input
- * @returns {{welcomeChannelId: string|null, welcomeMessage: string, logChannelId: string|null, vipRoleIds: string[], moderatorRoleIds: string[]}}
+ * @returns {{logChannelId: string|null, vipRoleIds: string[], moderatorRoleIds: string[]}}
  */
 export function cleanSettings(input = {}) {
   return {
-    welcomeChannelId: channelId(input.welcomeChannelId),
-    welcomeMessage: String(input.welcomeMessage ?? DEFAULT_WELCOME).slice(0, 1500).trim() || DEFAULT_WELCOME,
     logChannelId: channelId(input.logChannelId),
     vipRoleIds: parseRoleIds(input.vipRoleIds).ids,
     moderatorRoleIds: parseRoleIds(input.moderatorRoleIds).ids,
@@ -116,7 +110,7 @@ export class SettingsStore {
 
   /** @param {string} guildId */
   get(guildId) {
-    const settings = { ...blankSettings(), ...(this.data[guildId] ?? {}) };
+    const settings = cleanSettings(this.data[guildId] ?? {});
     return {
       ...settings,
       vipRoleIds: [...settings.vipRoleIds],
@@ -201,13 +195,9 @@ function isStoredSettings(settings) {
   }
 
   return (
-    (settings.welcomeChannelId === undefined ||
-      settings.welcomeChannelId === null ||
-      typeof settings.welcomeChannelId === "string") &&
     (settings.logChannelId === undefined ||
       settings.logChannelId === null ||
       typeof settings.logChannelId === "string") &&
-    (settings.welcomeMessage === undefined || typeof settings.welcomeMessage === "string") &&
     isStoredRoleIds(settings.vipRoleIds) &&
     isStoredRoleIds(settings.moderatorRoleIds)
   );
@@ -230,17 +220,3 @@ function settingsReadError(error) {
   );
 }
 
-/**
- * Fill the placeholders in a welcome message.
- *
- * @param {string} template
- * @param {{mention: string, username: string, guildName: string, memberCount: number}} member
- */
-export function renderWelcome(template, member) {
-  return String(template ?? "")
-    .replaceAll("{user}", member.mention)
-    .replaceAll("{username}", member.username)
-    .replaceAll("{server}", member.guildName)
-    .replaceAll("{count}", String(member.memberCount))
-    .slice(0, 2000);
-}

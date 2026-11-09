@@ -121,12 +121,12 @@ test("saving without signing in does nothing", async () => {
   await fetch(`${base}/g/${GUILD}`, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({ welcomeChannelId: CHANNEL, welcomeMessage: "pwned" }),
+    body: new URLSearchParams({ logChannelId: CHANNEL }),
     redirect: "manual",
   });
 
-  assert.equal(settings.get(GUILD).welcomeChannelId, null);
-  assert.equal(settings.get(OTHER_GUILD).welcomeChannelId, null);
+  assert.equal(settings.get(GUILD).logChannelId, null);
+  assert.equal(settings.get(OTHER_GUILD).logChannelId, null);
 
   await close();
 });

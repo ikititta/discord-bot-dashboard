@@ -1,226 +1,66 @@
-# Discord bot with a dashboard
+# Sugar
 
-[![Deploy to FadeHost](https://fadehost.com/deploy-button.svg)](https://laplace.fadehost.com/register?intent=app&repo=https://github.com/FadeHost/discord-bot-dashboard)
+Sugar is the single Discord bot for Kittisugar. GitHub is the canonical source, FadeHost is the production runtime, Discord is the community interface, and DeepSeek provides optional AI replies. Replit is development-only and is not required for production operation.
 
-[![Deploy on FadeHost](https://img.shields.io/badge/deploy%20on-FadeHost-0ea5e9?style=flat-square)](https://laplace.fadehost.com/bots?new=1)
-
-A welcome and log bot you set up on a web page instead of with slash commands.
-It is also the example to copy when you want your own bot to have a dashboard:
-the login, the permission check and the settings file are all here in about
-four hundred lines.
-
-- Greets new members in a channel you choose, with their name, your server's
-  name and the member count
-- Logs joins, leaves, edited messages and deleted messages to another channel
-- Everything is configured on the app's own web address
-- Signing in is Discord's own login, and only people who run the server get in
-- Settings are kept on the persistent volume, so a redeploy keeps them
-
-## Deploy on FadeHost
-
-1. Create an application at
-   [discord.com/developers](https://discord.com/developers/applications).
-   Under **Bot**, press Reset Token and copy it. Under **Bot, Privileged
-   Gateway Intents**, turn on **Server Members** and **Message Content**.
-2. Under **OAuth2**, copy the **Client ID** and the **Client Secret**.
-3. In the [FadeHost panel](https://laplace.fadehost.com/bots), choose **Host an
-   app**, then the **Bot with a dashboard** template, and paste the three
-   values. Turn on the web address.
-4. Open your address once. The console prints the redirect URL to paste back
-   into the Developer Portal under **OAuth2, Redirects**. It is your address
-   with `/auth/callback` on the end.
-5. Invite the bot to your server, sign in on the dashboard, pick your channels.
-
-Step 4 is the only fiddly one, and Discord insists on it: it will not send
-anybody back to an address you have not listed.
-
-## Environment variables
-
-| Variable | Required | What it is |
-|---|---|---|
-| `DISCORD_TOKEN` | yes | The bot token, from **Bot, Reset Token**. |
-| `DISCORD_CLIENT_ID` | yes | From the **OAuth2** page of the same application. |
-| `DISCORD_CLIENT_SECRET` | yes | From the **OAuth2** page. Treat it like a password. |
-| `SESSION_SECRET` | yes | Any long random string. It signs the login cookie. |
-| `DEEPSEEK_API_KEY` | no | Optional. Enables AI replies when set. |
-| `APP_URL` | no | The public address. FadeHost sets it when the web address is on. Set it yourself when running elsewhere. |
-| `PORT` | no | The port to listen on. FadeHost sets this for you. |
-| `DATA_DIR` | no | An existing, writable persistent directory for settings. Production defaults to `/data`. |
-| `NODE_ENV` | no | Set to `development` for local data-directory fallback; other modes require persistent storage. |
-
-Without `APP_URL` the bot still runs; the dashboard just says it has nowhere
-for Discord to send people back to.
-
-## Private chats
-
-The bot registers `/priv-chat` for the server containing channel
-`1568179043356901376`. In that channel, use **Create private chat** or
-`/priv-chat create name:<name>`; creation can include up to five invitees.
-New channels use the existing category whose name resolves to **General**,
-including decorative Unicode lettering.
-
-The channel owner can add or remove invitees and rename the chat. Invitees can
-leave. Deletion requires an owner confirmation and permanently removes the
-channel and its messages. Access for each channel is managed through Discord
-permission overwrites. Chat ownership and invitees are stored in
-`private-chats.json` under the persistent `DATA_DIR`.
-
-The bot needs permission to create and manage channels in the target server.
-On startup it posts and pins one guide in the lobby, and keeps unrelated
-application slash commands when registering `/priv-chat`.
-
-### Keeping secrets out of the project
-
-The app reads variables from its process environment; it does not load `.env`
-files. Set production secrets in the host's secret or environment-variable
-manager. `.env.example` contains names and empty values only. Local `.env*`
-files and `.envrc` are ignored by Git, and backup archives exclude them.
-Never place secret values in GitHub, project documents, or backup archives.
-
-## Run it somewhere else
+## Run
 
 ```bash
 npm ci
 npm start
 ```
 
-Before starting, provide the required environment variables through your
-operating system or host's secure environment-variable manager. Generate a
-long random `SESSION_SECRET`; do not put secret values in shell history or
-project files. Add `http://localhost:8080/auth/callback` to the redirects in
-the Developer Portal while testing. For local development, run
-`NODE_ENV=development npm start`; production requires an existing `DATA_DIR`
-or a mounted `/data` directory. Node 20 or newer.
+Use Node.js 20 or newer. Configure secrets through the hosting platform's secure environment-variable manager.
 
-## The welcome message
+| Variable | Required | Purpose |
+|---|---|---|
+| `DISCORD_TOKEN` | yes | Existing Discord bot token |
+| `DISCORD_CLIENT_ID` | yes | Discord application ID |
+| `DISCORD_CLIENT_SECRET` | yes | OAuth client secret for the existing settings interface |
+| `SESSION_SECRET` | yes | Random signing secret, at least 16 characters |
+| `DEEPSEEK_API_KEY` | no | Enables Sugar AI replies |
+| `APP_URL` | no | Public app URL |
+| `PORT` | no | HTTP port; supplied by FadeHost |
+| `DATA_DIR` | no | Existing writable persistent directory; production defaults to `/data` |
+| `NODE_ENV` | no | Use `development` for local data-directory fallback |
 
-| Placeholder | Becomes |
-|---|---|
-| `{user}` | a mention, so they get a ping |
-| `{username}` | their name, without the mention |
-| `{server}` | your server's name |
-| `{count}` | how many members there are now |
+The application reads secrets from its process environment and does not load local `.env` files. Never commit or paste credentials into source code, issues, pull requests, or chat.
 
-Sugar also posts a separate AI-personalized welcome in channel
-`1567093021298794658` when someone joins the server that owns that channel. It
-uses their display name, server roles, account creation date and server join
-date as limited context, and only pings the new member.
+## Current features
 
-## Who can change things
+- Sugar AI replies through DeepSeek only when a local detector recognizes a direct mention or address to Sugar.
+- Private Discord chats, with ownership and access managed through Discord permissions.
+- Join, leave, edited-message, and deleted-message logs.
+- Message-deletion commands with configurable VIP and moderator role IDs.
+- Existing Discord OAuth settings interface and health endpoint.
 
-The login asks Discord for two things: who you are, and which servers you are
-in. A server appears on your dashboard only when you are its owner, an
-administrator or have Manage Server, **and** the bot is in it. Every save is
-checked again against that list, so a hand-written request cannot reach a
-server that is not yours, and the channel you pick has to be one the bot can
-really post in.
+Legacy welcome/onboarding, automatic join-role assignment, self-role panels, and their age/NSFW visibility controls have been retired from the application. No replacement verification flow is active yet; the new flow will be designed separately after the server requirements are agreed.
 
-Logins live in memory, so restarting the app signs everybody out. That is two
-clicks to fix and means there is nothing on disk worth stealing.
+## Persistent data
 
-## What it stores
+Production uses an existing writable persistent directory (normally `/data`). Preserve existing files when deploying or migrating. Current application data includes:
 
-```
-/data/settings.json   one entry per server: the two channels and the message
-/data/memory.json     bounded per-guild, per-user conversation history
-/data/private-chats.json   private-chat owners, invitees, and lobby guide IDs
-/data/onboarding-guide.json the reusable #start onboarding guide message ID
-/data/nsfw-visibility.json member-specific visibility overrides for age-restricted channels
-```
+- `settings.json` — per-server log and role settings
+- `memory.json` — bounded AI conversation history
+- `private-chats.json` — private-chat owners, invitees, and lobby guide IDs
+- `moderation-logs.json` — moderation deletion records
 
-Production startup requires this file to exist; it will not initialize empty
-settings automatically. Only local development can start without it. For a
-confirmed new production installation, create `{}` in the persistent data
-directory before starting. Do not do this when restoring an existing install.
-The onboarding guide file is initialized if it is missing. If it is malformed,
-startup stops without rewriting it; repair it or restore it from a backup.
+Older installations may still contain data files from retired modules. The code no longer reads or modifies those legacy files; keep them in backups until you explicitly decide they can be archived or removed. Startup never resets persistent data.
 
 ## Backup and recovery
 
-The app currently has no database. Its durable application data is
-`settings.json`, `memory.json`, `private-chats.json`, `moderation-logs.json`,
-`onboarding-guide.json`, `self-roles.json`, and `nsfw-visibility.json` under
-`DATA_DIR`.
-Point `DATA_DIR` at a persistent disk or mounted directory on the host. Outside
-`NODE_ENV=development`, the app only uses an existing `DATA_DIR` or `/data` and
-stops if that storage is unavailable; it never switches to `./data`. Local
-development may fall back to `./data`. A writable path is not necessarily
-persistent, so confirm the chosen disk survives host restarts and redeploys.
-
-## Self-role picker
-
-On startup, the bot provisions the styled self-role channel only in the server
-containing the configured onboarding welcome channel. It reuses the saved
-bot-owned panel message. The five approved categories are Age, Gender,
-Sexuality, Interests, and Color. Individual role options remain disabled until
-they are approved; the bot does not create unapproved option roles.
-
-Self-selected age is never age verification and never grants access to
-age-restricted channels. Color supports a custom six-digit hex value through a
-permissionless personal role, only when the bot has Manage Roles and the role
-hierarchy allows it. Self-role metadata is kept in `self-roles.json`; corrupt
-data stops startup instead of being overwritten.
-
-## NSFW channel visibility
-
-The self-role panel includes an **Age-restricted channels** select menu with
-**Show NSFW channels** and **Hide NSFW channels** actions. Sugar only changes
-the member's View Channel overwrite for channels Discord already marks as
-age-restricted. Showing restores the saved prior permission state; it never
-grants new access or changes Discord's native age-restricted setting. The bot
-needs Manage Channels on each channel it can update. Visibility records are
-kept in `nsfw-visibility.json`. On startup, Sugar removes the retired
-`/show-hide` guild command while preserving other application commands.
-
-GitHub `main` stores the source history. To make a portable snapshot of the
-project files and current data, run this from the project directory:
+Create a backup outside the project directory:
 
 ```bash
 bash scripts/backup.sh
 ```
 
-The archive is written to `~/sugar-backups` by default. To choose another
-location outside the project, pass it as the first argument:
+Restore only into a new, empty directory:
 
 ```bash
-bash scripts/backup.sh /path/to/private-backups
+bash scripts/restore.sh /path/to/sugar-ai-backup.tar.gz
 ```
 
-For FadeHost, use a directory under `/data` so the archive appears in the app's
-Files tab and can be downloaded:
-
-```bash
-bash scripts/backup.sh /data/sugar-backups
-```
-
-The backup includes the project files needed to run the app and each of
-`DATA_DIR/settings.json`, `DATA_DIR/memory.json`, `DATA_DIR/private-chats.json`,
-`DATA_DIR/moderation-logs.json`, `DATA_DIR/onboarding-guide.json`, and
-`DATA_DIR/self-roles.json`, and `DATA_DIR/nsfw-visibility.json` when present.
-Missing data files are not created or added as empty files. The restore script
-extracts every archived file, including these data files, into a new directory;
-it does not write to `DATA_DIR` or modify the live installation. It refuses to extract into an existing
-directory. It excludes Git internals, installed packages, temporary caches,
-environment files, and common credential files. Store the downloaded archive
-somewhere separate from the host that runs the bot.
-
-To inspect and recover a snapshot, extract it into a new, empty directory:
-
-```bash
-bash scripts/restore.sh /path/to/sugar-ai-YYYYMMDDTHHMMSSZ.tar.gz
-```
-
-An optional second argument selects the restore directory. The script refuses
-to overwrite an existing directory or extract into the live project. Review
-`BACKUP-INFO.txt` and the restored `data/` before using them. To recover data
-for an existing installation, first make and verify a separate backup, then
-review and copy only the needed files; never extract over an existing data
-directory. For a new host,
-check out the GitHub `main` branch, install with `npm ci`, set the required
-secrets in that host's secret manager, and point `DATA_DIR` at a persistent
-directory. Restore data only into an empty data directory; preserve any
-existing host data before attempting a recovery. Do not copy secrets from an
-archive: they are intentionally not included.
+The restore script does not overwrite the live installation. Review restored files before recovering any data.
 
 ## Tests
 
@@ -228,8 +68,4 @@ archive: they are intentionally not included.
 npm test
 ```
 
-The dashboard tests start the real web server with a stand-in for the bot, so
-the routes, the cookies and the permission checks are covered without a
-Discord token.
-
-Built and maintained by [FadeHost](https://fadehost.com). MIT licensed.
+Tests use Node's built-in test runner and stubs for Discord and provider interactions; they do not require production credentials or send real community messages.

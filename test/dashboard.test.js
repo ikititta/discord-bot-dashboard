@@ -15,11 +15,9 @@ import {
 } from "../src/oauth.js";
 import { Sessions, readCookie } from "../src/session.js";
 import {
-  DEFAULT_WELCOME,
   SettingsStore,
   cleanSettings,
   parseRoleIds,
-  renderWelcome,
   resolveDataDir,
 } from "../src/settings.js";
 import { escapeHtml, guildPage, loginPage } from "../src/views.js";
@@ -146,8 +144,6 @@ test("readCookie picks one cookie out of the header", () => {
 test("settings survive a new store over the same directory, like a redeploy", () => {
   const dir = tempDir();
   new SettingsStore(dir, { allowMissing: true }).set("941800000000000001", {
-    welcomeChannelId: "941800000000000002",
-    welcomeMessage: "Hi {user}",
     logChannelId: "941800000000000003",
     vipRoleIds: ["941800000000000004"],
     moderatorRoleIds: ["941800000000000005"],
@@ -155,8 +151,6 @@ test("settings survive a new store over the same directory, like a redeploy", ()
 
   const after = new SettingsStore(dir);
   assert.deepEqual(after.get("941800000000000001"), {
-    welcomeChannelId: "941800000000000002",
-    welcomeMessage: "Hi {user}",
     logChannelId: "941800000000000003",
     vipRoleIds: ["941800000000000004"],
     moderatorRoleIds: ["941800000000000005"],
@@ -166,8 +160,6 @@ test("settings survive a new store over the same directory, like a redeploy", ()
 test("a guild nobody configured gets the defaults", () => {
   const settings = new SettingsStore(tempDir(), { allowMissing: true });
   assert.deepEqual(settings.get("999"), {
-    welcomeChannelId: null,
-    welcomeMessage: DEFAULT_WELCOME,
     logChannelId: null,
     vipRoleIds: [],
     moderatorRoleIds: [],
@@ -175,8 +167,6 @@ test("a guild nobody configured gets the defaults", () => {
 });
 
 test("a channel id that is not a snowflake means off", () => {
-  const clean = cleanSettings({ welcomeChannelId: "../../etc", logChannelId: "<script>", welcomeMessage: "Hi" });
-  assert.equal(clean.welcomeChannelId, null);
   assert.equal(clean.logChannelId, null);
 });
 
@@ -209,18 +199,9 @@ test("the dashboard renders VIP and moderator role-ID settings", () => {
   assert.match(html, /941800000000000011/);
 });
 
-test("an empty welcome message falls back to the default", () => {
-  assert.equal(cleanSettings({ welcomeMessage: "   " }).welcomeMessage, DEFAULT_WELCOME);
-});
-
-test("a huge welcome message is cut down", () => {
-  assert.equal(cleanSettings({ welcomeMessage: "x".repeat(5000) }).welcomeMessage.length, 1500);
-});
-
 test("nothing outside the three known fields is stored", () => {
   const settings = new SettingsStore(tempDir(), { allowMissing: true });
   const saved = settings.set("941800000000000001", {
-    welcomeChannelId: "941800000000000002",
     token: "leak me",
   });
 
@@ -228,8 +209,6 @@ test("nothing outside the three known fields is stored", () => {
     "logChannelId",
     "moderatorRoleIds",
     "vipRoleIds",
-    "welcomeChannelId",
-    "welcomeMessage",
   ]);
 });
 
@@ -256,8 +235,6 @@ test("development may initialize empty settings when the file is missing", () =>
   const settings = new SettingsStore(dir, { allowMissing: true });
 
   assert.deepEqual(settings.get("941800000000000001"), {
-    welcomeChannelId: null,
-    welcomeMessage: DEFAULT_WELCOME,
     logChannelId: null,
     vipRoleIds: [],
     moderatorRoleIds: [],
@@ -314,36 +291,11 @@ test("production storage failure does not create or fall back from DATA_DIR", ()
   }
 });
 
-// ---- the welcome message -------------------------------------------------
-
-test("every placeholder is filled in", () => {
-  const text = renderWelcome("{user} ({username}) joined {server}, member {count}", {
-    mention: "<@1>",
-    username: "bernis",
-    guildName: "Emberfell",
-    memberCount: 42,
-  });
-
-  assert.equal(text, "<@1> (bernis) joined Emberfell, member 42");
-});
-
-test("a welcome message can never be longer than Discord allows", () => {
-  const text = renderWelcome("{user} ".repeat(1000), {
-    mention: "<@1>",
-    username: "b",
-    guildName: "g",
-    memberCount: 1,
-  });
-
-  assert.ok(text.length <= 2000);
-});
-
 // ---- rendering -----------------------------------------------------------
 
 test("a server name cannot inject markup into the settings page", () => {
   const html = guildPage({
     guild: { id: "1", name: "<script>alert(1)</script>" },
-    settings: { welcomeChannelId: null, welcomeMessage: DEFAULT_WELCOME, logChannelId: null },
     channels: [{ id: "2", name: "general" }],
     csrf: "token",
   });
@@ -356,7 +308,6 @@ test("a server name cannot inject markup into the settings page", () => {
 test("the selected channel is the one that comes back selected", () => {
   const html = guildPage({
     guild: { id: "1", name: "Emberfell" },
-    settings: { welcomeChannelId: "2", welcomeMessage: "Hi", logChannelId: null },
     channels: [
       { id: "2", name: "general" },
       { id: "3", name: "logs" },
