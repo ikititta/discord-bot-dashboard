@@ -79,7 +79,7 @@ test("sticky panel moves to the bottom after a new channel message", async () =>
   await settle();
   const firstId = h.stickyStore.get("main-panel");
   assert.ok(firstId);
-  assert.equal(h.messages.get(firstId).pinned, true);
+  assert.equal(h.messages.get(firstId).pinned, false);
 
   const userMessage = {
     id: "323456789012345678",
@@ -94,7 +94,7 @@ test("sticky panel moves to the bottom after a new channel message", async () =>
   const nextId = h.stickyStore.get("main-panel");
   assert.notEqual(nextId, firstId);
   assert.equal(h.messages.has(firstId), false);
-  assert.equal(h.messages.get(nextId).pinned, true);
+  assert.equal(h.messages.get(nextId).pinned, false);
   assert.ok(h.messages.get(nextId).createdTimestamp > userMessage.createdTimestamp);
 });
 
@@ -106,7 +106,6 @@ test("sticky panels can stay at the bottom without being pinned", async () => {
     channelId: h.channel.id,
     titles: ["Primary Panel"],
     buildPayload: h.payload,
-    pinOnCreate: false,
   });
   h.client.emit(Events.ClientReady);
   await settle();
@@ -151,7 +150,7 @@ test("sticky panel is recreated if a member deletes it", async () => {
   const replacementId = h.stickyStore.get("main-panel");
   assert.ok(replacementId);
   assert.notEqual(replacementId, firstId);
-  assert.equal(h.messages.get(replacementId).pinned, true);
+  assert.equal(h.messages.get(replacementId).pinned, false);
 });
 
 test("sticky panel setup restores the panel below messages posted while Sugar was offline", async () => {
