@@ -177,3 +177,33 @@ test("community-triggered refresh republishes the panel and deletes the previous
   assert.equal(h.messages.has(firstId), false);
   assert.equal(h.messages.get(nextId).pinned, true);
 });
+
+test("startup replaces the existing panel with the current canonical payload", async () => {
+  const h = makeHarness();
+  const oldPanel = {
+    id: "723456789012345678",
+    channelId: h.channel.id,
+    author: h.client.user,
+    embeds: [{ title: "Primary Panel", description: "legacy" }],
+    createdTimestamp: 2_000,
+    pinned: true,
+    edit: async () => oldPanel,
+    pin: async () => { oldPanel.pinned = true; },
+    delete: async () => { h.messages.delete(oldPanel.id); },
+  };
+  h.messages.set(oldPanel.id, oldPanel);
+  h.stickyStore.set("main-panel", oldPanel.id);
+  attachStickyPanel(h.client, {
+    store: h.stickyStore,
+    key: "main-panel",
+    channelId: h.channel.id,
+    titles: ["Primary Panel"],
+    buildPayload: h.payload,
+  });
+  h.client.emit(Events.ClientReady);
+  await settle();
+  const currentId = h.stickyStore.get("main-panel");
+  assert.notEqual(currentId, oldPanel.id);
+  assert.equal(h.messages.has(oldPanel.id), false);
+  assert.ok(h.messages.get(currentId).createdTimestamp > oldPanel.createdTimestamp);
+});
