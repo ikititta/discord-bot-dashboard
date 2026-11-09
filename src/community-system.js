@@ -41,7 +41,7 @@ function communityThreadReplyButton(kind, messageId) {
 }
 
 export function buildCommunityThreadReplyComponents(kind, messageId) {
-  if (!validReplyKind(kind) || !/^\\d{17,20}$/.test(messageId ?? "")) {
+  if (!validReplyKind(kind) || !/^\d{17,20}$/.test(messageId ?? "")) {
     throw new Error("Invalid thread reply target.");
   }
   return [new ActionRowBuilder().addComponents(
@@ -144,7 +144,7 @@ export function buildConfessionModePicker() {
 }
 
 export function buildThreadReplyModePicker(kind, messageId) {
-  if (!validReplyKind(kind) || !/^\\d{17,20}$/.test(messageId ?? "")) {
+  if (!validReplyKind(kind) || !/^\d{17,20}$/.test(messageId ?? "")) {
     throw new Error("Invalid thread reply target.");
   }
   return {
@@ -296,7 +296,7 @@ async function handleCommunityButton(interaction) {
     const thread = interaction.channel;
     const expectedParent = kind === "confession" ? CONFESSIONS_CHANNEL_ID
       : kind === "letter" ? LOVE_LETTERS_CHANNEL_ID : null;
-    if (!expectedParent || !/^\\d{17,20}$/.test(messageId ?? "") ||
+    if (!expectedParent || !/^\d{17,20}$/.test(messageId ?? "") ||
         interaction.message?.id !== messageId || !interaction.inGuild() ||
         !thread?.isThread?.() || thread.parentId !== expectedParent ||
         !hasThreadReplyButton(interaction.message, kind, messageId)) {
@@ -310,7 +310,7 @@ async function handleCommunityButton(interaction) {
     const thread = interaction.channel;
     const expectedParent = kind === "confession" ? CONFESSIONS_CHANNEL_ID
       : kind === "letter" ? LOVE_LETTERS_CHANNEL_ID : null;
-    if (!expectedParent || !validMode(mode) || !/^\\d{17,20}$/.test(messageId ?? "") ||
+    if (!expectedParent || !validMode(mode) || !/^\d{17,20}$/.test(messageId ?? "") ||
         !interaction.inGuild() || !thread?.isThread?.() || thread.parentId !== expectedParent) {
       return replyEphemeral(interaction, "This reply option is no longer valid.");
     }
@@ -528,7 +528,7 @@ async function handleCommunityModal(interaction, {
   }
   if (isThreadReply) {
     const [, kind, mode, targetId] = id.split(":");
-    if (!validReplyKind(kind) || !validMode(mode) || !/^\\d{17,20}$/.test(targetId ?? "")) {
+    if (!validReplyKind(kind) || !validMode(mode) || !/^\d{17,20}$/.test(targetId ?? "")) {
       return interaction.editReply("This reply is invalid.");
     }
     return publishCommunityThreadMessageReply(interaction, kind, mode, targetId);
