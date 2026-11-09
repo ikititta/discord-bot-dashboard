@@ -31,7 +31,9 @@ function replyButton(kind, messageId) {
 }
 
 function postComponents(kind, messageId) {
-  return [new ActionRowBuilder().addComponents(replyButton(kind, messageId))];
+  const buttons = [replyButton(kind, messageId)];
+  if (kind === "confession") buttons.push(button("confess-new", "Confess ♡", ButtonStyle.Primary));
+  return [new ActionRowBuilder().addComponents(...buttons)];
 }
 
 export function buildConfessionsPanelPayload() {
@@ -92,6 +94,17 @@ export function buildConfessionRecipientPicker(mode) {
 
 function validMode(mode) {
   return mode === "anonymous" || mode === "named";
+}
+
+export function buildConfessionModePicker() {
+  return {
+    content: "How would you like to confess?",
+    components: [new ActionRowBuilder().addComponents(
+      button("confess:anonymous", "Anonymously ♡"),
+      button("confess:named", "With My Name ♡", ButtonStyle.Secondary),
+    )],
+    ephemeral: true,
+  };
 }
 
 export function buildReplyModePicker(kind, messageId) {
@@ -184,6 +197,13 @@ async function upsertPanel(client, channelId, title, payload) {
 
 async function handleCommunityButton(interaction) {
   const id = interaction.customId.slice(PREFIX.length);
+  if (id === "confess-new") {
+    if (!interaction.inGuild() || interaction.channelId !== CONFESSIONS_CHANNEL_ID) {
+      return replyEphemeral(interaction, "Please use the Confessions channel.");
+    }
+    return interaction.reply(buildConfessionModePicker());
+  }
+
   if (id.startsWith("reply:")) {
     const [, kind, messageId] = id.split(":");
     if (!validReplyKind(kind) || !/^\d{17,20}$/.test(messageId ?? "")) {
@@ -434,8 +454,11 @@ async function handleCommunityModal(interaction, { store }) {
 async function publishThreadReply(interaction, channel, kind, mode, parentId) {
   const parent = await channel.messages.fetch(parentId).catch(() => null);
   if (!parent) return interaction.editReply("The original post could not be found.");
-  const expectedTitle = kind === "confession" ? "Confession #" : "Love Letter #";
-  if (!parent.embeds.some((embed) => embed.title?.includes(expectedTitle))) {
+  const expectedReplyId = `${PREFIX}reply:${kind}:${parentId}`;
+  const hasMatchingReplyButton = parent.components.some((row) =>
+    row.components.some((component) => component.customId === expectedReplyId),
+  );
+  if (parent.author?.id !== interaction.client.user.id || !hasMatchingReplyButton || !parent.embeds.length) {
     return interaction.editReply("This message is not a replyable community post.");
   }
   let thread = parent.hasThread ? await parent.fetchThread().catch(() => null) : null;
