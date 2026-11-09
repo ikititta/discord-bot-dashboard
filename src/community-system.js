@@ -473,7 +473,7 @@ async function handleCommunityModal(interaction, {
     }
     const embed = new EmbedBuilder()
       .setColor(COLOR)
-      .setTitle(formatEmbedTitle("Community Poll"))
+      .setTitle(formatEmbedTitle("Poll"))
       .setDescription(`**${question}**\n\n${options.map((option, index) => `${CONFESSION_REACTIONS[index]}  ${option}`).join("\n")}\n\n*React to vote!*`);
     if (mode === "named") {
       embed.setAuthor({
@@ -564,6 +564,7 @@ async function handleCommunityModal(interaction, {
 }
 
 async function publishThreadReply(interaction, channel, kind, mode, parentId) {
+  try {
   const parent = await channel.messages.fetch(parentId).catch(() => null);
   if (!parent) return interaction.editReply("The original post could not be found.");
   const expectedReplyId = `${PREFIX}reply:${kind}:${parentId}`;
@@ -575,7 +576,14 @@ async function publishThreadReply(interaction, channel, kind, mode, parentId) {
   }
   // Fetch even when Discord reports no active thread: an archived thread may
   // already exist for this message, and trying to create a second one fails.
-  let thread = await channel.threads.fetch({ message: parent.id }).catch(() => null);
+  let thread;
+  try {
+    thread = await channel.threads.fetch({ message: parent.id, force: true });
+  } catch (error) {
+    // Discord reports an unknown channel when no thread exists for this message.
+    if (error?.code !== 10003 && error?.code !== 10008) throw error;
+    thread = null;
+  }
   if (thread?.locked) await thread.setLocked(false, "Reopening community replies");
   if (thread?.archived) await thread.setArchived(false, "Reopening community replies");
   if (!thread) {
@@ -615,6 +623,13 @@ async function publishThreadReply(interaction, channel, kind, mode, parentId) {
     components: [new ActionRowBuilder().addComponents(reportButton(`${kind}-reply`, reply.id))],
   });
   return interaction.editReply("Your reply has been added to the thread ♡");
+  } catch (error) {
+    console.error(`[community] reply publish failed (guild=${interaction.guildId}, channel=${channel.id}, parent=${parentId}, code=${error?.code ?? "unknown"}):`, error);
+    if (error?.code === 50013) {
+      return interaction.editReply("Sugar needs permission to create or reopen the reply thread and send messages in it. Please ask a moderator to check Create Public Threads, Send Messages in Threads, and Manage Threads permissions.");
+    }
+    return interaction.editReply("Sugar couldn't open the reply thread or send your reply. Please ask a moderator to check Sugar's thread permissions and try again.");
+  }
 }
 
 function buildReportModal(kind, messageId) {
