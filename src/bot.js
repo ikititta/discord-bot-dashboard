@@ -37,6 +37,7 @@ export function createBot({
   privateChats,
   moderationLogs,
   communityStore,
+  stickyPanels,
 }) {
   const client = new Client({
     intents: [
@@ -129,10 +130,11 @@ export function createBot({
     applicationId,
     store: privateChats,
     lobbyChannelId: PRIVATE_CHAT_LOBBY_CHANNEL_ID,
+    stickyPanels,
   });
   attachMessageDeletionSystem(client, { settings, moderationLogs });
-  attachTicketSystem(client, { settings });
-  attachCommunitySystem(client, { store: communityStore });
+  attachTicketSystem(client, { settings, stickyPanels });
+  attachCommunitySystem(client, { store: communityStore, stickyPanels });
   attachQuoteSystem(client, { token, applicationId });
 
   client.login(token).catch((error) => {

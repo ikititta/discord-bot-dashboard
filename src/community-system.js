@@ -12,6 +12,7 @@ import {
 } from "discord.js";
 
 import { formatEmbedTitle } from "./embed-format.js";
+import { attachStickyPanel } from "./sticky-panels.js";
 
 export const CONFESSIONS_CHANNEL_ID = "1568179046209028106";
 export const LOVE_LETTERS_CHANNEL_ID = "1568179044900409418";
@@ -107,15 +108,34 @@ export function buildReplyModePicker(kind, messageId) {
   };
 }
 
-export function attachCommunitySystem(client, { store }) {
+export function attachCommunitySystem(client, { store, stickyPanels }) {
   if (!store || typeof store.nextNumber !== "function") {
     throw new Error("The community system requires a persistent community store.");
   }
-  client.once(Events.ClientReady, () => {
-    void ensureCommunityPanels(client).catch((error) => {
-      console.error(`[community] panel setup failed: ${error.message}`);
+  if (stickyPanels) {
+    attachStickyPanel(client, {
+      store: stickyPanels,
+      key: "confessions",
+      channelId: CONFESSIONS_CHANNEL_ID,
+      titles: [CONFESSION_PANEL_TITLE],
+      buildPayload: buildConfessionsPanelPayload,
+      logger: "community",
     });
-  });
+    attachStickyPanel(client, {
+      store: stickyPanels,
+      key: "love-letters",
+      channelId: LOVE_LETTERS_CHANNEL_ID,
+      titles: [LOVE_PANEL_TITLE],
+      buildPayload: buildLoveLettersPanelPayload,
+      logger: "community",
+    });
+  } else {
+    client.once(Events.ClientReady, () => {
+      void ensureCommunityPanels(client).catch((error) => {
+        console.error(`[community] panel setup failed: ${error.message}`);
+      });
+    });
+  }
   client.on(Events.InteractionCreate, (interaction) => {
     if (interaction.isButton() && interaction.customId.startsWith(PREFIX)) {
       void handleCommunityButton(interaction).catch(async (error) => {

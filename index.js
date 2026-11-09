@@ -11,6 +11,7 @@ import { MemoryStore } from "./src/memory.js";
 import { PrivateChatStore } from "./src/private-chat-store.js";
 import { ModerationLogStore } from "./src/moderation-log-store.js";
 import { CommunityStore } from "./src/community-store.js";
+import { StickyPanelStore } from "./src/sticky-panel-store.js";
 import { createWeb } from "./src/web.js";
 
 const STARTED_AT = new Date().toISOString();
@@ -50,6 +51,7 @@ let memory;
 let privateChats;
 let moderationLogs;
 let communityStore;
+let stickyPanels;
 try {
   dataDir = resolveDataDir();
   settings = new SettingsStore(dataDir, { allowMissing: process.env.NODE_ENV === "development" });
@@ -57,6 +59,7 @@ try {
   privateChats = new PrivateChatStore(dataDir);
   moderationLogs = new ModerationLogStore(dataDir);
   communityStore = new CommunityStore(dataDir);
+  stickyPanels = new StickyPanelStore(dataDir);
 } catch (error) {
   fatal(error instanceof Error ? error.message : "Storage initialization failed.", "storage");
 }
@@ -76,6 +79,7 @@ const client = createBot({
   privateChats,
   moderationLogs,
   communityStore,
+  stickyPanels,
 });
 
 const { app, redirectUri } = createWeb({

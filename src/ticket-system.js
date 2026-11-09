@@ -13,6 +13,7 @@ import {
 } from "discord.js";
 
 import { formatEmbedTitle } from "./embed-format.js";
+import { attachStickyPanel } from "./sticky-panels.js";
 
 export const TICKET_PANEL_CHANNEL_ID = "1568492748732895313";
 const PREFIX = "sugar-ticket:";
@@ -90,14 +91,25 @@ export function buildTicketPermissionOverwrites({ guild, openerId, moderatorRole
 }
 
 /** Attach the support-ticket panel and private ticket interactions to Sugar. */
-export function attachTicketSystem(client, { settings, panelChannelId = TICKET_PANEL_CHANNEL_ID }) {
+export function attachTicketSystem(client, { settings, stickyPanels, panelChannelId = TICKET_PANEL_CHANNEL_ID }) {
   if (!settings) throw new Error("The ticket system requires the server settings store.");
 
-  client.once(Events.ClientReady, () => {
-    void ensureTicketPanel(client, panelChannelId).catch((error) => {
-      console.error(`[tickets] panel setup failed: ${error.message}`);
+  if (stickyPanels) {
+    attachStickyPanel(client, {
+      store: stickyPanels,
+      key: "support-tickets",
+      channelId: panelChannelId,
+      titles: [PANEL_TITLE],
+      buildPayload: buildTicketPanelPayload,
+      logger: "tickets",
     });
-  });
+  } else {
+    client.once(Events.ClientReady, () => {
+      void ensureTicketPanel(client, panelChannelId).catch((error) => {
+        console.error(`[tickets] panel setup failed: ${error.message}`);
+      });
+    });
+  }
 
   client.on(Events.InteractionCreate, (interaction) => {
     if (interaction.isStringSelectMenu() && interaction.customId === `${PREFIX}category`) {
