@@ -19,6 +19,12 @@ import { attachStickyPanel } from "./sticky-panels.js";
 export const CONFESSIONS_CHANNEL_ID = "1568179046209028106";
 export const LOVE_LETTERS_CHANNEL_ID = "1568179044900409418";
 export const SUGGESTIONS_CHANNEL_ID = "1569164719309328455";
+export const REPORTS_CHANNEL_ID = "1569479283133382787";
+export const REPORT_NOTIFICATION_ROLE_IDS = [
+  "1567796193268858950",
+  "1568188570890403910",
+  "1568188595171500123",
+];
 const PREFIX = "sugar-community:";
 const COLOR = 0xffd9ff;
 const CONFESSION_PANEL_TITLE = "୨୧ 𝒄𝒐𝒏𝒇𝒆𝒔𝒔ions ♡";
@@ -925,6 +931,9 @@ function hasReportButton(message, kind, messageId) {
 }
 
 async function getConfiguredReportsChannel(interaction, settings) {
+  const designatedReportsChannel = await interaction.guild.channels.fetch(REPORTS_CHANNEL_ID).catch(() => null);
+  if (designatedReportsChannel?.type === ChannelType.GuildText) return designatedReportsChannel;
+
   const configuredId = settings?.get(interaction.guildId)?.reportsChannelId;
   if (/^\d{17,20}$/.test(configuredId ?? "") &&
       ![CONFESSIONS_CHANNEL_ID, LOVE_LETTERS_CHANNEL_ID, SUGGESTIONS_CHANNEL_ID].includes(configuredId)) {
@@ -1097,8 +1106,16 @@ async function submitCommunityReport(interaction, { reportKind, messageId, setti
       ...(targetEmbed?.description ? [{ name: "Post content", value: cleanText(targetEmbed.description, 900) }] : []),
     )
     .setTimestamp();
-  await reportChannel.send({ embeds: [report], allowedMentions: { parse: [] } });
+  await reportChannel.send(buildReportNotificationPayload(report));
   return interaction.editReply("Your report has been sent privately to the moderation team. Thank you.");
+}
+
+export function buildReportNotificationPayload(embed) {
+  return {
+    content: REPORT_NOTIFICATION_ROLE_IDS.map((roleId) => `<@&${roleId}>`).join(" "),
+    embeds: [embed],
+    allowedMentions: { parse: [], roles: REPORT_NOTIFICATION_ROLE_IDS },
+  };
 }
 
 function validReplyKind(kind) {
