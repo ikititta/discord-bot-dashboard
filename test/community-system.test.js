@@ -13,6 +13,7 @@ import {
   buildPublicationModePicker,
   buildPublicationRecipientPicker,
   buildCommunityPostComponents,
+  buildLoveLetterReplyComponents,
   buildReplyModePicker,
   buildConfessionModePicker,
 } from "../src/community-system.js";
@@ -110,6 +111,16 @@ test("Love Letters posts use green Reply and red Report buttons with an empty he
   assert.equal(confessionButtons[0].label, "Reply ♡");
   assert.equal(confessionButtons.at(-1).style, 4);
   assert.equal(confessionButtons.at(-1).label, "Report ♡");
+});
+
+test("Love Letter thread replies show green Reply before red Report, both with empty hearts", () => {
+  const buttons = buildLoveLetterReplyComponents("123456789012345678")[0].toJSON().components;
+  assert.deepEqual(buttons.map((item) => item.label), ["Reply ♡", "Report ♡"]);
+  assert.deepEqual(buttons.map((item) => item.style), [3, 4]);
+  assert.deepEqual(buttons.map((item) => item.custom_id), [
+    "sugar-community:thread-reply:letter:123456789012345678",
+    "sugar-community:report:letter-reply:123456789012345678",
+  ]);
 });
 
 test("legacy standalone confess picker now opens two anonymous-or-named buttons", () => {
