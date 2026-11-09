@@ -297,18 +297,21 @@ export async function ensureCommunityPanels(client) {
       await suggestionsChannel.setName("suggestions", "Use the correct English spelling for the Suggestions channel");
     }
   }
-  const suggestions = await upsertPanel(client, SUGGESTIONS_CHANNEL_ID, SUGGESTIONS_PANEL_TITLE, buildSuggestionsPanelPayload(), { pinOnCreate: false });
+  const suggestions = await upsertPanel(client, SUGGESTIONS_CHANNEL_ID, SUGGESTIONS_PANEL_TITLE, buildSuggestionsPanelPayload(), {
+    pinOnCreate: false,
+    legacyTitles: [LEGACY_SUGGESTIONS_PANEL_TITLE],
+  });
   return { confessions, letters, suggestions };
 }
 
-async function upsertPanel(client, channelId, title, payload, { pinOnCreate = true } = {}) {
+async function upsertPanel(client, channelId, title, payload, { pinOnCreate = true, legacyTitles = [] } = {}) {
   const channel = await client.channels.fetch(channelId);
   if (!channel || channel.type !== ChannelType.GuildText) {
     throw new Error(`Community panel channel ${channelId} is not an accessible text channel.`);
   }
   const recent = await channel.messages.fetch({ limit: 50 });
   const existing = recent.find((message) =>
-    message.author.id === client.user.id && message.embeds.some((embed) => embed.title === title),
+    message.author.id === client.user.id && message.embeds.some((embed) => [title, ...legacyTitles].includes(embed.title)),
   );
   if (existing) {
     await existing.edit(payload);
