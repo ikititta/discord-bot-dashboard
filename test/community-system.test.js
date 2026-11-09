@@ -5,7 +5,13 @@ import os from "node:os";
 import path from "node:path";
 
 import { CommunityStore } from "../src/community-store.js";
-import { buildConfessionsPanelPayload, buildLoveLettersPanelPayload, buildLoveLetterRecipientPicker } from "../src/community-system.js";
+import {
+  buildConfessionsPanelPayload,
+  buildLoveLettersPanelPayload,
+  buildLoveLetterRecipientPicker,
+  buildConfessionRecipientPicker,
+  buildReplyModePicker,
+} from "../src/community-system.js";
 import { buildTicketPanelPayload } from "../src/ticket-system.js";
 
 test("community counters persist and increment independently", () => {
@@ -60,6 +66,20 @@ test("love letter starts by privately asking for one recipient", () => {
   assert.equal(picker.custom_id, "sugar-community:letter-recipient:anonymous");
   assert.equal(picker.min_values, 1);
   assert.equal(picker.max_values, 1);
+});
+
+test("confession recipient picker makes tagging optional", () => {
+  const payload = buildConfessionRecipientPicker("named");
+  assert.match(payload.content, /optional/i);
+  assert.equal(payload.components[0].toJSON().components[0].custom_id, "sugar-community:confess-recipient:named");
+  assert.equal(payload.components[1].toJSON().components[0].custom_id, "sugar-community:confess-skip:named");
+});
+
+test("community post reply picker offers anonymous and named thread replies", () => {
+  const payload = buildReplyModePicker("confession", "123456789012345678");
+  const buttons = payload.components[0].toJSON().components;
+  assert.deepEqual(buttons.map((item) => item.label), ["Anonymously ♡", "With My Name ♡"]);
+  assert.ok(buttons.every((item) => item.custom_id.includes(":123456789012345678")));
 });
 
 test("ticket panel offers the five support categories", () => {
