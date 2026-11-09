@@ -29,11 +29,11 @@ function button(id, label, style = ButtonStyle.Primary) {
 }
 
 function replyButton(kind, messageId) {
-  return button(`reply:${kind}:${messageId}`, "Reply ♡", kind === "letter" ? ButtonStyle.Success : ButtonStyle.Secondary);
+  return button(`reply:${kind}:${messageId}`, "Reply ♡", ButtonStyle.Success);
 }
 
 function reportButton(kind, messageId) {
-  return button(`report:${kind}:${messageId}`, kind === "letter" || kind === "letter-reply" ? "Report ♡" : "Report", ButtonStyle.Danger);
+  return button(`report:${kind}:${messageId}`, kind === "letter" || kind === "letter-reply" || kind === "confession" ? "Report ♡" : "Report", ButtonStyle.Danger);
 }
 
 export function buildCommunityPostComponents(kind, messageId) {
@@ -51,7 +51,7 @@ export function buildConfessionsPanelPayload() {
     .setDescription("Share a confession or create a poll. Choose how you want your post to appear.");
   const row = new ActionRowBuilder().addComponents(
     button("confess-start", "Submit a Confession ♡"),
-    button("poll-start", "Create a Poll ♡", ButtonStyle.Success),
+    button("poll-start", "Create a Poll ♡", ButtonStyle.Secondary),
   );
   return { embeds: [embed], components: [row] };
 }
@@ -156,6 +156,7 @@ export function attachCommunitySystem(client, { store, stickyPanels, settings })
       channelId: CONFESSIONS_CHANNEL_ID,
       titles: [CONFESSION_PANEL_TITLE],
       buildPayload: buildConfessionsPanelPayload,
+      pinOnCreate: false,
       logger: "community",
     }).refresh;
     refreshLoveLettersPanel = attachStickyPanel(client, {
@@ -202,7 +203,7 @@ export function attachCommunitySystem(client, { store, stickyPanels, settings })
 }
 
 export async function ensureCommunityPanels(client) {
-  const confessions = await upsertPanel(client, CONFESSIONS_CHANNEL_ID, CONFESSION_PANEL_TITLE, buildConfessionsPanelPayload());
+  const confessions = await upsertPanel(client, CONFESSIONS_CHANNEL_ID, CONFESSION_PANEL_TITLE, buildConfessionsPanelPayload(), { pinOnCreate: false });
   const letters = await upsertPanel(client, LOVE_LETTERS_CHANNEL_ID, LOVE_PANEL_TITLE, buildLoveLettersPanelPayload(), { pinOnCreate: false });
   return { confessions, letters };
 }
