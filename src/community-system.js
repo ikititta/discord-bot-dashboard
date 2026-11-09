@@ -6,6 +6,7 @@ import {
   EmbedBuilder,
   Events,
   ModalBuilder,
+  PermissionFlagsBits,
   TextInputBuilder,
   TextInputStyle,
   UserSelectMenuBuilder,
@@ -640,8 +641,13 @@ async function submitCommunityReport(interaction, { reportKind, messageId, setti
     return interaction.editReply("Reports are temporarily unavailable. Please contact a moderator.");
   }
   const reportChannel = await interaction.guild.channels.fetch(reportChannelId).catch(() => null);
-  if (!reportChannel || reportChannel.type !== ChannelType.GuildText) {
+  if (!reportChannel || reportChannel.type !== ChannelType.GuildText ||
+      [CONFESSIONS_CHANNEL_ID, LOVE_LETTERS_CHANNEL_ID].includes(reportChannelId)) {
     return interaction.editReply("The moderation report channel is unavailable. Please contact a moderator.");
+  }
+  const everyonePermissions = reportChannel.permissionsFor(interaction.guild.roles.everyone);
+  if (!everyonePermissions || everyonePermissions.has(PermissionFlagsBits.ViewChannel)) {
+    return interaction.editReply("Reports require a private moderation log channel. Please contact a moderator.");
   }
   const reason = cleanText(interaction.fields.getTextInputValue("reason"), 500);
   if (reason.length < 5) return interaction.editReply("Please provide a little more detail for the report.");
