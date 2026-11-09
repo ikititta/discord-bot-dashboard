@@ -163,7 +163,11 @@ test("sticky panel setup restores the panel below messages posted while Sugar wa
     embeds: [{ title: "Primary Panel" }],
     createdTimestamp: 1_000,
     pinned: true,
-    edit: async () => oldPanel,
+    edit: async (payload) => {
+      oldPanel.embeds = payload.embeds;
+      oldPanel.components = payload.components;
+      return oldPanel;
+    },
     pin: async () => { oldPanel.pinned = true; },
     delete: async () => { h.messages.delete(oldPanel.id); },
   };
