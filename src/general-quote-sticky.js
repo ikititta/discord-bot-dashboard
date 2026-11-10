@@ -117,10 +117,7 @@ export function attachGeneralQuoteStickyTip(client, { store, logger = "general-s
   client.on(Events.MessageCreate, (message) => {
     if (!message.guild || message.author?.bot || message.webhookId) return;
     const state = channels.get(message.channelId);
-    if (state) void state.enqueue(async () => {
-      // A bot-authored sticky message is ignored, so this cannot loop.
-      await state.enqueue(moveAfterMessage);
-    });
+    if (state) void state.enqueue(moveAfterMessage);
   });
 
   client.on(Events.MessageDelete, (message) => {
