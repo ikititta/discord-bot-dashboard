@@ -277,6 +277,18 @@ async function completeOnboarding(interaction) {
 
 export async function startRoleOnboarding(interaction) {
   await interaction.deferReply({ ephemeral: true });
+  const newRole = findRoleByName(interaction.guild, "new");
+  const memberRole = findRoleByName(interaction.guild, "member");
+  const member = await interaction.guild.members.fetch(interaction.user.id).catch(() => null);
+  if (!member || !newRole || !memberRole) {
+    return interaction.editReply("Sugar couldn't verify your server access. Please contact a moderator.");
+  }
+  if (member.roles.cache.has(memberRole.id) && !member.roles.cache.has(newRole.id)) {
+    return interaction.editReply("You're already verified and have access to Kittisugar ♡");
+  }
+  if (!member.roles.cache.has(newRole.id)) {
+    return interaction.editReply("You need the New role to start this access verification. Please contact a moderator.");
+  }
   return interaction.editReply(selectStepPayload({ step: "gender", mode: "onboard", userId: interaction.user.id }));
 }
 
