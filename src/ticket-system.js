@@ -10,6 +10,7 @@ import {
   PermissionFlagsBits,
   TextInputBuilder,
   TextInputStyle,
+  UserSelectMenuBuilder,
 } from "discord.js";
 
 import { formatEmbedTitle } from "./embed-format.js";
@@ -148,7 +149,7 @@ export function attachTicketSystem(client, { settings, stickyPanels, panelChanne
         console.error(`[tickets] creation failed: ${error.message}`);
         await replyEphemeral(interaction, error.message || "The ticket could not be created. Please try again.");
       });
-    } else if (interaction.isModalSubmit() && interaction.customId === `${PREFIX}add-person`) {
+    } else if (interaction.isUserSelectMenu() && interaction.customId === `${PREFIX}add-person`) {
       void addPersonToTicket(interaction, { settings }).catch(async (error) => {
         console.error(`[tickets] add-person failed: ${error.message}`);
         await replyEphemeral(interaction, error.message || "The member could not be added. Please try again.");
@@ -187,36 +188,42 @@ async function handleTicketButton(interaction, { client, settings, panelChannelI
     if (!interaction.inGuild() || interaction.channel?.type !== ChannelType.GuildText || !parseTicketTopic(interaction.channel.topic)) return replyEphemeral(interaction, "This action is only available inside an active ticket.");
     const config = settings.get(interaction.guildId);
     if (!hasTicketStaffAccess(interaction.member, getStaffRoleIds(interaction.guild, config.moderatorRoleIds))) return replyEphemeral(interaction, "Only the staff team can add people to a ticket.");
-    const modal = new ModalBuilder().setCustomId(`${PREFIX}add-person`).setTitle("Add a person");
-    const memberInput = new TextInputBuilder().setCustomId("member-id").setLabel("User ID or @mention").setPlaceholder("Enter the member to add").setStyle(TextInputStyle.Short).setRequired(true).setMaxLength(30);
-    modal.addComponents(new ActionRowBuilder().addComponents(memberInput));
-    return interaction.showModal(modal);
+    const selector = new UserSelectMenuBuilder().setCustomId(`${PREFIX}add-person`).setPlaceholder("Choose a person to add").setMinValues(1).setMaxValues(1);
+    return interaction.reply({ content: "Select the member who should have access to this ticket:", components: [new ActionRowBuilder().addComponents(selector)], ephemeral: true });
   }
-  if (action === "close") {
-    if (!interaction.inGuild() || interaction.channel?.type !== ChannelType.GuildText) {
-      return replyEphemeral(interaction, "This action is only available inside a ticket.");
-    }
+  if (action === "close-confirm" || action === "close-cancel") {
+    if (!interaction.inGuild() || interaction.channel?.type !== ChannelType.GuildText) return replyEphemeral(interaction, "This action is only available inside a ticket.");
     const ticket = parseTicketTopic(interaction.channel.topic);
-    if (!ticket || ticket.guildId !== interaction.guildId) {
-      return replyEphemeral(interaction, "This channel is not an active Sugar support ticket.");
-    }
+    if (!ticket || ticket.status !== "open" || ticket.guildId !== interaction.guildId) return replyEphemeral(interaction, "This is not an active ticket.");
     const config = settings.get(interaction.guildId);
-    const isModerator = hasTicketStaffAccess(interaction.member, getStaffRoleIds(interaction.guild, config.moderatorRoleIds));
-    if (interaction.user.id !== ticket.openerId && !isModerator) {
-      return replyEphemeral(interaction, "Only the ticket opener or a moderator can close this ticket.");
-    }
-    await interaction.deferReply({ ephemeral: true });
-    await interaction.channel.send({ embeds: [new EmbedBuilder().setColor(PANEL_COLOR).setTitle(formatEmbedTitle("Ticket Closed")).setDescription(`This ticket was closed by <@${interaction.user.id}>.`)], allowedMentions: { parse: [] } });
+    const staffRoleIds = getStaffRoleIds(interaction.guild, config.moderatorRoleIds);
+    if (interaction.user.id !== ticket.openerId && !hasTicketStaffAccess(interaction.member, staffRoleIds)) return replyEphemeral(interaction, "Only the ticket opener or a moderator can close this ticket.");
+    if (action === "close-cancel") return interaction.update({ content: "Ticket closure cancelled.", embeds: [], components: [] });
+    await interaction.update({ content: "Saving the transcript and deleting this ticket…", embeds: [], components: [] });
     const transcriptChannel = await client.channels.fetch(TICKET_TRANSCRIPTS_CHANNEL_ID);
     if (!transcriptChannel || transcriptChannel.type !== ChannelType.GuildText) throw new Error(`Transcript channel ${TICKET_TRANSCRIPTS_CHANNEL_ID} is not accessible.`);
+    await interaction.channel.send({ embeds: [new EmbedBuilder().setColor(PANEL_COLOR).setTitle(formatEmbedTitle("Ticket Closed")).setDescription(`This ticket was closed by <@${interaction.user.id}>.`)], allowedMentions: { parse: [] } });
     const transcript = await buildTicketTranscript(interaction.channel);
-    await transcriptChannel.send({ embeds: [new EmbedBuilder().setColor(PANEL_COLOR).setTitle(formatEmbedTitle("Ticket Transcript")).setDescription(`**Ticket:** ${interaction.channel.name}\n**Category:** ${ticketCategoryFromChannel(interaction.channel.name)}\n**Opened by:** <@${ticket.openerId}>\n**Closed by:** <@${interaction.user.id}>`)], files: [new AttachmentBuilder(Buffer.from(transcript, "utf8"), { name: `${interaction.channel.name}-transcript.txt` })], allowedMentions: { parse: [] } });
-    await interaction.channel.permissionOverwrites.edit(ticket.openerId, {
-      ViewChannel: false,
-      SendMessages: false,
+    await transcriptChannel.send({
+      embeds: [new EmbedBuilder().setColor(PANEL_COLOR).setTitle(formatEmbedTitle("Ticket Transcript")).setDescription(`**Ticket:** ${interaction.channel.name}\\n**Category:** ${ticketCategoryFromChannel(interaction.channel.name)}\\n**Opened by:** <@${ticket.openerId}>\\n**Closed by:** <@${interaction.user.id}>`)],
+      files: [new AttachmentBuilder(Buffer.from(transcript, "utf8"), { name: `${interaction.channel.name}-transcript.txt` })],
+      allowedMentions: { parse: [] },
     });
-    await interaction.channel.setTopic(`${PREFIX}closed:${ticket.openerId}:${ticket.guildId}`);
-    return interaction.editReply(`Ticket closed and transcript saved in <#${TICKET_TRANSCRIPTS_CHANNEL_ID}>.`);
+    await interaction.channel.delete(`Ticket closed by ${interaction.user.id}; transcript archived`);
+    return;
+  }
+  if (action === "close") {
+    if (!interaction.inGuild() || interaction.channel?.type !== ChannelType.GuildText) return replyEphemeral(interaction, "This action is only available inside a ticket.");
+    const ticket = parseTicketTopic(interaction.channel.topic);
+    if (!ticket || ticket.guildId !== interaction.guildId || ticket.status !== "open") return replyEphemeral(interaction, "This channel is not an active Sugar support ticket.");
+    const config = settings.get(interaction.guildId);
+    const isModerator = hasTicketStaffAccess(interaction.member, getStaffRoleIds(interaction.guild, config.moderatorRoleIds));
+    if (interaction.user.id !== ticket.openerId && !isModerator) return replyEphemeral(interaction, "Only the ticket opener or a moderator can close this ticket.");
+    const confirmRow = new ActionRowBuilder().addComponents(
+      new ButtonBuilder().setCustomId(`${PREFIX}close-confirm`).setLabel("Confirm ♡").setStyle(ButtonStyle.Danger),
+      new ButtonBuilder().setCustomId(`${PREFIX}close-cancel`).setLabel("Cancel ♡").setStyle(ButtonStyle.Secondary),
+    );
+    return interaction.reply({ content: "Are you sure you want to close and permanently delete this ticket? A transcript will be saved first.", components: [confirmRow], ephemeral: true });
   }
 }
 
@@ -297,10 +304,8 @@ async function addPersonToTicket(interaction, { settings }) {
   if (!ticket || ticket.guildId !== interaction.guildId || ticket.status !== "open") return replyEphemeral(interaction, "This is not an active Sugar support ticket.");
   const config = settings.get(interaction.guildId);
   if (!hasTicketStaffAccess(interaction.member, getStaffRoleIds(interaction.guild, config.moderatorRoleIds))) return replyEphemeral(interaction, "Only the staff team can add people to a ticket.");
-  const raw = interaction.fields.getTextInputValue("member-id").trim();
-  const match = /^(?:<@!?(\d{5,25})>|(\d{5,25}))$/.exec(raw);
-  const memberId = match?.[1] || match?.[2];
-  if (!memberId) return replyEphemeral(interaction, "Please enter a valid user ID or @mention.");
+  const memberId = interaction.values?.[0];
+  if (!memberId) return replyEphemeral(interaction, "Please select a member.");
   await interaction.deferReply({ ephemeral: true });
   const member = await interaction.guild.members.fetch(memberId).catch(() => null);
   if (!member) return interaction.editReply("That member could not be found in this server.");
