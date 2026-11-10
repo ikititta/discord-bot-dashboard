@@ -217,8 +217,8 @@ export function attachCommunitySystem(client, { store, stickyPanels, settings, s
   }
   if (stickyPanels) {
     const legacyPanelMessageId = stickyPanels.get("suggestences");
-    if (legacyPanelMessageId && !stickyPanels.get("🗳️｜୨୧•𝓼𝓾𝓰𝓰𝓮𝓼𝓽𝓲𝓸𝓷𝓼")) {
-      stickyPanels.set("🗳️｜୨୧•𝓼𝓾𝓰𝓰𝓮𝓼𝓽𝓲𝓸𝓷𝓼", legacyPanelMessageId);
+    if (legacyPanelMessageId && !stickyPanels.get("suggestions")) {
+      stickyPanels.set("suggestions", legacyPanelMessageId);
     }
     if (legacyPanelMessageId) stickyPanels.set("suggestences", null);
     attachStickyPanel(client, {
@@ -246,7 +246,7 @@ export function attachCommunitySystem(client, { store, stickyPanels, settings, s
     });
     attachStickyPanel(client, {
       store: stickyPanels,
-      key: "🗳️｜୨୧•𝓼𝓾𝓰𝓰𝓮𝓼𝓽𝓲𝓸𝓷𝓼",
+      key: "suggestions",
       channelId: SUGGESTIONS_CHANNEL_ID,
       titles: [SUGGESTIONS_PANEL_TITLE, LEGACY_SUGGESTIONS_PANEL_TITLE],
       buildPayload: buildSuggestionsPanelPayload,
