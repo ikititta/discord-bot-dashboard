@@ -14,6 +14,7 @@ import {
 } from "discord.js";
 
 import { formatEmbedTitle } from "./embed-format.js";
+import { attachStickyPanel } from "./sticky-panels.js";
 
 export const CONFESSIONS_CHANNEL_ID = "1568179046209028106";
 export const LOVE_LETTERS_CHANNEL_ID = "1568179044900409418";
