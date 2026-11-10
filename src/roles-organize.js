@@ -314,7 +314,9 @@ export async function applyRoleOrganization(guild, plan) {
   if (!me.permissions.has(PermissionFlagsBits.ManageRoles)) throw new Error("Sugar no longer has Manage Roles.");
   const currentById = guild.roles.cache;
   for (const item of plan.ordered) {
-    if (!item.role) continue;
+    // Managed roles (Sugar AI) are deliberately preserved and must never be
+    // subjected to the editability check or sent to Discord's position API.
+    if (!item.role || item.managed) continue;
     const current = currentById.get(item.role.id);
     if (!current || current.managed || !current.editable) {
       throw new Error(`Role ${item.role.id} is missing or no longer editable; stopped before applying changes.`);
