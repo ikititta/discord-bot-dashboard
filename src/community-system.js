@@ -315,6 +315,9 @@ export async function ensureCommunityPanels(client) {
   const confessions = await upsertPanel(client, CONFESSIONS_CHANNEL_ID, CONFESSION_PANEL_TITLE, buildConfessionsPanelPayload(), { pinOnCreate: false });
   const letters = await upsertPanel(client, LOVE_LETTERS_CHANNEL_ID, LOVE_PANEL_TITLE, buildLoveLettersPanelPayload(), { pinOnCreate: false });
   const suggestionsChannel = await client.channels.fetch(SUGGESTIONS_CHANNEL_ID).catch(() => null);
+  if (suggestionsChannel?.type === ChannelType.GuildText) {
+    await migrateSuggestionReactions(suggestionsChannel, client.user?.id);
+  }
   if (suggestionsChannel?.type === ChannelType.GuildText && suggestionsChannel.name !== "🗳️｜୨୧•𝓼𝓾𝓰𝓰𝓮𝓼𝓽𝓲𝓸𝓷𝓼") {
     const botMember = suggestionsChannel.guild.members.me;
     if (botMember?.permissions.has(PermissionFlagsBits.ManageChannels)) {
@@ -1054,7 +1057,7 @@ async function publishSuggestion(interaction, suggestionStore, mode) {
 }
 
 async function handleSuggestionReaction(reaction, user, { suggestionStore, settings }, added) {
-  if (user?.bot || !added) return;
+  if (user?.bot) return;
   if (reaction.partial) await reaction.fetch();
   const message = reaction.message;
   if (message.partial) await message.fetch();
@@ -1063,10 +1066,11 @@ async function handleSuggestionReaction(reaction, user, { suggestionStore, setti
   const emoji = reaction.emoji.name;
   const direction = emoji === "⬆️" ? "up" : emoji === "⬇️" ? "down" : null;
   if (direction && suggestionStore) {
-    suggestionStore.setVote(message.id, user.id, direction);
+    if (added) suggestionStore.setVote(message.id, user.id, direction);
+    else suggestionStore.removeVote(message.id, user.id, direction);
     return;
   }
-  if (emoji === "⚠️") await sendSuggestionReactionReport(message, user, settings);
+  if (emoji === "⚠️" && added) await sendSuggestionReactionReport(message, user, settings);
 }
 
 async function addSuggestionReactions(message) {
