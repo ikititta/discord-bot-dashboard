@@ -29,7 +29,7 @@ export function buildForumVisibilityPanelPayload() {
 
   const button = new ButtonBuilder()
     .setCustomId(OPEN_ID)
-    .setLabel("Customize Forums")
+    .setLabel("Customize Forums ♡")
     .setStyle(ButtonStyle.Danger);
 
   return { embeds: [embed], components: [new ActionRowBuilder().addComponents(button)] };
