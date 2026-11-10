@@ -102,3 +102,41 @@ test("rejects a stale or incomplete role inventory", () => {
   const roles = inventory().filter((role) => role.id !== "1569809500955738164");
   assert.throws(() => buildRoleOrganizationPlan(roles), /inventory no longer matches/);
 });
+
+
+test("safe positioning reuses unique editable role slots below Sugar's highest role", async () => {
+  const { buildSafeRolePositions } = await import("../src/roles-organize.js");
+  const top = makeRole("top", "Top");
+  const middle = makeRole("middle", "Middle");
+  const bottom = makeRole("bottom", "Bottom");
+  top.position = 8;
+  middle.position = 4;
+  bottom.position = 2;
+
+  const positions = buildSafeRolePositions([top, middle, bottom], 10);
+  assert.deepEqual(positions.map(({ role, position }) => [role.id, position]), [
+    ["bottom", 2],
+    ["middle", 4],
+    ["top", 8],
+  ]);
+});
+
+test("safe positioning rejects roles at or above Sugar and managed roles", async () => {
+  const { buildSafeRolePositions } = await import("../src/roles-organize.js");
+  const tooHigh = makeRole("high", "High");
+  tooHigh.position = 10;
+  assert.throws(() => buildSafeRolePositions([tooHigh], 10), /safe position slot/);
+
+  const managed = makeRole("managed", "Managed", { managed: true });
+  managed.position = 2;
+  assert.throws(() => buildSafeRolePositions([managed], 10), /managed or not editable/);
+});
+
+test("safe positioning rejects duplicate role IDs instead of assigning colliding slots", async () => {
+  const { buildSafeRolePositions } = await import("../src/roles-organize.js");
+  const duplicateA = makeRole("same", "A");
+  const duplicateB = makeRole("same", "B");
+  duplicateA.position = 2;
+  duplicateB.position = 3;
+  assert.throws(() => buildSafeRolePositions([duplicateA, duplicateB], 10), /Duplicate role/);
+});
