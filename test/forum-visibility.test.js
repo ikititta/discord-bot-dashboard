@@ -37,6 +37,7 @@ test("forum visibility panel uses the Kittisugar pink embed and a red button tha
   const button = payload.components[0].components[0].toJSON();
   assert.equal(button.custom_id, "sugar-forum-visibility:open");
   assert.equal(button.style, ButtonStyle.Danger);
+  assert.equal(button.label, "Customize Forums ♡");
 });
 
 test("only forum channels directly inside the configured category are listed", () => {
