@@ -31,6 +31,7 @@ const TICKET_CATEGORIES = new Map([
   ["apply", "Apply"],
   ["error", "Error"],
   ["other", "Others"],
+  ["buy-vip", "Buy VIP"],
 ]);
 const TICKET_BUTTON_STYLES = new Map([
   ["general", ButtonStyle.Primary],
@@ -40,6 +41,7 @@ const TICKET_BUTTON_STYLES = new Map([
   ["apply", ButtonStyle.Success],
   ["error", ButtonStyle.Danger],
   ["other", ButtonStyle.Secondary],
+  ["buy-vip", ButtonStyle.Primary],
 ]);
 const MEMBER_PERMISSIONS = [
   PermissionFlagsBits.ViewChannel,
@@ -61,7 +63,8 @@ export function buildTicketPanelPayload() {
       "**Partnership** — Collaboration and server partnership inquiries.\n" +
       "**Apply** — Apply to become a member of our staff team.\n" +
       "**Error** — Report bugs, errors, or technical problems.\n" +
-      "**Others** — Requests that don't fit the other categories.\n\n" +
+      "**Others** — Requests that don't fit the other categories.\n" +
+      "**Buy VIP** — Questions about purchasing VIP or getting VIP access.\n\n" +
       `Have a suggestion? Share it in <#${SUGGESTIONS_CHANNEL_ID}>!`,
     );
 
