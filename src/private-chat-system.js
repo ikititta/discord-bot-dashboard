@@ -244,6 +244,7 @@ async function ensureLobbyGuide(lobby, client, store) {
 
 export async function ensurePrivateChatPanels(client, store, guildId) {
   for (const chat of store.listGuild(guildId)) {
+    if (store.isClearHistoryPanelReady(chat.channelId)) continue;
     try {
       const channel = await client.channels.fetch(chat.channelId);
       if (!channel || channel.type !== ChannelType.GuildText) continue;
@@ -307,7 +308,7 @@ export function buildPrivateChatLobbyGuidePayload() {
       [
         "A private space for you and the people you invite. Chat with friends or bots, make a list, or use it however you like.",
         "",
-        "• Press **Create a private chat** or run `/priv-chat create` and provide a name. You can optionally invite up to five people.",
+        "• Use a button to create a private chat, or run `/priv-chat create` and provide a name. You can optionally invite up to five people.",
         "",
         toRoyalBold("Name format"),
         "`👤｜୨୧•your-text`",

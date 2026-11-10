@@ -10,6 +10,7 @@ import { SettingsStore, resolveDataDir } from "./src/settings.js";
 import { MemoryStore } from "./src/memory.js";
 import { PrivateChatStore } from "./src/private-chat-store.js";
 import { ModerationLogStore } from "./src/moderation-log-store.js";
+import { AutoModerationStore } from "./src/moderation-system.js";
 import { CommunityStore } from "./src/community-store.js";
 import { SuggestionStore } from "./src/suggestion-store.js";
 import { StickyPanelStore } from "./src/sticky-panel-store.js";
@@ -51,6 +52,7 @@ let settings;
 let memory;
 let privateChats;
 let moderationLogs;
+let autoModeration;
 let communityStore;
 let suggestionStore;
 let stickyPanels;
@@ -60,6 +62,7 @@ try {
   memory = new MemoryStore(dataDir);
   privateChats = new PrivateChatStore(dataDir);
   moderationLogs = new ModerationLogStore(dataDir);
+  autoModeration = new AutoModerationStore(dataDir);
   communityStore = new CommunityStore(dataDir);
   suggestionStore = new SuggestionStore(dataDir);
   stickyPanels = new StickyPanelStore(dataDir);
@@ -81,6 +84,7 @@ const client = createBot({
   memory,
   privateChats,
   moderationLogs,
+  autoModeration,
   communityStore,
   suggestionStore,
   stickyPanels,

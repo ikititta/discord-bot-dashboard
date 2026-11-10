@@ -32,8 +32,11 @@ The application reads secrets from its process environment and does not load loc
 - Join, leave, edited-message, and deleted-message logs.
 - Message-deletion commands with configurable VIP and moderator role IDs.
 - New-member access flow: assigns the New role on join, provides concise rules and a compact server guide, and grants Member after the member confirms they have read the rules and are 18 or older.
+- Automatic moderation: detects message flooding, repeated messages, mass mentions, and unauthorized promotions/invite links; removes violating messages, records persistent strikes, applies a timeout at strike 2, and kicks at strike 3. Moderators bypass these checks.
+- Anti-raid protection: detects bursts of 8 joins within 10 seconds and temporarily times out recently-created accounts in that burst for 10 minutes. A moderation notice is sent to the configured reports channel or a recognized moderation-log channel.
 - The guide is mirrored into the existing `#dashboard` channel when that channel exists. It points members to self-roles to change their selected roles and show or hide channels.
-- Rules explain the $5 USD lifetime promotions/selling access (VIP, Seller, and custom role), the monthly cost of operating the independent Sugar bot, and support through donations or server boosts.
+- Rules explain that promotions/selling are for VIP members only and only in the assigned promotions channel; VIP access costs $5 USD once for life and includes VIP, Seller, and a custom role. NSFW content should stay in the Porn category unless the member is VIP. Three violations result in removal. The rules also explain monthly Sugar hosting costs and support through donations or boosts.
+- Persistent moderation strikes are stored in `automod-state.json` under the existing data directory.
 - Existing Discord OAuth settings interface and health endpoint.
 
 The retired legacy welcome and self-role panels remain retired. The current entry flow is implemented in `src/access-system.js` and uses the existing New and Member roles.

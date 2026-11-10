@@ -80,21 +80,23 @@ export function buildAccessPanelPayload(guild, { rulesChannel, guideChannel } = 
 }
 
 export function buildRulesPayload(guild) {
-  const promotionChannel = guild ? channelMention(guild, ["promotions", "promotion", "selling", "advertising", "marketplace"]) : "**promotions / selling channel**";
+  const promotionChannel = guild ? channelMention(guild, ["promotions", "promotion", "promos", "promo", "selling", "advertising", "advertise", "marketplace"]) : "**promotions / selling channel**";
+  const pornCategory = guild?.channels?.cache?.find((channel) =>
+    channel.type === ChannelType.GuildCategory && ["porn", "porno", "nsfw"].includes(normalizeName(channel.name)),
+  );
+  const pornLabel = pornCategory ? `**${pornCategory.name}**` : "**the Porn category**";
   const embed = new EmbedBuilder()
     .setColor(COLOR)
     .setTitle("୨୧ Kittisugar Rules ♡")
-    .setDescription(
-      "**18+ · SFW · Be respectful.** By staying here, you agree to these essentials:",
-    )
+    .setDescription("**18+ community · Respect others · Use the right channels.** Just five things to remember:")
     .addFields(
-      { name: "01 · Respect & safety", value: "No harassment, hate, bullying, threats, spam, raids, or sharing private information." },
-      { name: "02 · SFW only", value: "No nudity, sexual or suggestive content, including images, videos, avatars, or banners." },
-      { name: "03 · Promotions & selling", value: `Promotions, advertising, and selling are only allowed in ${promotionChannel}. Access costs **$5 USD one time (lifetime)** and includes **VIP, Seller, and a custom role**, plus their server benefits. No unsolicited ads in chats, profiles, or DMs.` },
-      { name: "04 · Keep the server tidy", value: "Use the right channels, follow staff instructions, and respect Discord's Terms of Service and Community Guidelines." },
-      { name: "05 · Support Kittisugar ♡", value: "Sugar is our own bot, maintained independently instead of relying on third-party bots. Hosting and operation have a monthly cost. Donations are always welcome, and server boosts also unlock a role and benefits. Every bit of support is genuinely appreciated." },
+      { name: "01 · Respect", value: "No harassment, hate, threats, bullying, raids, spam, or sharing private information." },
+      { name: "02 · Content", value: `Keep NSFW content in ${pornLabel}. VIP members may post NSFW content in other channels. No illegal content or non-consensual intimate material.` },
+      { name: "03 · Promotions & selling", value: `Only VIP members may promote or sell, and only in ${promotionChannel}. VIP access costs **$5 USD once, for life**, and includes **VIP, Seller, and a custom role** with their benefits. No unsolicited promotions in chats, profiles, or DMs.` },
+      { name: "04 · Three strikes", value: "**Three rule violations mean removal from Kittisugar.** Sugar may delete content, warn, or apply a timeout when needed." },
+      { name: "05 · Support Kittisugar ♡", value: "Sugar is our own bot, so we pay its hosting and operating costs every month instead of relying on other bots. Donations are open and always appreciated. Server boosts also unlock a special role and benefits. Thank you for helping keep Kittisugar running ♡" },
     )
-    .setFooter({ text: "Kittisugar is an 18+ SFW community ♡" });
+    .setFooter({ text: "By staying, you agree to follow these rules ♡" });
   return { embeds: [embed] };
 }
 
@@ -129,10 +131,10 @@ export function buildGuidePayload(guild) {
       "/delete amount:<number> — delete your own recent messages.\n" +
       "/vip-delete amount:<number> — VIP message cleanup.\n" +
       "/mod-delete amount:<number> [member:<user>] — moderator cleanup.\n" +
-      "!quote — reply to a message and quote it.\n\n" +
+      "!quote — reply to a message and quote it.\n/priv-chat commands — see private chat commands.\n\n" +
       "**୨୧ SUGAR AI**\nMention Sugar or address the bot directly to start a conversation ♡"
     )
-    .setFooter({ text: "Take your time, make yourself at home ♡" });
+    .setFooter({ text: "This guide is also pinned in #dashboard and will always be available there ♡" });
   return { embeds: [embed] };
 }
 
@@ -216,7 +218,10 @@ export async function ensureStartChannels(guild, client) {
     channel.type === ChannelType.GuildText && normalizeName(channel.name) === "dashboard",
   );
   if (dashboard) {
-    await upsertPanel(dashboard, client, "୨୧ Kittisugar Guide ♡", buildGuidePayload(guild));
+    const dashboardGuide = await upsertPanel(dashboard, client, "୨୧ Kittisugar Guide ♡", buildGuidePayload(guild));
+    await dashboardGuide.pin().catch((error) => {
+      console.error(`[access] could not pin the dashboard guide in guild ${guild.id}: ${error.message}`);
+    });
   }
   await upsertPanel(guide, client, "୨୧ Kittisugar Guide ♡", buildGuidePayload(guild));
 
