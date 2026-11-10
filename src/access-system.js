@@ -147,7 +147,6 @@ async function upsertPanel(channel, client, title, payload) {
 }
 
 async function applyStartPermissions(channel, guild, newRole, botId) {
-  const viewOnly = [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.ReadMessageHistory];
   await channel.permissionOverwrites.edit(guild.roles.everyone, {
     ViewChannel: false,
   });
@@ -163,7 +162,6 @@ async function applyStartPermissions(channel, guild, newRole, botId) {
     ReadMessageHistory: true,
     ManageChannels: true,
   });
-  void viewOnly;
 }
 
 function findTextChannel(guild, category, expectedName) {
