@@ -1,4 +1,5 @@
 import { toRoyalBold } from "./embed-format.js";
+import { attachRoleOnboarding, ensureSelfRolesChannel, startRoleOnboarding } from "./role-onboarding.js";
 
 import {
   ActionRowBuilder,
@@ -96,7 +97,7 @@ export function buildAccessPanelPayload(guild, { rulesChannel, guideChannel } = 
     .setDescription(
       `Welcome! Before entering the server, please read ${rulesChannel ? `<#${rulesChannel.id}>` : "**Rules**"} & ${guideChannel ? `<#${guideChannel.id}>` : "**Guide**"} in this category.\n\n` +
       "By pressing **Enter Server ♡**, you confirm that you have read & agree to follow all server rules and that you are **18 years of age or older**.\n\n" +
-      "Once confirmed, Sugar will give you the **Member** role and remove **New**, unlocking the rest of Kittisugar.",
+      "After confirmation, Sugar will guide you through your gender, age, sexuality, chat color, and NSFW visibility. Once you finish, Sugar will give you **Member** and remove **New** to unlock Kittisugar.",
     )
     .setFooter({ text: "Please make sure you meet both requirements before continuing ♡" });
   return {
@@ -156,7 +157,7 @@ export function buildGuidePayload(guild) {
       `## ୨୧ ${guideSectionTitle("Help")}\n\n` +
       `• ${channelMention(guild, ["support"])}\nOpen a private support ticket when you need help from the team.\n` +
       `• ${channelMention(guild, ["privatechat", "privatechats", "private-chat"])}\nCreate and manage private chat rooms. Use /priv-chat commands to see the available options.\n` +
-      `• ${channelMention(guild, ["selfroles", "self-roles"])}\nChoose or update your age, gender, sexuality, interests, and color roles. These roles also let you show or hide channels.\n` +
+      `• ${channelMention(guild, ["selfroles", "self-roles"])}\nChoose or update your age, gender, sexuality, and chat color. You can also show or hide NSFW channels.\n` +
       `## ୨୧ ${guideSectionTitle("Commands")}\n\n` +
       "`/delete amount:` — delete your own recent messages.\n" +
       "`/vip-delete amount:` — VIP message cleanup.\n" +
@@ -268,34 +269,16 @@ async function replyEphemeral(interaction, content) {
 
 async function handleEnterButton(interaction) {
   if (!interaction.inGuild()) return replyEphemeral(interaction, "This button only works inside Kittisugar.");
-  await interaction.deferReply({ ephemeral: true });
-
-  const newRole = findRoleByName(interaction.guild, NEW_ROLE_NAME);
-  const memberRole = findRoleByName(interaction.guild, MEMBER_ROLE_NAME);
-  if (!newRole || !memberRole) {
-    return interaction.editReply("Sugar couldn't find the New or Member role. Please contact a moderator.");
-  }
-
-  const member = await interaction.guild.members.fetch(interaction.user.id).catch(() => null);
-  if (!member) return interaction.editReply("I couldn't verify your server membership. Please try again.");
-  try {
-    const changed = await assignMemberAccess(member, { newRole, memberRole });
-    return interaction.editReply(changed
-      ? "Welcome to Kittisugar! You now have Member access. Enjoy your stay ♡"
-      : "You're already verified and have access to the server ♡");
-  } catch (error) {
-    console.error(`[access] verification failed for member ${interaction.user.id}: ${error.message}`);
-    return interaction.editReply(error.message === "You do not have the New role."
-      ? "You don't have the New role, so this access button isn't available to you."
-      : "I couldn't update your roles. Please contact a moderator.");
-  }
+  return startRoleOnboarding(interaction);
 }
 
 export function attachAccessSystem(client) {
+  attachRoleOnboarding(client);
   client.once(Events.ClientReady, async () => {
     for (const guild of client.guilds.cache.values()) {
       try {
         await ensureStartChannels(guild, client);
+        await ensureSelfRolesChannel(guild, client);
         const newRole = findRoleByName(guild, NEW_ROLE_NAME);
         if (newRole && !(await applyNewRoleVisibility(guild, newRole))) {
           console.warn(`[access] visible category ${NEW_USER_VISIBLE_CATEGORY_ID} was not found in guild ${guild.id}; New-role visibility was not changed.`);
@@ -327,7 +310,7 @@ export function attachAccessSystem(client) {
     if (!interaction.isButton() || interaction.customId !== ENTER_ID) return;
     void handleEnterButton(interaction).catch(async (error) => {
       console.error(`[access] enter button failed: ${error.message}`);
-      await replyEphemeral(interaction, "Something went wrong while verifying your access. Please try again.").catch(() => {});
+      await replyEphemeral(interaction, "Something went wrong while starting access verification. Please try again.").catch(() => {});
     });
   });
 }
