@@ -242,6 +242,6 @@ test("suggestion publication mode is validated and suggestion embeds omit timest
   assert.match(source, /if \(mode === "named"\)/);
   const publish = source.slice(source.indexOf("async function publishSuggestion"), source.indexOf("async function handleSuggestionReaction"));
   assert.doesNotMatch(publish, /\.setTimestamp\(\)/);
-  assert.match(publish, /name: "⚠️ Reports", value: "0"/);
-  assert.match(source, /async function updateSuggestionReportCount/);
+  assert.doesNotMatch(publish, /Upvotes|Downvotes|Reports/);
+  assert.match(source, /Suggestions can receive upvotes and downvotes/);
 });
