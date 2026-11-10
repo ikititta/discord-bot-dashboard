@@ -133,13 +133,13 @@ export function buildGuidePayload(guild) {
       `• ${channelMention(guild, ["support"])}\nOpen a private support ticket when you need help from the team.\n` +
       `• ${channelMention(guild, ["privatechat", "privatechats", "private-chat"])}\nCreate and manage private chat rooms. Use /priv-chat commands to see the available options.\n` +
       `• ${channelMention(guild, ["selfroles", "self-roles"])}\nChoose or update your age, gender, sexuality, interests, and color roles. These roles also let you show or hide channels.\n` +
-      `୨୧ ${guideSectionTitle("Commands")}\n\n` +
+      `## ୨୧ ${guideSectionTitle("Commands")}\n\n` +
       "`/delete amount:` — delete your own recent messages.\n" +
       "`/vip-delete amount:` — VIP message cleanup.\n" +
       "`/mod-delete amount: [member:]` — moderator cleanup.\n" +
       "`!quote` — quote a message with an image.\n" +
       "`/priv-chat commands` — see private chat commands.\n" +
-      `୨୧ ${guideSectionTitle("Sugar AI")}\n\n` +
+      `## ୨୧ ${guideSectionTitle("Sugar AI")}\n\n` +
       "Mention Sugar or address the bot directly to start a conversation ♡"
     )
     .setFooter({ text: "This guide is also pinned in dashboard and will always be available there ♡" });
