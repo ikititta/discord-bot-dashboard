@@ -92,7 +92,7 @@ function buildEnterButton(guild) {
 export function buildAccessPanelPayload(guild, { rulesChannel, guideChannel } = {}) {
   const embed = new EmbedBuilder()
     .setColor(COLOR)
-    .setTitle("୨୧ Welcome to Kittisugar ♡")
+    .setTitle(`୨୧ ${toRoyalBold("Get Access!")} ♡`)
     .setDescription(
       `Welcome! Before entering the server, please read ${rulesChannel ? `<#${rulesChannel.id}>` : "**Rules**"} & ${guideChannel ? `<#${guideChannel.id}>` : "**Guide**"} in this category.\n\n` +
       "By pressing **Enter Server ♡**, you confirm that you have read & agree to follow all server rules and that you are **18 years of age or older**.\n\n" +
@@ -244,7 +244,7 @@ export async function ensureStartChannels(guild, client) {
   const rules = await ensureTextChannel(guild, category, RULES_CHANNEL_NAME, newRole, client.user.id);
   const guide = await ensureTextChannel(guild, category, GUIDE_CHANNEL_NAME, newRole, client.user.id);
 
-  await upsertPanel(access, client, "୨୧ Welcome to Kittisugar ♡", buildAccessPanelPayload(guild, { rulesChannel: rules, guideChannel: guide }));
+  await upsertPanel(access, client, `୨୧ ${toRoyalBold("Get Access!")} ♡`, buildAccessPanelPayload(guild, { rulesChannel: rules, guideChannel: guide }));
   await upsertPanel(rules, client, "୨୧ Kittisugar Rules ♡", buildRulesPayload(guild));
   const dashboard = guild.channels.cache.find((channel) =>
     channel.type === ChannelType.GuildText && normalizeName(channel.name) === "dashboard",
