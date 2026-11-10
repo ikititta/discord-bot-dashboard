@@ -52,6 +52,7 @@ Do not move production hosting to Replit. Do not change deployment settings, env
 - index.js — validates startup configuration and starts the settings store, Discord bot, and HTTP server in one Node process.
 - package.json and package-lock.json — runtime requirements, scripts, and locked dependencies.
 - src/bot.js — Discord client, community event and moderation log handlers, and postable-channel selection.
+- src/access-system.js — New-member role assignment, restricted start category, rules and guide panels, and 18+ access verification.
 - src/deepseek.js — bounded requests to DeepSeek's official chat-completions API.
 - src/message-handler.js — local message routing, duplicate suppression, concurrency limits, and safe Discord replies.
 - src/message-trigger.js — local-only detection and cleanup of direct Sugar mentions/name addresses.
@@ -63,6 +64,7 @@ Do not move production hosting to Replit. Do not change deployment settings, env
 - test/dashboard.test.js — unit tests for OAuth helpers, authorization, sessions, settings, and HTML rendering.
 - test/deepseek.test.js and test/message-handler.test.js — mocked provider, local trigger, duplicate, timeout, and limit tests.
 - test/web.test.js — HTTP route tests using a stub Discord client rather than production credentials.
+- test/access-system.test.js — access-role transitions, verification safeguards, and onboarding panel content.
 
 Keep new functionality in the module that owns that responsibility. Avoid turning index.js into a feature module or combining unrelated concerns.
 
@@ -88,4 +90,4 @@ Write durable data atomically, validate it when loading, and keep formats backwa
 
 Before editing, inspect this AGENTS.md and the relevant source, tests, and current Git diff. Keep changes scoped to the request and list every changed file. Ask for explicit approval before deleting existing functionality, removing or migrating the current dashboard, changing deployment or hosting configuration, changing the existing Discord application or token, or performing a deployment. Do not infer approval for any of those actions from a request to make an unrelated code or documentation change.
 
-Legacy welcome/onboarding, automatic join-role assignment, self-role panels, and self-role-linked age/NSFW visibility controls have been retired from the active application. Do not reintroduce them or assume a verification flow exists. The user will define a replacement verification system in a separate task.
+Legacy welcome and self-role panels, including their age/NSFW visibility controls, remain retired. The replacement entry flow is active in `src/access-system.js`: new joins receive the New role, the start category is restricted to New, and the Enter Server button confirms rule agreement and 18+ eligibility before swapping New for Member. Do not revive the retired legacy panels or their old role-picker behavior.
