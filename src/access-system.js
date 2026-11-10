@@ -112,7 +112,7 @@ function guideSectionTitle(title) {
 export function buildGuidePayload(guild) {
   const embed = new EmbedBuilder()
     .setColor(COLOR)
-    .setTitle(`୨୧ ${toRoyalBold("Kittisugar Guide")} ! ♡`)
+    .setTitle(`୨୧ ${toRoyalBold("Kittisugar Guide!")} ♡`)
     .setDescription(
       "A little guide of Kittisugar ♡ Tap any channel mention to open it.\n\n" +
       `୨୧ ${guideSectionTitle("Start")}\n\n` +
