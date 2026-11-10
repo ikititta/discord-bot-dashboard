@@ -160,7 +160,7 @@ async function replaceCategoryRole(member, category, selectedRole) {
   const prefix = `${category}-`;
   await member.roles.add(selectedRole, `Set Kittisugar ${category} self-role`);
   const oldRoles = member.roles.cache.filter((role) =>
-    role.id !== selectedRole.id && normalizeRoleName(role.name).startsWith(normalizeRoleName(prefix)),
+    role.id !== selectedRole.id && String(role.name).toLowerCase().startsWith(prefix),
   );
   if (oldRoles.size) {
     await member.roles.remove([...oldRoles.values()], `Replace previous Kittisugar ${category} self-role`);
@@ -379,11 +379,15 @@ export function attachRoleOnboarding(client) {
     }
   });
 
-  client.on("channelCreate", (channel) => {
-    if (!channel.guild || !channel.nsfw || !channel.permissionOverwrites?.edit) return;
+  const syncNsfwChannel = (channel) => {
+    if (!channel.guild || !channel.permissionOverwrites?.edit) return;
     const role = findRoleByName(channel.guild, NSFW_HIDDEN_ROLE);
     if (!role) return;
-    void channel.permissionOverwrites.edit(role, { ViewChannel: false }, "Apply NSFW opt-out visibility")
-      .catch((error) => console.error(`[self-roles] could not secure NSFW channel ${channel.id}: ${error.message}`));
-  });
+    const update = channel.nsfw
+      ? channel.permissionOverwrites.edit(role, { ViewChannel: false }, "Apply NSFW opt-out visibility")
+      : channel.permissionOverwrites.delete(role, "Remove NSFW opt-out override from a channel that is no longer NSFW");
+    void update.catch((error) => console.error(`[self-roles] could not update NSFW visibility for channel ${channel.id}: ${error.message}`));
+  };
+  client.on("channelCreate", syncNsfwChannel);
+  client.on("channelUpdate", (_before, after) => syncNsfwChannel(after));
 }
