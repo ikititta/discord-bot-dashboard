@@ -37,7 +37,7 @@ export function attachGeneralQuoteStickyTip(client, { store, logger = "general-s
       });
       return queue;
     };
-    const isPanel = (message) => message.author?.id === client.user?.id &&
+    const isPanel = (message) => Boolean(message) && message.author?.id === client.user?.id &&
       message.embeds?.some((embed) => embed.title === PANEL_TITLE);
 
     async function fetchSaved() {
@@ -96,7 +96,7 @@ export function attachGeneralQuoteStickyTip(client, { store, logger = "general-s
       }
     }
 
-    channels.set(channel.id, { enqueue, ensure, key });
+    channels.set(channel.id, { enqueue, ensure, moveAfterMessage, key });
     return channels.get(channel.id);
   }
 
@@ -117,7 +117,7 @@ export function attachGeneralQuoteStickyTip(client, { store, logger = "general-s
   client.on(Events.MessageCreate, (message) => {
     if (!message.guild || message.author?.bot || message.webhookId) return;
     const state = channels.get(message.channelId);
-    if (state) void state.enqueue(moveAfterMessage);
+    if (state) void state.enqueue(state.moveAfterMessage);
   });
 
   client.on(Events.MessageDelete, (message) => {
