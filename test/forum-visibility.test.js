@@ -30,7 +30,7 @@ function guildWith(channels) {
 test("forum visibility panel uses the Kittisugar pink embed and a red button that opens the selector", () => {
   const payload = buildForumVisibilityPanelPayload();
   assert.equal(payload.embeds[0].data.color, 0xffd9ff);
-  assert.equal(payload.embeds[0].data.title, "୨୧ 𝓕𝓸𝓻𝓾𝓶 𝓥𝓲𝓼𝓲𝓫𝓲𝓵𝓲𝓽𝔂");
+  assert.equal(payload.embeds[0].data.title, "୨୧ 𝓕𝓸𝓻𝓾𝓶 𝓥𝓲𝓼𝓲𝓫𝓲𝓵𝓲𝓽𝔂 ♡");
   assert.ok(payload.embeds[0].data.description.includes("\n\n**Your choices can be changed later.**"));
   assert.doesNotMatch(payload.embeds[0].data.description, /only affects your own view|only for you/i);
   assert.equal(payload.embeds[0].data.footer, undefined);
