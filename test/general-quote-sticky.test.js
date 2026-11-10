@@ -67,7 +67,7 @@ test("general quote tip is reposted after member messages and is never pinned", 
     channelId: h.channel.id,
     guild: { id: "guild" },
     author: { id: "323456789012345678", bot: false },
-    createdTimestamp: ++h.channel.messages.timestamp,
+    createdTimestamp: 2_000,
   };
   h.messages.set(memberMessage.id, memberMessage);
   h.client.emit(Events.MessageCreate, memberMessage);
