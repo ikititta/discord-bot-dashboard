@@ -70,7 +70,7 @@ export function buildAccessPanelPayload(guild, { rulesChannel, guideChannel } = 
     .setColor(COLOR)
     .setTitle("୨୧ Welcome to Kittisugar ♡")
     .setDescription(
-      `Welcome! Before entering the server, please read ${rulesChannel ? `<#${rulesChannel.id}>` : "**Rules**"} and ${guideChannel ? `<#${guideChannel.id}>` : "**Guide**"} in this category.\n\n` +
+      `Welcome! Before entering the server, please read ${rulesChannel ? `<#${rulesChannel.id}>` : "**Rules**"} & ${guideChannel ? `<#${guideChannel.id}>` : "**Guide**"} in this category.\n\n` +
       "By pressing **Enter Server ♡**, you confirm that you have read and agree to follow all server rules and that you are **18 years of age or older**.\n\n" +
       "Once confirmed, Sugar will give you the **Member** role and remove **New**, unlocking the rest of Kittisugar.",
     )
