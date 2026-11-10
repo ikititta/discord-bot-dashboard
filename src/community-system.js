@@ -76,13 +76,8 @@ export function buildSuggestionsPanelPayload() {
   };
 }
 
-export function buildSuggestionComponents(messageId) {
-  if (!/^(?:0|\d{17,20})$/.test(messageId ?? "")) throw new Error("Invalid suggestion message ID.");
-  return [new ActionRowBuilder().addComponents(
-    button(`suggestion-vote:${messageId}:up`, "⬆️", ButtonStyle.Primary),
-    button(`suggestion-vote:${messageId}:down`, "⬇️", ButtonStyle.Primary),
-    button(`report:suggestion:${messageId}`, "⚠️", ButtonStyle.Danger),
-  )];
+export function buildSuggestionComponents() {
+  return [];
 }
 
 export function buildSuggestionModePicker() {
@@ -312,14 +307,8 @@ async function renameSuggestionsChannel(client) {
     }
   }
 
-  // Upgrade existing Sugar suggestion posts so they also show the vote/report controls.
-  const recent = await channel.messages.fetch({ limit: 100 });
-  for (const message of recent.values()) {
-    if (message.author?.id !== client.user?.id || !isSuggestionMessage(message)) continue;
-    await message.edit({ components: buildSuggestionComponents(message.id) }).catch((error) => {
-      console.error(`[community] could not update suggestion controls for ${message.id}: ${error.message}`);
-    });
-  }
+  // Migrate older suggestion posts from buttons to native Discord reactions.
+  await migrateSuggestionReactions(channel, client.user?.id);
 }
 
 export async function ensureCommunityPanels(client) {
@@ -379,16 +368,6 @@ async function handleCommunityButton(interaction) {
       return replyEphemeral(interaction, "Please choose a valid publication option.");
     }
     return interaction.showModal(buildSuggestionModal(mode));
-  }
-
-  if (id.startsWith("suggestion-vote:")) {
-    const [, messageId, direction] = id.split(":");
-    if (!["up", "down"].includes(direction) || !/^\d{17,20}$/.test(messageId ?? "") ||
-        !interaction.inGuild() || interaction.channelId !== SUGGESTIONS_CHANNEL_ID ||
-        interaction.message?.id !== messageId || !isSuggestionMessage(interaction.message)) {
-      return replyEphemeral(interaction, "This suggestion vote is no longer valid.");
-    }
-    return handleSuggestionVote(interaction, { suggestionStore, messageId, direction });
   }
 
   if (id === "confess-new" || id === "confess-start" || id === "poll-start") {
@@ -1068,29 +1047,77 @@ async function publishSuggestion(interaction, suggestionStore, mode) {
   }
   const message = await channel.send({
     embeds: [embed],
-    components: buildSuggestionComponents("0"),
     allowedMentions: { parse: [] },
   });
-  await message.edit({ components: buildSuggestionComponents(message.id) });
-  await message.react("⬆️");
-  await message.react("⬇️");
+  await addSuggestionReactions(message);
   return interaction.editReply("Your suggestion has been published ♡");
 }
 
 async function handleSuggestionReaction(reaction, user, { suggestionStore, settings }, added) {
-  if (user?.bot) return;
+  if (user?.bot || !added) return;
   if (reaction.partial) await reaction.fetch();
   const message = reaction.message;
   if (message.partial) await message.fetch();
   if (!message.guild || message.channelId !== SUGGESTIONS_CHANNEL_ID ||
       message.author?.id !== message.client.user?.id || !isSuggestionMessage(message)) return;
-
   const emoji = reaction.emoji.name;
   const direction = emoji === "⬆️" ? "up" : emoji === "⬇️" ? "down" : null;
-  if (!direction || !suggestionStore) return;
-  const counts = added
-    ? suggestionStore.setVote(message.id, user.id, direction)
-    : suggestionStore.removeVote(message.id, user.id, direction);
+  if (direction && suggestionStore) {
+    suggestionStore.setVote(message.id, user.id, direction);
+    return;
+  }
+  if (emoji === "⚠️") await sendSuggestionReactionReport(message, user, settings);
+}
+
+async function addSuggestionReactions(message) {
+  for (const emoji of ["⬆️", "⬇️", "⚠️"]) {
+    const existing = message.reactions?.cache?.find((item) => item.emoji.name === emoji);
+    if (!existing) await message.react(emoji);
+  }
+}
+
+async function migrateSuggestionReactions(channel, botUserId) {
+  const recent = await channel.messages.fetch({ limit: 100 });
+  for (const message of recent.values()) {
+    if (message.author?.id !== botUserId || !isSuggestionMessage(message)) continue;
+    if (message.components?.length) {
+      await message.edit({ components: [] }).catch((error) => {
+        console.error(`[community] could not remove old suggestion buttons for ${message.id}: ${error.message}`);
+      });
+    }
+    await addSuggestionReactions(message).catch((error) => {
+      console.error(`[community] could not add suggestion reactions for ${message.id}: ${error.message}`);
+    });
+  }
+}
+
+async function sendSuggestionReactionReport(message, user, settings) {
+  const guild = message.guild;
+  let reportChannel = await guild.channels.fetch(REPORTS_CHANNEL_ID).catch(() => null);
+  const configuredId = settings?.get(guild.id)?.reportsChannelId;
+  if (!reportChannel && /^\d{17,20}$/.test(configuredId ?? "")) {
+    reportChannel = await guild.channels.fetch(configuredId).catch(() => null);
+  }
+  if (!reportChannel || reportChannel.type !== ChannelType.GuildText) {
+    console.warn("[community] suggestion reaction report received but no reports channel is configured.");
+    return;
+  }
+  const everyone = reportChannel.permissionsFor(guild.roles.everyone);
+  if (!everyone || everyone.has(PermissionFlagsBits.ViewChannel)) {
+    console.warn("[community] suggestion reaction report channel is not private; report was not forwarded.");
+    return;
+  }
+  const embed = new EmbedBuilder()
+    .setColor(0xef4444)
+    .setTitle(formatEmbedTitle("Suggestion Report"))
+    .setDescription("A member reported this suggestion using the ⚠️ reaction.")
+    .addFields(
+      { name: "Reported by", value: `<@${user.id}>`, inline: true },
+      { name: "Reported post", value: `[Jump to suggestion](https://discord.com/channels/${guild.id}/${message.channelId}/${message.id})` },
+      ...(message.embeds?.[0]?.description ? [{ name: "Suggestion", value: cleanText(message.embeds[0].description, 900) }] : []),
+    )
+    .setTimestamp();
+  await reportChannel.send(buildReportNotificationPayload(embed));
 }
 
 function isSuggestionMessage(message) {
