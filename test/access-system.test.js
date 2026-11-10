@@ -111,7 +111,7 @@ test("access, rules, and guide panels contain the required confirmations and upd
     assert.ok(guideText.includes(`## ୨୧ ${toRoyalBold(title)}`), `missing large guide heading: ${title}`);
   }
   assert.equal((guideText.match(/• <#\d{18}>/g) ?? []).length, 10);
-  assert.match(guideText, /## ୨୧ .*Start.*\n\n• <#\d{18}>\nRead the welcome message/);
+  assert.ok(guideText.includes(`## ୨୧ ${toRoyalBold("Start")}\n\n• <#100000000000000000>\nRead the welcome message`));
   assert.ok(guideText.includes("`/delete amount:` — delete your own recent messages."));
   assert.ok(guideText.includes("`/vip-delete amount:` — VIP message cleanup."));
   assert.ok(guideText.includes("`/mod-delete amount: [member:]` — moderator cleanup."));
