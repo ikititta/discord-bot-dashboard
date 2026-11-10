@@ -254,7 +254,11 @@ test("startup refreshes an existing sticky panel with the latest embed and butto
     embeds: [{ title: "Primary Panel", description: "legacy" }],
     createdTimestamp: 2_000,
     pinned: true,
-    edit: async () => oldPanel,
+    edit: async (payload) => {
+      oldPanel.embeds = payload.embeds;
+      oldPanel.components = payload.components;
+      return oldPanel;
+    },
     pin: async () => { oldPanel.pinned = true; },
     delete: async () => { h.messages.delete(oldPanel.id); },
   };
