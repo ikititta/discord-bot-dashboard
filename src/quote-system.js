@@ -54,8 +54,6 @@ export async function buildQuoteCard({ authorName, avatarUrl, content }) {
   const height = 800;
   const canvas = createCanvas(width, height);
   const ctx = canvas.getContext("2d");
-  ctx.fillStyle = "#17131b";
-  ctx.fillRect(0, 0, width, height);
 
   let avatar;
   let accent = { r: 255, g: 217, b: 255 };
@@ -66,67 +64,67 @@ export async function buildQuoteCard({ authorName, avatarUrl, content }) {
     // Keep the card complete if Discord's avatar CDN is unavailable.
   }
 
-  ctx.save();
-  ctx.filter = "blur(105px)";
-  const glow = ctx.createRadialGradient(1000, 390, 30, 1000, 390, 620);
-  glow.addColorStop(0, `rgba(${accent.r}, ${accent.g}, ${accent.b}, 0.62)`);
-  glow.addColorStop(0.62, `rgba(${accent.r}, ${accent.g}, ${accent.b}, 0.22)`);
-  glow.addColorStop(1, "rgba(23, 19, 27, 0)");
-  ctx.fillStyle = glow;
-  ctx.fillRect(430, -100, 1100, 1000);
-  ctx.restore();
+  const luminance = 0.2126 * accent.r + 0.7152 * accent.g + 0.0722 * accent.b;
+  const quoteColor = luminance < 145 ? "#ffffff" : "#111111";
+  const leftWidth = Math.round(width * 0.48);
+  const rightX = leftWidth;
+  const rightWidth = width - rightX;
 
-  const avatarX = 72, avatarY = 105, avatarW = 500, avatarH = 590;
-  ctx.save();
-  roundedRect(ctx, avatarX, avatarY, avatarW, avatarH, 42);
-  ctx.clip();
+  // The member's avatar fills the entire left side, edge to edge.
   if (avatar) {
-    const scale = Math.max(avatarW / avatar.width, avatarH / avatar.height);
+    const scale = Math.max(leftWidth / avatar.width, height / avatar.height);
     const drawW = avatar.width * scale;
     const drawH = avatar.height * scale;
-    ctx.drawImage(avatar, avatarX + (avatarW - drawW) / 2, avatarY + (avatarH - drawH) / 2, drawW, drawH);
+    ctx.drawImage(avatar, (leftWidth - drawW) / 2, (height - drawH) / 2, drawW, drawH);
   } else {
     ctx.fillStyle = `rgb(${accent.r}, ${accent.g}, ${accent.b})`;
-    ctx.fillRect(avatarX, avatarY, avatarW, avatarH);
+    ctx.fillRect(0, 0, leftWidth, height);
   }
-  ctx.restore();
 
-  ctx.strokeStyle = PINK;
-  ctx.lineWidth = 4;
-  roundedRect(ctx, avatarX, avatarY, avatarW, avatarH, 42);
-  ctx.stroke();
+  // Continue the avatar's dominant color across the right side, rather than using a default dark panel.
+  const tint = luminance < 145 ? 0.18 : 0.94;
+  const endColor = {
+    r: Math.round(accent.r + (255 - accent.r) * tint),
+    g: Math.round(accent.g + (255 - accent.g) * tint),
+    b: Math.round(accent.b + (255 - accent.b) * tint),
+  };
+  const gradient = ctx.createLinearGradient(rightX, 0, width, height);
+  gradient.addColorStop(0, `rgb(${accent.r}, ${accent.g}, ${accent.b})`);
+  gradient.addColorStop(1, `rgb(${endColor.r}, ${endColor.g}, ${endColor.b})`);
+  ctx.fillStyle = gradient;
+  ctx.fillRect(rightX, 0, rightWidth, height);
 
-  const luminance = 0.2126 * accent.r + 0.7152 * accent.g + 0.0722 * accent.b;
-  const quoteColor = luminance < 145 ? "#ffffff" : "#17131b";
-  const rightWidth = 680;
-
-  ctx.textAlign = "right";
-  ctx.fillStyle = "#ffffff";
-  ctx.font = "600 38px Arial";
-  ctx.fillText(String(authorName ?? "Unknown").slice(0, 70), width - 78, 145, rightWidth);
-
+  const panelPadding = 76;
+  const textWidth = rightWidth - panelPadding * 2;
   const quote = `“${String(content ?? "").trim().slice(0, MAX_QUOTE_LENGTH)}”`;
-  let fontSize = 48;
+  let fontSize = 58;
   let lines = [];
   do {
-    ctx.font = `italic ${fontSize}px Georgia`;
-    lines = wrapQuoteText(ctx, quote, rightWidth);
-    if (lines.length <= 7 || fontSize <= 30) break;
+    ctx.font = `italic 600 ${fontSize}px Georgia`;
+    lines = wrapQuoteText(ctx, quote, textWidth);
+    if (lines.length <= 8 || fontSize <= 34) break;
     fontSize -= 3;
-  } while (fontSize > 27);
+  } while (fontSize > 31);
 
-  const lineHeight = Math.round(fontSize * 1.42);
+  const lineHeight = Math.round(fontSize * 1.38);
   const quoteBlockHeight = lines.length * lineHeight;
-  const startY = Math.max(270, Math.round(420 - quoteBlockHeight / 2));
+  const quoteAreaTop = 110;
+  const quoteAreaBottom = 650;
+  const quoteAreaHeight = quoteAreaBottom - quoteAreaTop;
+  const startY = quoteAreaTop + Math.max(fontSize, (quoteAreaHeight - quoteBlockHeight) / 2 + fontSize * 0.78);
+
+  ctx.textAlign = "center";
+  ctx.textBaseline = "alphabetic";
   ctx.fillStyle = quoteColor;
-  ctx.font = `italic ${fontSize}px Georgia`;
+  ctx.font = `italic 600 ${fontSize}px Georgia`;
   lines.forEach((line, index) => {
-    ctx.fillText(line, width - 78, startY + index * lineHeight, rightWidth);
+    ctx.fillText(line, rightX + rightWidth / 2, startY + index * lineHeight, textWidth);
   });
 
-  ctx.fillStyle = PINK;
-  ctx.font = "bold 30px Georgia";
-  ctx.fillText("kittisugar ♡", width - 78, 735);
+  ctx.fillStyle = quoteColor;
+  ctx.font = "500 23px Arial";
+  ctx.textAlign = "center";
+  ctx.fillText("kittisugar", rightX + rightWidth / 2, 748);
   return canvas.toBuffer("image/png");
 }
 
