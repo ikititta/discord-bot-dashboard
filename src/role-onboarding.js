@@ -151,7 +151,7 @@ async function getOrCreateRole(guild, name, color) {
   if (role) return role;
   return guild.roles.create({
     name,
-    ...(color ? { color } : {}),
+    ...(color !== undefined ? { color } : {}),
     reason: "Create a Kittisugar self-role selection",
   });
 }
