@@ -1,3 +1,5 @@
+import { toRoyalBold } from "./embed-format.js";
+
 import {
   ActionRowBuilder,
   ButtonBuilder,
@@ -14,7 +16,7 @@ export const FORUM_VISIBILITY_CATEGORY_ID = "1568680126294663330";
 const PREFIX = "sugar-forum-visibility:";
 const OPEN_ID = `${PREFIX}open`;
 const APPLY_ID = `${PREFIX}apply`;
-const PANEL_TITLE = "୨୧ 𝐅𝐨𝐫𝐮𝐦 𝐕𝐢𝐬𝐢𝐛𝐢𝐥𝐢𝐭𝐲";
+const PANEL_TITLE = `୨୧ ${toRoyalBold("Forum Visibility")}`;
 const COLOR = 0xffd9ff;
 
 export function buildForumVisibilityPanelPayload() {
@@ -22,7 +24,7 @@ export function buildForumVisibilityPanelPayload() {
     .setColor(COLOR)
     .setTitle(PANEL_TITLE)
     .setDescription(
-      "Customize which forums appear in your channel list. Choose the forums you want to hide and change your selection anytime.\n\n**Your choices can be changed whenever you like.**",
+      "Customize which forums appear in your channel list. Choose the forums you want to hide and change your selection anytime.\n\n**Your choices can be changed later.**",
     );
 
   const button = new ButtonBuilder()
