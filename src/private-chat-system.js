@@ -245,7 +245,6 @@ async function ensureLobbyGuide(lobby, client, store) {
 export async function ensurePrivateChatPanels(client, store, guildId) {
   for (const chat of store.listGuild(guildId)) {
     try {
-      if (store.isClearHistoryPanelReady(chat.channelId)) continue;
       const channel = await client.channels.fetch(chat.channelId);
       if (!channel || channel.type !== ChannelType.GuildText) continue;
 
@@ -267,11 +266,11 @@ export async function ensurePrivateChatPanels(client, store, guildId) {
         }
 
         if (!isPrivateChatWelcomePanelMessage(message, client.user.id)) continue;
-        if (!messageHasPrivateChatButton(message, `${PREFIX}clear-history`)) {
-          const payload = buildPrivateChatWelcomePayload(
-            chat.ownerId,
-            chat.memberIds.map((id) => ({ id })),
-          );
+        const payload = buildPrivateChatWelcomePayload(
+          chat.ownerId,
+          chat.memberIds.map((id) => ({ id })),
+        );
+        if (privateChatPanelNeedsRefresh(message, payload)) {
           await message.edit({ components: payload.components, allowedMentions: { parse: [] } });
         }
         store.markClearHistoryPanelReady(chat.channelId);
@@ -283,6 +282,23 @@ export async function ensurePrivateChatPanels(client, store, guildId) {
   }
 }
 
+function privateChatPanelNeedsRefresh(message, payload) {
+  const current = (message.components ?? []).flatMap((row) => row.components ?? []);
+  const expected = payload.components.flatMap((row) => row.components);
+  if (current.length !== expected.length) return true;
+
+  return expected.some((button) => {
+    const customId = button.data?.custom_id ?? button.customId;
+    const existing = current.find((component) =>
+      (component.customId ?? component.custom_id ?? component.data?.custom_id) === customId
+    );
+    if (!existing) return true;
+    const label = existing.label ?? existing.data?.label;
+    const style = existing.style ?? existing.data?.style;
+    return label !== button.data.label || style !== button.data.style;
+  });
+}
+
 export function buildPrivateChatLobbyGuidePayload() {
   const embed = new EmbedBuilder()
     .setColor(0xf472b6)
@@ -291,7 +307,7 @@ export function buildPrivateChatLobbyGuidePayload() {
       [
         "A private space for you and the people you invite. Chat with friends or bots, make a list, or use it however you like.",
         "",
-        "• Use a button to create a private chat, or run `/priv-chat create` and provide a name. You can optionally invite up to five people.",
+        "• Press **Create a private chat** or run `/priv-chat create` and provide a name. You can optionally invite up to five people.",
         "",
         toRoyalBold("Name format"),
         "`👤｜୨୧•your-text`",
