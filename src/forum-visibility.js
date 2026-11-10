@@ -14,7 +14,7 @@ export const FORUM_VISIBILITY_CATEGORY_ID = "1568680126294663330";
 const PREFIX = "sugar-forum-visibility:";
 const OPEN_ID = `${PREFIX}open`;
 const APPLY_ID = `${PREFIX}apply`;
-const PANEL_TITLE = "୨୧ Forum Visibility ♡";
+const PANEL_TITLE = "୨୧ 𝐅𝐨𝐫𝐮𝐦 𝐕𝐢𝐬𝐢𝐛𝐢𝐥𝐢𝐭𝐲";
 const COLOR = 0xffd9ff;
 
 export function buildForumVisibilityPanelPayload() {
@@ -22,14 +22,13 @@ export function buildForumVisibilityPanelPayload() {
     .setColor(COLOR)
     .setTitle(PANEL_TITLE)
     .setDescription(
-      "Customize which forums appear in your channel list. Choose the forums you want to hide from yourself, and change your selection anytime. This only affects your own view ♡",
-    )
-    .setFooter({ text: "Your choices are personal and can be changed whenever you like ♡" });
+      "Customize which forums appear in your channel list. Choose the forums you want to hide and change your selection anytime.\n\n**Your choices can be changed whenever you like.**",
+    );
 
   const button = new ButtonBuilder()
     .setCustomId(OPEN_ID)
-    .setLabel("Customize Forums ♡")
-    .setStyle(ButtonStyle.Primary);
+    .setLabel("Customize Forums")
+    .setStyle(ButtonStyle.Danger);
 
   return { embeds: [embed], components: [new ActionRowBuilder().addComponents(button)] };
 }
@@ -64,16 +63,16 @@ export function buildForumVisibilityPickerPayload(guild, userId) {
 
   const picker = new StringSelectMenuBuilder()
     .setCustomId(APPLY_ID)
-    .setPlaceholder("Select the forums you want to hide ♡")
+    .setPlaceholder("Select the forums you want to hide")
     .setMinValues(0)
     .setMaxValues(Math.max(1, forums.length))
     .addOptions(options);
 
   const embed = new EmbedBuilder()
     .setColor(COLOR)
-    .setTitle("୨୧ Choose Your Forums ♡")
+    .setTitle("୨୧ Choose Your Forums")
     .setDescription(
-      "Select the forums you want to hide. Selected options will be hidden only for you; deselect them to show them again.",
+      "Select the forums you want to hide. Deselect them to show them again.",
     );
 
   return {
@@ -98,7 +97,7 @@ async function openPicker(interaction) {
   }
   const payload = buildForumVisibilityPickerPayload(interaction.guild, interaction.user.id);
   if (!payload) {
-    return interaction.reply({ content: "There are no forum channels in this category yet ♡", ephemeral: true });
+    return interaction.reply({ content: "There are no forum channels in this category yet.", ephemeral: true });
   }
   return interaction.reply(payload);
 }
@@ -112,7 +111,7 @@ async function applySelection(interaction) {
   const botMember = guild.members.me;
   if (!botMember?.permissions.has(PermissionFlagsBits.ManageRoles)) {
     return interaction.reply({
-      content: "Sugar needs the Manage Roles permission to update your personal forum visibility. Please contact a moderator ♡",
+      content: "Sugar needs the Manage Roles permission to update your personal forum visibility. Please contact a moderator.",
       ephemeral: true,
     });
   }
@@ -157,11 +156,11 @@ async function applySelection(interaction) {
   if (next) {
     const editPayload = { embeds: next.embeds, components: next.components };
     editPayload.content = failed
-      ? `Updated ${changed} forum(s). ${failed} could not be changed; check with a moderator ♡`
-      : "Your forum visibility has been updated ♡";
+      ? `Updated ${changed} forum(s). ${failed} could not be changed; check with a moderator.`
+      : "Your forum visibility has been updated.";
     await interaction.editReply(editPayload);
   } else {
-    await interaction.editReply({ content: "There are no forum channels in this category yet ♡", embeds: [], components: [] });
+    await interaction.editReply({ content: "There are no forum channels in this category yet.", embeds: [], components: [] });
   }
 }
 
@@ -186,7 +185,7 @@ export function attachForumVisibilitySystem(client) {
       void openPicker(interaction).catch(async (error) => {
         console.error(`[forum-visibility] could not open selector: ${error.message}`);
         if (!interaction.replied && !interaction.deferred) {
-          await interaction.reply({ content: "I couldn't open the forum selector. Please try again ♡", ephemeral: true }).catch(() => {});
+          await interaction.reply({ content: "I couldn't open the forum selector. Please try again.", ephemeral: true }).catch(() => {});
         }
       });
       return;
@@ -195,9 +194,9 @@ export function attachForumVisibilitySystem(client) {
       void applySelection(interaction).catch(async (error) => {
         console.error(`[forum-visibility] could not save selection: ${error.message}`);
         if (interaction.deferred || interaction.replied) {
-          await interaction.followUp({ content: "I couldn't save your forum settings. Please try again ♡", ephemeral: true }).catch(() => {});
+          await interaction.followUp({ content: "I couldn't save your forum settings. Please try again.", ephemeral: true }).catch(() => {});
         } else {
-          await interaction.reply({ content: "I couldn't save your forum settings. Please try again ♡", ephemeral: true }).catch(() => {});
+          await interaction.reply({ content: "I couldn't save your forum settings. Please try again.", ephemeral: true }).catch(() => {});
         }
       });
     }
