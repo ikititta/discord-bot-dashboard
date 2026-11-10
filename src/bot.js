@@ -6,6 +6,7 @@
 import { ChannelType, Client, EmbedBuilder, Events, GatewayIntentBits, PermissionFlagsBits, Partials } from "discord.js";
 
 import { createMessageResponder } from "./message-handler.js";
+import { shouldAutoReactToMessage, addAutoReactions } from "./auto-reactions.js";
 import { formatEmbedTitle, toRoyalBold } from "./embed-format.js";
 import { attachMessageDeletionSystem } from "./message-deletion.js";
 import { attachPrivateChatSystem } from "./private-chat-system.js";
@@ -58,6 +59,13 @@ export function createBot({
   client.once(Events.ClientReady, () => {
     console.log(`[bot] logged in as ${client.user.tag} in ${client.guilds.cache.size} server(s)`);
   });
+  client.on(Events.MessageCreate, (message) => {
+    if (!shouldAutoReactToMessage(message, { stickyPanels })) return;
+    void addAutoReactions(message).catch((error) => {
+      console.error(`[reactions] automatic reactions failed for message ${message.id}: ${error.message}`);
+    });
+  });
+
   if (generateReply) {
     client.on(
       Events.MessageCreate,
