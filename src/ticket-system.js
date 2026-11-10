@@ -20,20 +20,20 @@ const PANEL_TITLE = formatEmbedTitle("Support");
 const LEGACY_PANEL_TITLE = formatEmbedTitle("Kittisugar Support");
 const PANEL_COLOR = 0xffd9ff;
 const TICKET_CATEGORIES = new Map([
-  ["general", "General Help"],
+  ["general", "General"],
   ["report", "Report"],
+  ["appeal", "Appeal"],
   ["partnership", "Partnership"],
   ["apply", "Apply"],
-  ["appeal", "Appeal"],
   ["error", "Error"],
   ["other", "Others"],
 ]);
 const TICKET_BUTTON_STYLES = new Map([
   ["general", ButtonStyle.Primary],
   ["report", ButtonStyle.Danger],
-  ["partnership", ButtonStyle.Success],
-  ["apply", ButtonStyle.Primary],
   ["appeal", ButtonStyle.Danger],
+  ["partnership", ButtonStyle.Primary],
+  ["apply", ButtonStyle.Success],
   ["error", ButtonStyle.Secondary],
   ["other", ButtonStyle.Secondary],
 ]);
