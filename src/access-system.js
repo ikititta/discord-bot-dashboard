@@ -19,6 +19,7 @@ const RULES_CHANNEL_NAME = "📃｜୨୧•𝓻𝓾𝓵𝓮𝓼";
 const GUIDE_CHANNEL_NAME = "📖｜୨୧•𝓰𝓾𝓲𝓭𝓮";
 const NEW_ROLE_NAME = "new";
 const MEMBER_ROLE_NAME = "member";
+export const NEW_USER_VISIBLE_CATEGORY_ID = "1569548036055507055";
 
 export function normalizeName(value) {
   return String(value ?? "").normalize("NFKD").toLowerCase().replace(/\p{M}/gu, "").replace(/[^a-z0-9]/g, "");
@@ -27,6 +28,29 @@ export function normalizeName(value) {
 export function findRoleByName(guild, name) {
   const expected = normalizeName(name);
   return guild.roles.cache.find((role) => normalizeName(role.name) === expected) ?? null;
+}
+
+export function canNewRoleViewChannel(channel) {
+  return channel.id === NEW_USER_VISIBLE_CATEGORY_ID || channel.parentId === NEW_USER_VISIBLE_CATEGORY_ID;
+}
+
+export async function applyNewRoleVisibility(guild, newRole) {
+  const visibleCategory = guild.channels.cache.get(NEW_USER_VISIBLE_CATEGORY_ID);
+  if (!visibleCategory || visibleCategory.type !== ChannelType.GuildCategory) return false;
+
+  for (const channel of guild.channels.cache.values()) {
+    if (channel.isThread?.()) continue;
+    // Synced children inherit the category overwrite. Editing them would
+    // unnecessarily desynchronize their permissions from the parent.
+    if (channel.parentId && channel.permissionsLocked === true) continue;
+
+    await channel.permissionOverwrites.edit(
+      newRole,
+      { ViewChannel: canNewRoleViewChannel(channel) },
+      "Restrict the New role to the designated Kittisugar entry category",
+    );
+  }
+  return true;
 }
 
 export async function assignMemberAccess(member, { newRole, memberRole }) {
@@ -272,6 +296,10 @@ export function attachAccessSystem(client) {
     for (const guild of client.guilds.cache.values()) {
       try {
         await ensureStartChannels(guild, client);
+        const newRole = findRoleByName(guild, NEW_ROLE_NAME);
+        if (newRole && !(await applyNewRoleVisibility(guild, newRole))) {
+          console.warn(`[access] visible category ${NEW_USER_VISIBLE_CATEGORY_ID} was not found in guild ${guild.id}; New-role visibility was not changed.`);
+        }
       } catch (error) {
         console.error(`[access] setup failed for guild ${guild.id}: ${error.message}`);
       }
@@ -284,6 +312,14 @@ export function attachAccessSystem(client) {
     if (!newRole || (memberRole && member.roles.cache.has(memberRole.id))) return;
     await member.roles.add(newRole, "Assign the New role before Kittisugar access verification").catch((error) => {
       console.error(`[access] could not assign New role to member ${member.id}: ${error.message}`);
+    });
+  });
+
+  client.on(Events.ChannelCreate, (channel) => {
+    const newRole = findRoleByName(channel.guild, NEW_ROLE_NAME);
+    if (!newRole) return;
+    void applyNewRoleVisibility(channel.guild, newRole).catch((error) => {
+      console.error(`[access] could not enforce New-role channel visibility in guild ${channel.guild.id}: ${error.message}`);
     });
   });
 
