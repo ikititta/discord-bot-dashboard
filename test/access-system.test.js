@@ -90,18 +90,21 @@ test("access, rules, and guide panels contain the required confirmations and upd
   assert.equal(access.components[0].components[0].data.label, "Enter Server ♡");
   assert.equal(access.components[0].components[0].data.style, 1);
   assert.equal(rules.embeds[0].data.description, undefined);
-  const ruleText = rules.embeds[0].data.fields.map((field) => field.value).join("\n");
+  const ruleText = rules.embeds[0].data.description;
   assert.match(ruleText, /\$5 USD once, for life/);
   assert.match(ruleText, /VIP, Seller, and a custom role/);
   assert.match(ruleText, /monthly hosting costs/);
   assert.match(ruleText, /NSFW content in NSFW channels/i);
   assert.doesNotMatch(ruleText, /Porn category|nsfw.*category/i);
   assert.match(ruleText, /server boosts/i);
-  assert.equal(rules.embeds[0].data.fields[3].name, `**${toRoyalBold("04 · WARNINGS")}**`);
-  assert.equal(rules.embeds[0].data.fields[0].name, `**${toRoyalBold("01 · RESPECT")}**`);
+  assert.match(ruleText, /^## 01 · Respect/m);
+  assert.match(ruleText, /^## 02 · Content/m);
+  assert.match(ruleText, /^## 03 · Promotions & Selling/m);
+  assert.match(ruleText, /^## 04 · Warnings/m);
+  assert.match(ruleText, /^## 05 · Support Kittisugar ♡/m);
 
   const guideText = guide.embeds[0].data.description;
-  assert.equal(guide.embeds[0].data.title, `୨୧ ${toRoyalBold("Kittisugar Guide")} ! ♡`);
+  assert.equal(guide.embeds[0].data.title, `୨୧ ${toRoyalBold("Kittisugar Guide!")} ♡`);
   assert.match(guideText, /A little guide of Kittisugar/);
   for (const title of ["Start", "Community", "Help", "Commands", "Sugar AI"]) {
     assert.ok(guideText.includes(`୨୧ ${toRoyalBold(title)}`), `missing guide heading: ${title}`);
@@ -114,5 +117,7 @@ test("access, rules, and guide panels contain the required confirmations and upd
   assert.ok(guideText.includes("`!quote` — reply to a message and quote it."));
   assert.ok(guideText.includes("`/priv-chat commands` — see private chat commands."));
   assert.match(guideText, /show or hide channels/i);
-  assert.match(guideText, /This guide is also pinned in #dashboard/);
+  assert.match(guideText, /This guide is also pinned in dashboard/);
+  assert.doesNotMatch(guideText, /pinned in #dashboard/);
+  assert.ok(guideText.includes("`/delete amount:` — delete your own recent messages.\n`/vip-delete amount:` — VIP message cleanup.\n`/mod-delete amount: [member:]` — moderator cleanup."));
 });
