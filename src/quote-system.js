@@ -81,7 +81,7 @@ export async function buildQuoteCard({ authorName, avatarUrl, content }) {
   const ctx = canvas.getContext("2d");
 
   let avatar;
-  let palette = getAvatarPalette({ width: 1, height: 1 });
+  let palette = { average: { r: 255, g: 217, b: 255, luminance: 222 }, darkest: { r: 80, g: 65, b: 80 }, lightest: { r: 255, g: 217, b: 255, luminance: 222 } };
   try {
     avatar = await loadImage(avatarUrl);
     palette = getAvatarPalette(avatar);
