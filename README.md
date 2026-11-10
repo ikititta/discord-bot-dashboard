@@ -31,7 +31,9 @@ The application reads secrets from its process environment and does not load loc
 - Private Discord chats, with ownership and access managed through Discord permissions.
 - Join, leave, edited-message, and deleted-message logs.
 - Message-deletion commands with configurable VIP and moderator role IDs.
-- New-member access flow: assigns the New role on join, provides rules and a server guide, and grants Member after the member confirms they have read the rules and are 18 or older.
+- New-member access flow: assigns the New role on join, provides concise rules and a compact server guide, and grants Member after the member confirms they have read the rules and are 18 or older.
+- The guide is mirrored into the existing `#dashboard` channel when that channel exists. It points members to self-roles to change their selected roles and show or hide channels.
+- Rules explain the $5 USD lifetime promotions/selling access (VIP, Seller, and custom role), the monthly cost of operating the independent Sugar bot, and support through donations or server boosts.
 - Existing Discord OAuth settings interface and health endpoint.
 
 The retired legacy welcome and self-role panels remain retired. The current entry flow is implemented in `src/access-system.js` and uses the existing New and Member roles.
