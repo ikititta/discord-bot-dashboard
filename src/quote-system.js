@@ -82,13 +82,19 @@ function roundedRect(ctx, x, y, width, height, radius) {
   ctx.roundRect(x, y, width, height, radius);
 }
 
-export async function buildQuoteCard({ authorName, displayNameValue, avatarUrl, content }) {
+export async function buildQuoteCard({ authorName, displayNameValue, avatarUrl, content, mediaUrl }) {
   const width = 1400;
   const height = 800;
   const canvas = createCanvas(width, height);
   const ctx = canvas.getContext("2d");
 
   let avatar;
+  let media;
+  if (mediaUrl) {
+    try { media = await loadImage(mediaUrl); } catch {
+      // The text or avatar can still be quoted if the attached image is unavailable.
+    }
+  }
   let palette = { average: { r: 255, g: 217, b: 255, luminance: 222 }, darkest: { r: 80, g: 65, b: 80 }, lightest: { r: 255, g: 217, b: 255, luminance: 222 } };
   try {
     avatar = await loadImage(avatarUrl);
@@ -140,28 +146,63 @@ export async function buildQuoteCard({ authorName, displayNameValue, avatarUrl, 
   ctx.font = "500 23px Arial";
   ctx.fillText(`@${username}`, rightX + rightWidth / 2, 151, textWidth);
 
-  const quote = `“${String(content ?? "").trim().slice(0, MAX_QUOTE_LENGTH)}”`;
-  let fontSize = 76;
-  let lines = [];
-  do {
+  const quoteText = String(content ?? "").trim().slice(0, MAX_QUOTE_LENGTH);
+  if (media) {
+    // Keep the quoted image visible while preserving any accompanying message text.
+    if (quoteText) {
+      let fontSize = 43;
+      let lines = [];
+      do {
+        ctx.font = `italic 700 ${fontSize}px Georgia`;
+        lines = wrapQuoteText(ctx, `“${quoteText}”`, textWidth);
+        if (lines.length <= 3 || fontSize <= 30) break;
+        fontSize -= 2;
+      } while (fontSize > 28);
+      ctx.font = `italic 700 ${fontSize}px Georgia`;
+      ctx.fillStyle = rgb(textColor);
+      const lineHeight = Math.round(fontSize * 1.2);
+      const startY = 205 + fontSize;
+      lines.forEach((line, index) => {
+        ctx.fillText(line, rightX + rightWidth / 2, startY + index * lineHeight, textWidth);
+      });
+    }
+
+    const maxImageWidth = textWidth;
+    const maxImageHeight = quoteText ? 310 : 470;
+    const scale = Math.min(maxImageWidth / media.width, maxImageHeight / media.height);
+    const imageWidth = media.width * scale;
+    const imageHeight = media.height * scale;
+    const imageX = rightX + (rightWidth - imageWidth) / 2;
+    const imageY = quoteText ? 330 + (maxImageHeight - imageHeight) / 2 : 205 + (maxImageHeight - imageHeight) / 2;
+    ctx.save();
+    roundedRect(ctx, imageX, imageY, imageWidth, imageHeight, 18);
+    ctx.clip();
+    ctx.drawImage(media, imageX, imageY, imageWidth, imageHeight);
+    ctx.restore();
+  } else if (quoteText) {
+    const quote = `“${quoteText}”`;
+    let fontSize = 76;
+    let lines = [];
+    do {
+      ctx.font = `italic 700 ${fontSize}px Georgia`;
+      lines = wrapQuoteText(ctx, quote, textWidth);
+      if (lines.length <= 7 || fontSize <= 40) break;
+      fontSize -= 3;
+    } while (fontSize > 37);
+
+    const lineHeight = Math.round(fontSize * 1.32);
+    const quoteBlockHeight = lines.length * lineHeight;
+    const quoteAreaTop = 185;
+    const quoteAreaBottom = 665;
+    const quoteAreaHeight = quoteAreaBottom - quoteAreaTop;
+    const startY = quoteAreaTop + Math.max(fontSize, (quoteAreaHeight - quoteBlockHeight) / 2 + fontSize * 0.78);
+
+    ctx.fillStyle = rgb(textColor);
     ctx.font = `italic 700 ${fontSize}px Georgia`;
-    lines = wrapQuoteText(ctx, quote, textWidth);
-    if (lines.length <= 7 || fontSize <= 40) break;
-    fontSize -= 3;
-  } while (fontSize > 37);
-
-  const lineHeight = Math.round(fontSize * 1.32);
-  const quoteBlockHeight = lines.length * lineHeight;
-  const quoteAreaTop = 185;
-  const quoteAreaBottom = 665;
-  const quoteAreaHeight = quoteAreaBottom - quoteAreaTop;
-  const startY = quoteAreaTop + Math.max(fontSize, (quoteAreaHeight - quoteBlockHeight) / 2 + fontSize * 0.78);
-
-  ctx.fillStyle = rgb(textColor);
-  ctx.font = `italic 700 ${fontSize}px Georgia`;
-  lines.forEach((line, index) => {
-    ctx.fillText(line, rightX + rightWidth / 2, startY + index * lineHeight, textWidth);
-  });
+    lines.forEach((line, index) => {
+      ctx.fillText(line, rightX + rightWidth / 2, startY + index * lineHeight, textWidth);
+    });
+  }
 
   ctx.fillStyle = rgb(textColor);
   ctx.font = "500 28px Arial";
@@ -208,17 +249,24 @@ export async function createQuoteFromReply(commandMessage) {
   }
   const original = await channel.messages.fetch(reference.messageId).catch(() => null);
   if (!original) throw new Error("The original message could not be found.");
-  if (!original.guild || original.author.bot) {
-    throw new Error("You can only quote a message written by a server member.");
+  if (!original.guild) {
+    throw new Error("You can only quote messages from this server.");
   }
-  const content = original.content?.trim();
-  if (!content) throw new Error("That message has no text to turn into a quote.");
+  const content = original.content?.trim() ?? "";
+  const imageAttachment = [...(original.attachments?.values?.() ?? [])]
+    .find((attachment) => attachment.contentType?.startsWith("image/") || /\.(?:png|jpe?g|gif|webp|avif)(?:\?.*)?$/i.test(attachment.url ?? ""));
+  const embeddedImage = original.embeds?.find((embed) => embed.image?.url)?.image?.url;
+  const mediaUrl = imageAttachment?.url ?? embeddedImage;
+  if (!content && !mediaUrl) {
+    throw new Error("That message has no text or image to turn into a quote.");
+  }
 
   const image = await buildQuoteCard({
     authorName: original.author.username,
     displayNameValue: original.member?.displayName ?? original.author.globalName ?? original.author.username,
     avatarUrl: original.author.displayAvatarURL({ extension: "png", size: 512 }),
     content,
+    mediaUrl,
   });
   const attachment = new AttachmentBuilder(image, { name: "kittisugar-quote.png" });
   const quotesChannel = await ensureQuotesChannel(original.guild);
