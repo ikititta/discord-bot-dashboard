@@ -28,7 +28,7 @@ test("age options are individual ages from 18 through 40 without emoji labels", 
   assert.equal(AGE_OPTIONS.length, 23);
   assert.equal(AGE_OPTIONS[0][0], "18");
   assert.equal(AGE_OPTIONS.at(-1)[0], "40");
-  assert.ok(AGE_OPTIONS.every(([value, label]) => value === label && /^\\d+$/.test(label)));
+  assert.ok(AGE_OPTIONS.every(([value, label]) => value === label && /^\d+$/.test(label)));
 });
 
 test("validates and normalizes custom HEX chat colors", () => {
