@@ -108,7 +108,7 @@ export function buildTicketPermissionOverwrites({ guild, openerId, moderatorRole
       allow: [...MEMBER_PERMISSIONS, PermissionFlagsBits.ManageChannels, PermissionFlagsBits.ManageMessages],
     },
   ];
-  const staffRoleIds = new Set(moderatorRoleIds);
+  const staffRoleIds = new Set(getStaffRoleIds(guild, moderatorRoleIds));
   for (const role of guild.roles.cache.values()) {
     if (role.permissions.has(PermissionFlagsBits.ManageChannels) || role.permissions.has(PermissionFlagsBits.ManageMessages)) {
       staffRoleIds.add(role.id);
@@ -186,7 +186,7 @@ async function handleTicketButton(interaction, { client, settings, panelChannelI
   if (action === "add-people") {
     if (!interaction.inGuild() || interaction.channel?.type !== ChannelType.GuildText || !parseTicketTopic(interaction.channel.topic)) return replyEphemeral(interaction, "This action is only available inside an active ticket.");
     const config = settings.get(interaction.guildId);
-    if (!hasTicketStaffAccess(interaction.member, config.moderatorRoleIds)) return replyEphemeral(interaction, "Only the staff team can add people to a ticket.");
+    if (!hasTicketStaffAccess(interaction.member, getStaffRoleIds(interaction.guild, config.moderatorRoleIds))) return replyEphemeral(interaction, "Only the staff team can add people to a ticket.");
     const modal = new ModalBuilder().setCustomId(`${PREFIX}add-person`).setTitle("Add a person");
     const memberInput = new TextInputBuilder().setCustomId("member-id").setLabel("User ID or @mention").setPlaceholder("Enter the member to add").setStyle(TextInputStyle.Short).setRequired(true).setMaxLength(30);
     modal.addComponents(new ActionRowBuilder().addComponents(memberInput));
@@ -271,7 +271,7 @@ async function createTicketFromModal(interaction, { client, settings, panelChann
     permissionOverwrites: buildTicketPermissionOverwrites({
       guild,
       openerId: interaction.user.id,
-      moderatorRoleIds,
+      moderatorRoleIds: getStaffRoleIds(guild, moderatorRoleIds),
       botId: client.user.id,
     }),
     reason: `Support ticket opened by ${interaction.user.id}`,
@@ -346,11 +346,11 @@ function parseTicketTopic(topic) {
   return { status: match[2], openerId: match[3], guildId: match[4] };
 }
 
-function hasTicketStaffAccess(member, moderatorRoleIds) {
+function hasTicketStaffAccess(member, staffRoleIds) {
   if (member?.permissions?.has(PermissionFlagsBits.ManageChannels) ||
       member?.permissions?.has(PermissionFlagsBits.Administrator)) return true;
   const roles = member?.roles?.cache;
-  return Boolean(roles && moderatorRoleIds.some((roleId) => roles.has(roleId)));
+  return Boolean(roles && staffRoleIds.some((roleId) => roles.has(roleId)));
 }
 
 async function replyEphemeral(interaction, content) {
