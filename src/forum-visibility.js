@@ -28,7 +28,7 @@ export function buildForumVisibilityPanelPayload() {
   const button = new ButtonBuilder()
     .setCustomId(OPEN_ID)
     .setLabel("Customize Forums ♡")
-    .setStyle(ButtonStyle.Danger);
+    .setStyle(ButtonStyle.Primary);
 
   return { embeds: [embed], components: [new ActionRowBuilder().addComponents(button)] };
 }
