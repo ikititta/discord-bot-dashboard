@@ -353,10 +353,11 @@ export async function applyRoleOrganization(guild, plan) {
   const managedServerBooster = refreshed.get(EXPECTED_SPECIAL_ROLES.serverBooster);
   if (managedServerBooster) notes.push("Server Booster administrado por Discord (posición protegida)");
   // Discord owns managed roles; only editable roles are sent to setPositions.
-  const maxPosition = Math.max(...[...refreshed.values()].map((role) => role.position));
+  const highestBotPosition = me.roles.highest.position;
   const positions = validRoles.map((role, index) => ({
     role,
-    position: Math.max(1, maxPosition - index),
+    // Keep every editable role strictly below Sugar's own highest role.
+    position: Math.max(1, highestBotPosition - 1 - index),
   }));
   await guild.roles.setPositions(positions);
 
