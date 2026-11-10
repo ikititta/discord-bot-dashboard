@@ -5,7 +5,7 @@ import {
   TICKET_TRANSCRIPTS_CHANNEL_ID,
 } from "./ticket-system.js";
 
-export const AUTO_REACTIONS = ["☺️", "😭", "😔", "💀", "💗"];
+export const AUTO_REACTIONS = ["😊", "😭", "😔", "💀", "💗"];
 
 const EXCLUDED_CHANNEL_IDS = new Set([
   TICKET_PANEL_CHANNEL_ID,
