@@ -235,6 +235,8 @@ test("suggestion publication mode is validated and suggestion embeds omit timest
   const source = fs.readFileSync(new URL("../src/community-system.js", import.meta.url), "utf8");
   assert.match(source, /suggestion:submit:\$\{mode\}/);
   assert.match(source, /if \(mode === "named"\)/);
-  const publish = source.slice(source.indexOf("async function publishSuggestion"), source.indexOf("async function handleSuggestionVote"));
+  const publish = source.slice(source.indexOf("async function publishSuggestion"), source.indexOf("async function handleSuggestionReaction"));
   assert.doesNotMatch(publish, /\.setTimestamp\(\)/);
+  assert.match(publish, /name: "⚠️ Reports", value: "0"/);
+  assert.match(source, /async function updateSuggestionReportCount/);
 });
