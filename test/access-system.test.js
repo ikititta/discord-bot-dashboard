@@ -93,10 +93,10 @@ test("access, rules, and guide panels contain the required confirmations and com
   assert.match(ruleText, /monthly cost/);
   assert.match(ruleText, /donations are always welcome/i);
   assert.match(ruleText, /server boosts/i);
-  assert.match(guide.embeds[0].data.fields.map((field) => field.value).join("\n"), /\/priv-chat create/);
-  assert.match(guide.embeds[0].data.fields.map((field) => field.value).join("\n"), /\/mod-delete/);
-  const guideText = guide.embeds[0].data.fields.map((field) => field.value).join("\n");
+  assert.match(guide.embeds[0].data.description, /\/priv-chat create/);
+  assert.match(guide.embeds[0].data.description, /\/mod-delete/);
+  const guideText = guide.embeds[0].data.description;
   assert.match(guideText, /selfroles/i);
   assert.match(guideText, /show or hide channels/i);
-  assert.doesNotMatch(guide.embeds[0].data.fields.map((field) => field.value).join("\n"), /<#\d{17,20}>/);
+  assert.doesNotMatch(guide.embeds[0].data.description, /<#\d{17,20}>/);
 });
