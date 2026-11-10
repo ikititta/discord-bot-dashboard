@@ -68,7 +68,7 @@ export function buildAccessPanelPayload(guild, { rulesChannel, guideChannel } = 
     .setColor(COLOR)
     .setTitle("୨୧ Welcome to Kittisugar ♡")
     .setDescription(
-      "Welcome! Before entering the server, please read the **Rules** and **Guide** in this category.\n\n" +
+      `Welcome! Before entering the server, please read ${rulesChannel ? `<#${rulesChannel.id}>` : "**Rules**"} and ${guideChannel ? `<#${guideChannel.id}>` : "**Guide**"} in this category.\n\n` +
       "By pressing **Enter Server ♡**, you confirm that you have read and agree to follow all server rules and that you are **18 years of age or older**.\n\n" +
       "Once confirmed, Sugar will give you the **Member** role and remove **New**, unlocking the rest of Kittisugar.",
     )
@@ -116,10 +116,10 @@ export function buildGuidePayload(guild) {
       "A little map of Kittisugar and its features. Tap any channel mention to open it ♡",
     )
     .addFields(
-      { name: "START", value: "**get-access** — complete the entry confirmation.\n**rules** — read the community rules.\n**guide** — learn how the server works." },
-      { name: "COMMUNITY", value: "**confessions** — share anonymous confessions and create polls.\n**love letters** — send a sweet message, anonymously or with your name.\n**suggestions** — share ideas and vote with reactions.\n**quotes** — a gallery of messages worth keeping." },
-      { name: "SUPPORT", value: "**support** — open a private ticket for general help, reports, appeals, partnerships, staff applications, errors, or other requests." },
-      { name: "PRIVATE CHATS", value: "Create a private space from the private-chat lobby. The owner can invite or remove people, rename the chat, or delete it." },
+      { name: "START", value: `${channelMention(guild, ["getaccess", "get-access"])} — complete the entry confirmation.\n${channelMention(guild, ["rules"])} — read the community rules.\n${channelMention(guild, ["guide"])} — learn how the server works.` },
+      { name: "COMMUNITY", value: `${channelMention(guild, ["confessions"])} — share anonymous confessions and create polls.\n${channelMention(guild, ["loveletters", "love-letters"])} — send a sweet message, anonymously or with your name.\n${channelMention(guild, ["suggestions"])} — share ideas and vote with reactions.\n${channelMention(guild, ["quotes"])} — a gallery of messages worth keeping.` },
+      { name: "SUPPORT", value: `${channelMention(guild, ["support"])} — open a private ticket for general help, reports, appeals, partnerships, staff applications, errors, or other requests.` },
+      { name: "PRIVATE CHATS", value: `${channelMention(guild, ["privatechat", "privatechats", "private-chat"])} — create a private space, invite or remove people, rename it, or delete it.` },
       {
         name: "SERVER COMMANDS",
         value:
