@@ -95,8 +95,8 @@ test("access, rules, and guide panels contain the required confirmations and com
   assert.match(ruleText, /NSFW content in NSFW channels/i);
   assert.doesNotMatch(ruleText, /Porn category|nsfw.*category/i);
   assert.match(ruleText, /server boosts/i);
-  assert.equal(rules.embeds[0].data.fields[3].name, toRoyalBold("04 · Warnings"));
-  assert.equal(rules.embeds[0].data.fields[0].name, toRoyalBold("01 · Respect"));
+  assert.equal(rules.embeds[0].data.fields[3].name, `**${toRoyalBold("04 · WARNINGS")}**`);
+  assert.equal(rules.embeds[0].data.fields[0].name, `**${toRoyalBold("01 · RESPECT")}**`);
   assert.match(guide.embeds[0].data.description, /\/priv-chat commands/);
   assert.match(guide.embeds[0].data.description, /\/mod-delete/);
   const guideText = guide.embeds[0].data.description;
