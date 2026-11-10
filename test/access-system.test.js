@@ -88,7 +88,7 @@ test("access, rules, and guide panels contain the required confirmations and com
   assert.equal(access.components[0].components[0].data.style, 1);
   assert.match(rules.embeds[0].data.description, /18\+/);
   const ruleText = rules.embeds[0].data.fields.map((field) => field.value).join("\n");
-  assert.match(ruleText, /\$5 USD one time \(lifetime\)/);
+  assert.match(ruleText, /\$5 USD once, for life/);
   assert.match(ruleText, /VIP, Seller, and a custom role/);
   assert.match(ruleText, /every month/);
   assert.match(ruleText, /donations are open/i);
