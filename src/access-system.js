@@ -86,13 +86,12 @@ export function buildRulesPayload(guild) {
   const embed = new EmbedBuilder()
     .setColor(COLOR)
     .setTitle(`୨୧ ${toRoyalBold("Kittisugar Rules")} ♡`)
-    .setDescription("18+ · Respect · Keep content in the right channels.")
     .addFields(
-      { name: toRoyalBold("01 · Respect"), value: "No harassment, hate, threats, bullying, spam, or sharing private information." },
-      { name: toRoyalBold("02 · Content"), value: "Keep NSFW content in NSFW channels. VIP members may post it elsewhere. No illegal or non-consensual intimate content." },
-      { name: toRoyalBold("03 · Promotions & selling"), value: `Only VIP members may promote or sell in ${promotionChannel}. VIP is **$5 USD once, for life** and includes **VIP, Seller, and a custom role**. No unsolicited ads in chats, profiles, or DMs.` },
-      { name: toRoyalBold("04 · Three strikes"), value: "**Three violations = removal.** Sugar may delete content, warn, or timeout members." },
-      { name: toRoyalBold("05 · Support Kittisugar ♡"), value: "Donations help cover Sugar’s monthly hosting costs. Server boosts also unlock a special role and benefits. Thank you for supporting Kittisugar ♡" },
+      { name: "### " + toRoyalBold("01 · Respect"), value: "No harassment, hate, threats, bullying, spam, or sharing private information." },
+      { name: "### " + toRoyalBold("02 · Content"), value: "Keep NSFW content in NSFW channels. VIP members may post it elsewhere. No illegal or non-consensual intimate content." },
+      { name: "### " + toRoyalBold("03 · Promotions & selling"), value: `Only VIP members may promote or sell in ${promotionChannel}. VIP is **$5 USD once, for life** and includes **VIP, Seller, and a custom role**. No unsolicited ads in chats, profiles, or DMs.` },
+      { name: "### " + toRoyalBold("04 · Warnings"), value: "Repeated rule-breaking may result in warnings, timeouts, or removal from Kittisugar." },
+      { name: "### " + toRoyalBold("05 · Support Kittisugar ♡"), value: "Donations help cover Sugar’s monthly hosting costs. Server boosts also unlock a special role and benefits. Thank you for supporting Kittisugar ♡" },
     )
     .setFooter({ text: "By staying, you agree to follow these rules ♡" });
   return { embeds: [embed] };
@@ -107,7 +106,7 @@ function channelMention(guild, names) {
 }
 
 function guideSectionTitle(title) {
-  return toRoyalBold(`୨୧ ───── ${title} ───── ୨୧`);
+  return `## ${toRoyalBold(`୨୧ ───── ${title} ───── ୨୧`)}`;
 }
 
 export function buildGuidePayload(guild) {
