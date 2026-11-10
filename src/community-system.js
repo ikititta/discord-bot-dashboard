@@ -79,7 +79,9 @@ export function buildSuggestionsPanelPayload() {
 export function buildSuggestionComponents(messageId) {
   if (!/^(?:0|\\d{17,20})$/.test(messageId ?? "")) throw new Error("Invalid suggestion message ID.");
   return [new ActionRowBuilder().addComponents(
-    reportButton("suggestion", messageId),
+    button(`suggestion-vote:${messageId}:up`, "⬆️", ButtonStyle.Primary),
+    button(`suggestion-vote:${messageId}:down`, "⬇️", ButtonStyle.Primary),
+    button(`report:suggestion:${messageId}`, "⚠️", ButtonStyle.Danger),
   )];
 }
 
