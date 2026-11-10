@@ -232,6 +232,8 @@ test("suggestions use up/down reactions and a reason-required report button", as
   assert.equal(panel.components[0].toJSON().components[0].custom_id, "sugar-community:suggestion-start");
   const report = buildSuggestionComponents("123456789012345678");
   assert.deepEqual(report[0].toJSON().components.map((component) => component.data.custom_id), [
+    "sugar-community:suggestion-vote:123456789012345678:up",
+    "sugar-community:suggestion-vote:123456789012345678:down",
     "sugar-community:report:suggestion:123456789012345678",
   ]);
 });
