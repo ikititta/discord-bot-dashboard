@@ -155,11 +155,11 @@ async function applySelection(interaction) {
 
   const next = buildForumVisibilityPickerPayload(guild, interaction.user.id);
   if (next) {
-    next.ephemeral = undefined;
-    next.content = failed
+    const editPayload = { embeds: next.embeds, components: next.components };
+    editPayload.content = failed
       ? `Updated ${changed} forum(s). ${failed} could not be changed; check with a moderator ♡`
       : "Your forum visibility has been updated ♡";
-    await interaction.editReply(next);
+    await interaction.editReply(editPayload);
   } else {
     await interaction.editReply({ content: "There are no forum channels in this category yet ♡", embeds: [], components: [] });
   }
