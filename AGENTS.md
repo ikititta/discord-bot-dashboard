@@ -52,7 +52,8 @@ Do not move production hosting to Replit. Do not change deployment settings, env
 - index.js — validates startup configuration and starts the settings store, Discord bot, and HTTP server in one Node process.
 - package.json and package-lock.json — runtime requirements, scripts, and locked dependencies.
 - src/bot.js — Discord client, community event and moderation log handlers, and postable-channel selection.
-- src/access-system.js — New-member role assignment, restricted start category, rules and guide panels, and 18+ access verification.
+- src/access-system.js — New-member role assignment, restricted start category, concise rules and guide panels, dashboard guide mirror, and 18+ access verification.
+- src/moderation-system.js — Persistent three-strike automatic moderation, spam/promotion detection, and anti-raid join-burst protection.
 - src/deepseek.js — bounded requests to DeepSeek's official chat-completions API.
 - src/message-handler.js — local message routing, duplicate suppression, concurrency limits, and safe Discord replies.
 - src/message-trigger.js — local-only detection and cleanup of direct Sugar mentions/name addresses.
@@ -71,6 +72,8 @@ Keep new functionality in the module that owns that responsibility. Avoid turnin
 ## Existing functionality and current gaps
 
 The current bot logs member joins, departures, edited messages, and deleted messages. Per-server log-channel and message-deletion role settings are managed through the existing web dashboard and stored in a JSON file. The dashboard uses Discord OAuth and limits access to servers the signed-in user can manage where the bot is present. A health endpoint reports bot and dashboard status.
+
+Automatic moderation deletes detected spam, repeated messages, mass mentions, and unauthorized promotional/invite links; it records strikes persistently, times out at strike two, and kicks at strike three. Moderators bypass automatic checks. Anti-raid protection watches for eight joins in ten seconds and temporarily times out only newly-created accounts in the burst. The configured reports channel receives moderation notices. NSFW image classification is not automated; the rules direct non-VIP members to keep NSFW in the Porn category.
 
 The bot uses Discord's Server Members and Message Content privileged intents; the corresponding intents must remain enabled in the existing Discord application for the documented events to work. The optional DeepSeek feature responds only after a local detector identifies a bot mention or direct address by name; ordinary messages are never sent to DeepSeek for intent detection. It uses bounded message input, API response size, timeout, and concurrent request limits. If `DEEPSEEK_API_KEY` is absent, the bot continues without AI replies.
 
