@@ -7,7 +7,7 @@ test("support panel uses the requested title, English guidance, and suggestions 
   const payload = buildTicketPanelPayload();
   const embed = payload.embeds[0].toJSON();
 
-  assert.equal(embed.title, "𝑺𝒖𝒑𝒑𝒐𝒓𝒕 🎀");
+  assert.equal(embed.title, "𝓢𝓾𝓹𝓹𝓸𝓻𝓽 🎀");
   assert.match(embed.description, /Need help with something\?/);
   assert.match(embed.description, /\*\*General\*\*/);
   assert.match(embed.description, /\*\*Error\*\*/);
