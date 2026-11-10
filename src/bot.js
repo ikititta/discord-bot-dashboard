@@ -14,6 +14,7 @@ import { PRIVATE_CHAT_LOBBY_CHANNEL_ID } from "./private-chat-format.js";
 import { attachTicketSystem } from "./ticket-system.js";
 import { attachCommunitySystem } from "./community-system.js";
 import { attachQuoteSystem } from "./quote-system.js";
+import { attachAccessSystem } from "./access-system.js";
 
 const COLORS = { join: 0x4ade80, leave: 0xf87171, edit: 0xfbbf24, delete: 0xf87171 };
 
@@ -146,6 +147,7 @@ export function createBot({
   attachTicketSystem(client, { settings, stickyPanels });
   attachCommunitySystem(client, { store: communityStore, suggestionStore, stickyPanels, settings });
   attachQuoteSystem(client, { token, applicationId });
+  attachAccessSystem(client);
 
   client.login(token).catch((error) => {
     if (String(error?.code) === "TokenInvalid" || String(error).includes("TOKEN_INVALID")) {
