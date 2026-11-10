@@ -1104,17 +1104,20 @@ async function updateSuggestionReportCount(message, reactionCount) {
   const embed = EmbedBuilder.from(original);
   // Sugar's own seed reaction is not a community report.
   const reports = Math.max(0, Number(reactionCount ?? 1) - 1);
-  embed.setFields((original.fields ?? []).map((field) =>
+  const fields = (original.fields ?? []).map((field) =>
     field.name === "⚠️ Reports" ? { ...field, value: String(reports) } : field,
-  ));
+  );
+  if (!fields.some((field) => field.name === "⚠️ Reports")) {
+    fields.push({ name: "⚠️ Reports", value: String(reports), inline: true });
+  }
+  embed.setFields(fields);
   await message.edit({ embeds: [embed] });
 }
 
 function isSuggestionMessage(message) {
   const fields = message.embeds?.[0]?.fields ?? [];
   return fields.some((field) => field.name === "⬆️ Upvotes") &&
-    fields.some((field) => field.name === "⬇️ Downvotes") &&
-    fields.some((field) => field.name === "⚠️ Reports");
+    fields.some((field) => field.name === "⬇️ Downvotes");
 }
 
 async function updateSuggestionVoteCounts(message, counts) {
