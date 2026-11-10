@@ -1,5 +1,6 @@
 import {
   ActionRowBuilder,
+  AttachmentBuilder,
   ButtonBuilder,
   ButtonStyle,
   ChannelType,
@@ -15,6 +16,8 @@ import { formatEmbedTitle } from "./embed-format.js";
 
 export const TICKET_PANEL_CHANNEL_ID = "1568492748732895313";
 export const SUGGESTIONS_CHANNEL_ID = "1569164719309328455";
+export const TICKET_CATEGORY_ID = "1569529041017503784";
+export const TICKET_TRANSCRIPTS_CHANNEL_ID = "1569529377102766131";
 const PREFIX = "sugar-ticket:";
 const PANEL_TITLE = formatEmbedTitle("Support");
 const LEGACY_PANEL_TITLE = formatEmbedTitle("Kittisugar Support");
@@ -81,13 +84,17 @@ export function buildTicketCreatedPayload(userId, category = "General Help") {
     .setTitle(formatEmbedTitle("Support Ticket"))
     .setDescription(
       `Hello <@${userId}>! Your ticket is open. Please explain what you need help with and a moderator will assist you soon.\n\n` +
-      `Category: **${category}**\nPlease keep all relevant details in this channel.`,
+      `Category: **${category}**`,
     );
   const row = new ActionRowBuilder().addComponents(
     new ButtonBuilder()
       .setCustomId(`${PREFIX}close`)
-      .setLabel("Close Ticket")
+      .setLabel("Close Ticket ♡")
       .setStyle(ButtonStyle.Danger),
+    new ButtonBuilder()
+      .setCustomId(`${PREFIX}add-people`)
+      .setLabel("Add People ♡")
+      .setStyle(ButtonStyle.Primary),
   );
   return { embeds: [embed], components: [row], allowedMentions: { parse: [], users: [userId] } };
 }
@@ -141,6 +148,11 @@ export function attachTicketSystem(client, { settings, stickyPanels, panelChanne
         console.error(`[tickets] creation failed: ${error.message}`);
         await replyEphemeral(interaction, error.message || "The ticket could not be created. Please try again.");
       });
+    } else if (interaction.isModalSubmit() && interaction.customId === `${PREFIX}add-person`) {
+      void addPersonToTicket(interaction, { settings }).catch(async (error) => {
+        console.error(`[tickets] add-person failed: ${error.message}`);
+        await replyEphemeral(interaction, error.message || "The member could not be added. Please try again.");
+      });
     }
   });
 }
@@ -171,6 +183,15 @@ async function handleTicketButton(interaction, { client, settings, panelChannelI
   if (action.startsWith("category:")) {
     return handleTicketCategory(interaction, panelChannelId, action.slice("category:".length));
   }
+  if (action === "add-people") {
+    if (!interaction.inGuild() || interaction.channel?.type !== ChannelType.GuildText || !parseTicketTopic(interaction.channel.topic)) return replyEphemeral(interaction, "This action is only available inside an active ticket.");
+    const config = settings.get(interaction.guildId);
+    if (!hasTicketStaffAccess(interaction.member, config.moderatorRoleIds)) return replyEphemeral(interaction, "Only the staff team can add people to a ticket.");
+    const modal = new ModalBuilder().setCustomId(`${PREFIX}add-person`).setTitle("Add a person");
+    const memberInput = new TextInputBuilder().setCustomId("member-id").setLabel("User ID or @mention").setPlaceholder("Enter the member to add").setStyle(TextInputStyle.Short).setRequired(true).setMaxLength(30);
+    modal.addComponents(new ActionRowBuilder().addComponents(memberInput));
+    return interaction.showModal(modal);
+  }
   if (action === "close") {
     if (!interaction.inGuild() || interaction.channel?.type !== ChannelType.GuildText) {
       return replyEphemeral(interaction, "This action is only available inside a ticket.");
@@ -185,21 +206,17 @@ async function handleTicketButton(interaction, { client, settings, panelChannelI
       return replyEphemeral(interaction, "Only the ticket opener or a moderator can close this ticket.");
     }
     await interaction.deferReply({ ephemeral: true });
+    await interaction.channel.send({ embeds: [new EmbedBuilder().setColor(PANEL_COLOR).setTitle(formatEmbedTitle("Ticket Closed")).setDescription(`This ticket was closed by <@${interaction.user.id}>.`)], allowedMentions: { parse: [] } });
+    const transcriptChannel = await client.channels.fetch(TICKET_TRANSCRIPTS_CHANNEL_ID);
+    if (!transcriptChannel || transcriptChannel.type !== ChannelType.GuildText) throw new Error(`Transcript channel ${TICKET_TRANSCRIPTS_CHANNEL_ID} is not accessible.`);
+    const transcript = await buildTicketTranscript(interaction.channel);
+    await transcriptChannel.send({ embeds: [new EmbedBuilder().setColor(PANEL_COLOR).setTitle(formatEmbedTitle("Ticket Transcript")).setDescription(`**Ticket:** ${interaction.channel.name}\n**Category:** ${ticketCategoryFromChannel(interaction.channel.name)}\n**Opened by:** <@${ticket.openerId}>\n**Closed by:** <@${interaction.user.id}>`)], files: [new AttachmentBuilder(Buffer.from(transcript, "utf8"), { name: `${interaction.channel.name}-transcript.txt` })], allowedMentions: { parse: [] } });
     await interaction.channel.permissionOverwrites.edit(ticket.openerId, {
       ViewChannel: false,
       SendMessages: false,
     });
     await interaction.channel.setTopic(`${PREFIX}closed:${ticket.openerId}:${ticket.guildId}`);
-    await interaction.channel.send({
-      embeds: [
-        new EmbedBuilder()
-          .setColor(PANEL_COLOR)
-          .setTitle(formatEmbedTitle("Ticket Closed"))
-          .setDescription(`This ticket was closed by <@${interaction.user.id}>. The channel is now read-only for the opener.`),
-      ],
-      allowedMentions: { parse: [] },
-    });
-    return interaction.editReply("Ticket closed. The channel has been locked.");
+    return interaction.editReply(`Ticket closed and transcript saved in <#${TICKET_TRANSCRIPTS_CHANNEL_ID}>.`);
   }
 }
 
@@ -249,7 +266,7 @@ async function createTicketFromModal(interaction, { client, settings, panelChann
   const channel = await guild.channels.create({
     name: `ticket-${categoryKey}-${safeName}`.slice(0, 90),
     type: ChannelType.GuildText,
-    parent: panelChannel.parentId ?? undefined,
+    parent: TICKET_CATEGORY_ID,
     topic: `${PREFIX}open:${interaction.user.id}:${guild.id}`,
     permissionOverwrites: buildTicketPermissionOverwrites({
       guild,
@@ -261,15 +278,66 @@ async function createTicketFromModal(interaction, { client, settings, panelChann
   });
 
   try {
+    const staffRoleIds = getStaffRoleIds(guild, moderatorRoleIds);
     await channel.send({
       ...buildTicketCreatedPayload(interaction.user.id, category),
-      content: `<@${interaction.user.id}>\n${reason}`,
+      content: `<@${interaction.user.id}>${staffRoleIds.length ? ` ${staffRoleIds.map((id) => `<@&${id}>`).join(" ")}` : ""}\n${reason}`,
+      allowedMentions: { parse: [], users: [interaction.user.id], roles: staffRoleIds },
     });
   } catch (error) {
     await channel.delete("Ticket setup failed; cleaning up the incomplete ticket").catch(() => {});
     throw error;
   }
   return interaction.editReply(`Your private ticket is ready: <#${channel.id}>.`);
+}
+
+async function addPersonToTicket(interaction, { settings }) {
+  if (!interaction.inGuild() || interaction.channel?.type !== ChannelType.GuildText) return replyEphemeral(interaction, "This action is only available inside a ticket.");
+  const ticket = parseTicketTopic(interaction.channel.topic);
+  if (!ticket || ticket.guildId !== interaction.guildId || ticket.status !== "open") return replyEphemeral(interaction, "This is not an active Sugar support ticket.");
+  const config = settings.get(interaction.guildId);
+  if (!hasTicketStaffAccess(interaction.member, config.moderatorRoleIds)) return replyEphemeral(interaction, "Only the staff team can add people to a ticket.");
+  const raw = interaction.fields.getTextInputValue("member-id").trim();
+  const match = /^(?:<@!?(\d{5,25})>|(\d{5,25}))$/.exec(raw);
+  const memberId = match?.[1] || match?.[2];
+  if (!memberId) return replyEphemeral(interaction, "Please enter a valid user ID or @mention.");
+  await interaction.deferReply({ ephemeral: true });
+  const member = await interaction.guild.members.fetch(memberId).catch(() => null);
+  if (!member) return interaction.editReply("That member could not be found in this server.");
+  await interaction.channel.permissionOverwrites.edit(member.id, { ViewChannel: true, SendMessages: true, ReadMessageHistory: true, AttachFiles: true, EmbedLinks: true });
+  await interaction.channel.send({ content: `<@${member.id}> has been added to this ticket.`, allowedMentions: { users: [member.id] } });
+  return interaction.editReply(`<@${member.id}> has been added to the ticket.`);
+}
+
+function getStaffRoleIds(guild, configuredRoleIds = []) {
+  const ids = new Set(configuredRoleIds.filter((id) => guild.roles.cache.has(id)));
+  for (const role of guild.roles.cache.values()) if (/^staff(?:\b|\s)/i.test(role.name)) ids.add(role.id);
+  return [...ids];
+}
+
+async function buildTicketTranscript(channel) {
+  const collected = [];
+  let before;
+  for (let page = 0; page < 10; page += 1) {
+    const batch = await channel.messages.fetch({ limit: 100, ...(before ? { before } : {}) });
+    if (!batch.size) break;
+    collected.push(...batch.values());
+    before = batch.last().id;
+    if (batch.size < 100) break;
+  }
+  return collected.reverse().map((message) => {
+    const timestamp = new Date(message.createdTimestamp).toISOString();
+    const author = `${message.author?.tag ?? "Unknown user"} (${message.author?.id ?? "unknown"})`;
+    const body = message.content || "[no text content]";
+    const attachments = [...message.attachments.values()].map((file) => file.url).join("\n");
+    const embeds = message.embeds.length ? `[${message.embeds.length} embed(s)]` : "";
+    return `[${timestamp}] ${author}: ${body}${attachments ? `\nAttachments: ${attachments}` : ""}${embeds ? `\n${embeds}` : ""}`;
+  }).join("\n\n");
+}
+
+function ticketCategoryFromChannel(channelName) {
+  const key = /^ticket-([a-z]+)-/.exec(channelName)?.[1];
+  return TICKET_CATEGORIES.get(key) ?? "Unknown";
 }
 
 function parseTicketTopic(topic) {
