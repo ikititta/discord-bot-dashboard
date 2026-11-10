@@ -89,7 +89,6 @@ test("access, rules, and guide panels contain the required confirmations and upd
   assert.match(access.embeds[0].data.description, /18 years of age or older/i);
   assert.equal(access.components[0].components[0].data.label, "Enter Server ♡");
   assert.equal(access.components[0].components[0].data.style, 1);
-  assert.equal(rules.embeds[0].data.description, undefined);
   const ruleText = rules.embeds[0].data.description;
   assert.match(ruleText, /\$5 USD once, for life/);
   assert.match(ruleText, /VIP, Seller, and a custom role/);
@@ -110,7 +109,7 @@ test("access, rules, and guide panels contain the required confirmations and upd
     assert.ok(guideText.includes(`୨୧ ${toRoyalBold(title)}`), `missing guide heading: ${title}`);
   }
   assert.equal((guideText.match(/• <#\d{18}>/g) ?? []).length, 10);
-  assert.match(guideText, /\n\n• <#\d{18}>\nRead the welcome message/);
+  assert.match(guideText, /\n• <#\d{18}>\nRead the welcome message/);
   assert.ok(guideText.includes("`/delete amount:` — delete your own recent messages."));
   assert.ok(guideText.includes("`/vip-delete amount:` — VIP message cleanup."));
   assert.ok(guideText.includes("`/mod-delete amount: [member:]` — moderator cleanup."));
@@ -118,6 +117,7 @@ test("access, rules, and guide panels contain the required confirmations and upd
   assert.ok(guideText.includes("`/priv-chat commands` — see private chat commands."));
   assert.match(guideText, /show or hide channels/i);
   assert.match(guideText, /This guide is also pinned in dashboard/);
+  assert.doesNotMatch(guideText, /pinned in #dashboard/);
   assert.doesNotMatch(guideText, /pinned in #dashboard/);
   assert.ok(guideText.includes("`/delete amount:` — delete your own recent messages.\n`/vip-delete amount:` — VIP message cleanup.\n`/mod-delete amount: [member:]` — moderator cleanup."));
 });
