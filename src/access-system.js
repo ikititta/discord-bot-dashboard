@@ -119,17 +119,17 @@ export function buildGuidePayload(guild) {
       `${guideSectionTitle("Start")}\n` +
       `**${channelMention(guild, ["getaccess", "get-access"])}**\nRead the welcome message and press Enter Server when you are ready to access the community.\n\n` +
       `**${channelMention(guild, ["rules"])}**\nCheck the server rules before chatting. They explain our 18+, SFW, safety, and promotion policies.\n\n` +
-      `**${channelMention(guild, ["guide"])}**\nFind what each channel is for and how to use the server.\n\n` +
-      `\n${guideSectionTitle("Community")}\n` +
+      `**${channelMention(guild, ["guide"])}**\nFind what each channel is for and how to use the server.\n` +
+      `${guideSectionTitle("Community")}\n` +
       `**${channelMention(guild, ["confessions"])}**\nShare an anonymous confession or create a poll with the channel buttons.\n\n` +
       `**${channelMention(guild, ["loveletters", "love-letters"])}**\nLeave a sweet message or appreciation for someone in the community.\n\n` +
       `**${channelMention(guild, ["suggestions"])}**\nShare ideas and suggestions to help make Kittisugar better.\n\n` +
-      `**${channelMention(guild, ["quotes"])}**\nPost memorable, funny, or meaningful quotes from the community.\n\n` +
-      `\n${guideSectionTitle("Help")}\n` +
+      `**${channelMention(guild, ["quotes"])}**\nPost memorable, funny, or meaningful quotes from the community.\n` +
+      `${guideSectionTitle("Help")}\n` +
       `**${channelMention(guild, ["support"])}**\nOpen a private support ticket when you need help from the team.\n\n` +
       `**${channelMention(guild, ["privatechat", "privatechats", "private-chat"])}**\nCreate and manage private chat rooms. Use /priv-chat commands to see the available options.\n\n` +
-      `**${channelMention(guild, ["selfroles", "self-roles"])}**\nChoose or update your age, gender, sexuality, interests, and color roles. These roles also let you show or hide channels.\n\n` +
-      `\n${guideSectionTitle("Commands")}\n` +
+      `**${channelMention(guild, ["selfroles", "self-roles"])}**\nChoose or update your age, gender, sexuality, interests, and color roles. These roles also let you show or hide channels.\n` +
+      `${guideSectionTitle("Commands")}\n` +
       "/delete amount:<number> — delete your own recent messages.\n" +
       "/vip-delete amount:<number> — VIP message cleanup.\n" +
       "/mod-delete amount:<number> [member:<user>] — moderator cleanup.\n" +
