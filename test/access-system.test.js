@@ -115,7 +115,7 @@ test("access, rules, and guide panels contain the required confirmations and upd
   assert.ok(guideText.includes("`/delete amount:` — delete your own recent messages."));
   assert.ok(guideText.includes("`/vip-delete amount:` — VIP message cleanup."));
   assert.ok(guideText.includes("`/mod-delete amount: [member:]` — moderator cleanup."));
-  assert.ok(guideText.includes("`!quote` — reply to a message and quote it."));
+  assert.ok(guideText.includes("`!quote` — quote a message with an image."));
   assert.ok(guideText.includes("`/priv-chat commands` — see private chat commands."));
   assert.match(guideText, /show or hide channels/i);
   assert.match(guideText, /This guide is also pinned in dashboard/);
