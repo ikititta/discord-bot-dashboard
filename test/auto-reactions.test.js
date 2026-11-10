@@ -1,0 +1,67 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+
+import { AUTO_REACTIONS, shouldAutoReactToMessage, addAutoReactions } from "../src/auto-reactions.js";
+import {
+  TICKET_PANEL_CHANNEL_ID,
+  TICKET_CATEGORY_ID,
+  TICKET_TRANSCRIPTS_CHANNEL_ID,
+} from "../src/ticket-system.js";
+import { REPORTS_CHANNEL_ID } from "../src/community-system.js";
+
+function message(overrides = {}) {
+  return {
+    id: "message-1",
+    guild: { id: "guild-1" },
+    author: { id: "member-1", bot: false },
+    channelId: "regular-channel",
+    channel: { name: "general", parentId: null, topic: null, isTextBased: () => true },
+    ...overrides,
+  };
+}
+
+test("automatic reactions are the five requested emojis", () => {
+  assert.deepEqual(AUTO_REACTIONS, ["☺️", "😭", "😔", "💀", "💗"]);
+});
+
+test("ordinary member messages in server text channels receive reactions", () => {
+  assert.equal(shouldAutoReactToMessage(message()), true);
+  assert.equal(shouldAutoReactToMessage(message({
+    channel: { name: "chat-thread", parentId: "regular-channel", topic: null, isTextBased: () => true },
+  })), true);
+});
+
+test("bot, webhook, system, and DM messages are ignored", () => {
+  assert.equal(shouldAutoReactToMessage(message({ author: { bot: true } })), false);
+  assert.equal(shouldAutoReactToMessage(message({ webhookId: "webhook-1" })), false);
+  assert.equal(shouldAutoReactToMessage(message({ system: true })), false);
+  assert.equal(shouldAutoReactToMessage(message({ guild: null })), false);
+});
+
+test("support panel, ticket category, transcript, and report channels are excluded", () => {
+  for (const channelId of [TICKET_PANEL_CHANNEL_ID, TICKET_TRANSCRIPTS_CHANNEL_ID, REPORTS_CHANNEL_ID]) {
+    assert.equal(shouldAutoReactToMessage(message({ channelId })), false, channelId);
+  }
+  assert.equal(shouldAutoReactToMessage(message({
+    channel: { name: "ticket-general-member", parentId: TICKET_CATEGORY_ID, topic: null, isTextBased: () => true },
+  })), false);
+  assert.equal(shouldAutoReactToMessage(message({
+    channel: { name: "private-ticket", parentId: null, topic: "sugar-ticket:open:123:456", isTextBased: () => true },
+  })), false);
+  assert.equal(shouldAutoReactToMessage(message({
+    channel: { name: "ticket-general", parentId: null, topic: null, isTextBased: () => true },
+  })), false);
+});
+
+test("saved sticky panel messages are excluded", () => {
+  const stickyPanels = { get: (key) => key === "confessions" ? "sticky-message" : null };
+  assert.equal(shouldAutoReactToMessage(message({ id: "sticky-message" }), { stickyPanels }), false);
+  assert.equal(shouldAutoReactToMessage(message({ id: "normal-message" }), { stickyPanels }), true);
+});
+
+test("five reactions are added to each eligible message", async () => {
+  const added = [];
+  const count = await addAutoReactions({ react: async (emoji) => added.push(emoji) });
+  assert.equal(count, 5);
+  assert.deepEqual(added, AUTO_REACTIONS);
+});
