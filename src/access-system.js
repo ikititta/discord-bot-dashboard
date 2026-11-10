@@ -113,14 +113,26 @@ export function buildGuidePayload(guild) {
     .setColor(COLOR)
     .setTitle("୨୧ Kittisugar Guide ♡")
     .setDescription(
-      "A tiny map to find your way around ♡\n\n" +
-      `**Start:** ${channelMention(guild, ["getaccess", "get-access"])}, ${channelMention(guild, ["rules"])}, ${channelMention(guild, ["guide"])}.\n` +
-      `**Community:** ${channelMention(guild, ["confessions"])}, ${channelMention(guild, ["loveletters", "love-letters"])}, ${channelMention(guild, ["suggestions"])}, ${channelMention(guild, ["quotes"])}.\n` +
-      `**Help:** ${channelMention(guild, ["support"])} for private support tickets.\n` +
-      `**Private chats:** ${channelMention(guild, ["privatechat", "privatechats", "private-chat"])} to create and manage private rooms.\n` +
-      `**Self roles:** ${channelMention(guild, ["selfroles", "self-roles"])} to change your selected roles and show or hide channels.\n\n` +
-      "**Commands:** `/delete`, `/vip-delete`, `/mod-delete` to clean messages; `!quote` to quote a replied message; `/priv-chat commands` for private chats.\n" +
-      "**Sugar AI:** mention Sugar or address it directly."
+      "A little map of Kittisugar ♡ Tap any channel mention to open it.\n\n" +
+      "**୨୧ START HERE**\n\n" +
+      `**${channelMention(guild, ["getaccess", "get-access"])}**\nRead the welcome message and press Enter Server when you are ready to access the community.\n\n` +
+      `**${channelMention(guild, ["rules"])}**\nCheck the server rules before chatting. They explain our 18+, SFW, safety, and promotion policies.\n\n` +
+      `**${channelMention(guild, ["guide"])}**\nFind what each channel is for and how to use the server.\n\n` +
+      "━━━━━━━━━━━━━━━━━━━━\n**୨୧ COMMUNITY**\n\n" +
+      `**${channelMention(guild, ["confessions"])}**\nShare an anonymous confession or create a poll with the channel buttons.\n\n` +
+      `**${channelMention(guild, ["loveletters", "love-letters"])}**\nLeave a sweet message or appreciation for someone in the community.\n\n` +
+      `**${channelMention(guild, ["suggestions"])}**\nShare ideas and suggestions to help make Kittisugar better.\n\n` +
+      `**${channelMention(guild, ["quotes"])}**\nPost memorable, funny, or meaningful quotes from the community.\n\n` +
+      "━━━━━━━━━━━━━━━━━━━━\n**୨୧ HELP & PRIVATE SPACES**\n\n" +
+      `**${channelMention(guild, ["support"])}**\nOpen a private support ticket when you need help from the team.\n\n` +
+      `**${channelMention(guild, ["privatechat", "privatechats", "private-chat"])}**\nCreate and manage private chat rooms. Use /priv-chat commands to see the available options.\n\n` +
+      `**${channelMention(guild, ["selfroles", "self-roles"])}**\nChoose or update your age, gender, sexuality, interests, and color roles. These roles also let you show or hide channels.\n\n` +
+      "━━━━━━━━━━━━━━━━━━━━\n**୨୧ USEFUL COMMANDS**\n" +
+      "/delete amount:<number> — delete your own recent messages.\n" +
+      "/vip-delete amount:<number> — VIP message cleanup.\n" +
+      "/mod-delete amount:<number> [member:<user>] — moderator cleanup.\n" +
+      "!quote — reply to a message and quote it.\n/priv-chat commands — see private chat commands.\n\n" +
+      "**୨୧ SUGAR AI**\nMention Sugar or address the bot directly to start a conversation ♡"
     )
     .setFooter({ text: "This guide is also pinned in #dashboard and will always be available there ♡" });
   return { embeds: [embed] };
