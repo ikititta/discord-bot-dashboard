@@ -136,14 +136,14 @@ async function applySelection(interaction) {
         await channel.permissionOverwrites.edit(
           interaction.user.id,
           { ViewChannel: false },
-          { reason: "Member customized their personal forum visibility" },
+          "Member customized their personal forum visibility",
         );
       } else if (currentlyDenied) {
         // Clear only ViewChannel; preserve any other explicit permissions.
         await channel.permissionOverwrites.edit(
           interaction.user.id,
           { ViewChannel: null },
-          { reason: "Member restored personal forum visibility" },
+          "Member restored personal forum visibility",
         );
       }
       changed += 1;
