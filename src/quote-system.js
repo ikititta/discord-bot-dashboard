@@ -222,13 +222,18 @@ export async function createQuoteFromReply(commandMessage) {
   });
   const attachment = new AttachmentBuilder(image, { name: "kittisugar-quote.png" });
   const quotesChannel = await ensureQuotesChannel(original.guild);
-  const publishedQuote = await quotesChannel.send({ files: [attachment], allowedMentions: { parse: [] } });
+  const mention = `<@${original.author.id}>`;
+  const publishedQuote = await quotesChannel.send({
+    content: mention,
+    files: [attachment],
+    allowedMentions: { parse: [], users: [original.author.id] },
+  });
   await copySourceReactions(original, publishedQuote);
   if (commandMessage.channelId !== quotesChannel.id) {
     const channelQuote = await commandMessage.channel.send({
-      content: "♡ a quote worth keeping",
+      content: `♡ a quote worth keeping · ${mention}`,
       files: [new AttachmentBuilder(image, { name: "kittisugar-quote.png" })],
-      allowedMentions: { parse: [] },
+      allowedMentions: { parse: [], users: [original.author.id] },
     });
     await copySourceReactions(original, channelQuote);
   }
