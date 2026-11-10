@@ -85,6 +85,8 @@ test("access, rules, and guide panels contain the required confirmations and upd
   const channels = channelNames.map((name, index) => ({ name, id: String(100000000000000000n + BigInt(index)), type: 0 }));
   const guide = buildGuidePayload({ channels: { cache: { find: (predicate) => channels.find(predicate) } } });
 
+  assert.ok(access.embeds[0].data.description.includes("please read **Rules** & **Guide**"));
+  assert.doesNotMatch(access.embeds[0].data.description, /Rules and \*\*Guide\*\*/);
   assert.match(access.embeds[0].data.description, /read and agree/i);
   assert.match(access.embeds[0].data.description, /18 years of age or older/i);
   assert.equal(access.components[0].components[0].data.label, "Enter Server ♡");
