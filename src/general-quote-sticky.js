@@ -1,6 +1,6 @@
 import { ChannelType, EmbedBuilder, Events } from "discord.js";
 
-const CHANNEL_NAME = "general";
+const CHANNEL_ID = "1567093021298794658";
 const PANEL_TITLE = "୨୧ fun quote cards ♡";
 const COLOR = 0xffd9ff;
 const KEY_PREFIX = "general-quote-tip:";
@@ -14,7 +14,7 @@ export function buildGeneralQuoteTipPayload() {
 }
 
 /**
- * Keep a single, unpinned quote tip at the bottom of every #general channel.
+ * Keep a single, unpinned quote tip at the bottom of the configured channel.
  * Each channel has its own persisted message ID and serialized update queue.
  */
 export function attachGeneralQuoteStickyTip(client, { store, logger = "general-sticky" } = {}) {
@@ -25,7 +25,7 @@ export function attachGeneralQuoteStickyTip(client, { store, logger = "general-s
   const channels = new Map();
 
   function attach(channel) {
-    if (!channel || channel.type !== ChannelType.GuildText || channel.name?.toLowerCase() !== CHANNEL_NAME) return;
+    if (!channel || channel.type !== ChannelType.GuildText || channel.id !== CHANNEL_ID) return;
     if (channels.has(channel.id)) return;
 
     const key = `${KEY_PREFIX}${channel.id}`;
@@ -33,7 +33,7 @@ export function attachGeneralQuoteStickyTip(client, { store, logger = "general-s
     let queue = Promise.resolve();
     const enqueue = (task) => {
       queue = queue.then(task).catch((error) => {
-        console.error(`[${logger}] could not update #general (${channel.id}): ${error.message}`);
+        console.error(`[${logger}] could not update quote tip (${channel.id}): ${error.message}`);
       });
       return queue;
     };
@@ -76,7 +76,7 @@ export function attachGeneralQuoteStickyTip(client, { store, logger = "general-s
       for (const duplicate of panels) {
         if (duplicate.id !== currentMessage.id) await duplicate.delete().catch(() => {});
       }
-      console.info(`[${logger}] quote tip ready in #general (${channel.id})`);
+      console.info(`[${logger}] quote tip ready in configured channel (${channel.id})`);
     }
 
     async function moveAfterMessage() {
@@ -127,5 +127,5 @@ export function attachGeneralQuoteStickyTip(client, { store, logger = "general-s
     void state.enqueue(state.ensure);
   });
 
-  return { channelName: CHANNEL_NAME, title: PANEL_TITLE };
+  return { channelId: CHANNEL_ID, title: PANEL_TITLE };
 }
