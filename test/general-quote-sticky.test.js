@@ -13,7 +13,7 @@ function harness() {
   let sequence = 0;
   let timestamp = 1_000;
   const channel = {
-    id: "223456789012345678",
+    id: "1567093021298794658",
     name: "general",
     type: ChannelType.GuildText,
     messages: {
