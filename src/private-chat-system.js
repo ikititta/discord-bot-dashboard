@@ -405,7 +405,7 @@ export async function handlePrivateChatInteraction(interaction, { client, store,
   } else if (interaction.isButton()) {
     await handleButton(interaction, { client, store, lobbyChannelId });
   } else if (interaction.isUserSelectMenu()) {
-    await handleUserSelect(interaction, { client, store });
+    await handleUserSelect(interaction, { client, store, lobbyChannelId });
   } else if (interaction.isModalSubmit()) {
     await handleModalSubmit(interaction, { client, store, lobbyChannelId });
   }
