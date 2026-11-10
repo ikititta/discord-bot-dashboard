@@ -21,7 +21,7 @@ function message(overrides = {}) {
 }
 
 test("automatic reactions are the five requested emojis", () => {
-  assert.deepEqual(AUTO_REACTIONS, ["☺️", "😭", "😔", "💀", "💗"]);
+  assert.deepEqual(AUTO_REACTIONS, ["😊", "😭", "😔", "💀", "💗"]);
 });
 
 test("ordinary member messages in server text channels receive reactions", () => {
