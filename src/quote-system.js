@@ -107,10 +107,12 @@ export async function buildQuoteCard({ authorName, displayNameValue, avatarUrl, 
   const backgroundColor = isLightPhoto
     ? mixColor(palette.lightest, { r: 255, g: 255, b: 255 }, 0.2)
     : mixColor(palette.darkest, { r: 0, g: 0, b: 0 }, 0.24);
-  const textColor = isLightPhoto
+  const baseTextColor = isLightPhoto
     ? mixColor(palette.darkest, { r: 0, g: 0, b: 0 }, 0.24)
     : mixColor(palette.lightest, { r: 255, g: 255, b: 255 }, 0.2);
   const middleColor = palette.average;
+  // Soften the text against the photo-derived palette without sacrificing legibility.
+  const textColor = mixColor(baseTextColor, middleColor, 0.22);
   const leftWidth = Math.round(width * 0.48);
   const rightX = leftWidth;
   const rightWidth = width - rightX;
