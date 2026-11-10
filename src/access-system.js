@@ -19,7 +19,7 @@ const NEW_ROLE_NAME = "new";
 const MEMBER_ROLE_NAME = "member";
 
 export function normalizeName(value) {
-  return String(value ?? "").normalize("NFKD").toLowerCase().replace(/\\p{M}/gu, "").replace(/[^a-z0-9]/g, "");
+  return String(value ?? "").normalize("NFKD").toLowerCase().replace(/\p{M}/gu, "").replace(/[^a-z0-9]/g, "");
 }
 
 export function findRoleByName(guild, name) {
