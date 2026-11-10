@@ -284,12 +284,21 @@ export async function handleRoleOrganization(interaction) {
     }
     collector.stop("confirmed");
     await button.update({ content: "Aplicando la organización de roles…", embeds: [], components: [] });
-    const result = await applyRoleOrganization(guild, plan);
-    await interaction.editReply({
-      content: `Organización terminada: **${result.renamed} nombres**, **${result.created} divisores** y **${result.reordered} posiciones** actualizadas. No se tocaron permisos, colores ni miembros.${result.notes.length ? `\n\nOmitidos: ${result.notes.join("; ")}` : ""}`,
-      embeds: [],
-      components: [],
-    });
+    try {
+      const result = await applyRoleOrganization(guild, plan);
+      await interaction.editReply({
+        content: `Organización terminada: **${result.renamed} nombres**, **${result.created} divisores** y **${result.reordered} posiciones** actualizadas. No se tocaron permisos, colores ni miembros.${result.notes.length ? `\n\nOmitidos: ${result.notes.join("; ")}` : ""}`,
+        embeds: [],
+        components: [],
+      });
+    } catch (error) {
+      console.error(`[roles-organize] apply failed in ${guild.id}: ${error.message}`);
+      await interaction.editReply({
+        content: `No pude completar la organización: ${error.message}. Revisa los roles en Discord antes de volver a intentarlo, porque un error de API durante la aplicación puede dejar cambios parciales.`,
+        embeds: [],
+        components: [],
+      }).catch(() => {});
+    }
   });
 
   collector.on("end", async (_collected, reason) => {
