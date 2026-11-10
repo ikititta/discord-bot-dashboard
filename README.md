@@ -41,6 +41,13 @@ The application reads secrets from its process environment and does not load loc
 
 The retired legacy welcome and self-role panels remain retired. The current entry flow is implemented in `src/access-system.js` and uses the existing New and Member roles.
 
+## Kittisugar role organization
+
+- The approved role inventory and desired category order live in `config/roles.json` (GitHub is the source of truth).
+- `/roles-organize` reads that file at startup and still requires a private preview plus explicit confirmation before changing Discord.
+- Edit role IDs, display names, group order, or neutral divider names in that JSON file through a reviewed pull request. Keep the protected Sugar AI and Discord-managed Server Booster IDs unchanged; never add bot tokens or secrets to this file.
+- The JSON config only describes the plan. Actual roles, permissions, assignments, and hierarchy remain managed by Discord.
+
 ## Persistent data
 
 Production uses an existing writable persistent directory (normally `/data`). Preserve existing files when deploying or migrating. Current application data includes:
