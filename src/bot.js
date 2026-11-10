@@ -17,6 +17,7 @@ import { attachQuoteSystem } from "./quote-system.js";
 import { attachGeneralQuoteStickyTip } from "./general-quote-sticky.js";
 import { attachAccessSystem } from "./access-system.js";
 import { attachModerationSystem } from "./moderation-system.js";
+import { renameMatchingChannels } from "./channel-renames.js";
 
 const COLORS = { join: 0x4ade80, leave: 0xf87171, edit: 0xfbbf24, delete: 0xf87171 };
 
@@ -62,6 +63,7 @@ export function createBot({
 
   client.once(Events.ClientReady, () => {
     console.log(`[bot] logged in as ${client.user.tag} in ${client.guilds.cache.size} server(s)`);
+    void renameMatchingChannels(client.guilds.cache, "transcriptions", "📝｜୨୧•𝓽𝓻𝓪𝓷𝓼𝓬𝓻𝓲𝓹𝓽𝓲𝓸𝓷𝓼");
   });
   client.on(Events.MessageCreate, (message) => {
     if (!shouldAutoReactToMessage(message, { stickyPanels })) return;
