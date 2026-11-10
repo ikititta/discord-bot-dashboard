@@ -72,7 +72,7 @@ test("Suggestions panel offers anonymous or named submissions and native vote/re
   assert.deepEqual(modes.components[0].toJSON().components.map((item) => item.label), ["Anonymously ♡", "With My Name ♡"]);
   assert.deepEqual(buildSuggestionComponents(), []);
   const source = fs.readFileSync(new URL("../src/community-system.js", import.meta.url), "utf8");
-  assert.match(source, /for \\(const emoji of \\[\\"⬆️\\", \\"⬇️\\", \\"⚠️\\"\\]\\)/);
+  assert.match(source, /for \(const emoji of \["⬆️", "⬇️", "⚠️"\]\)/);
   assert.match(source, /sendSuggestionReactionReport/);
 });
 test("love letters panel offers anonymous and named public submissions", () => {
@@ -215,7 +215,7 @@ test("community reports ping all configured moderation roles without broad menti
 test("suggestions publish with native upvote, downvote, and report reactions", async () => {
   const source = fs.readFileSync(new URL("../src/community-system.js", import.meta.url), "utf8");
   const publish = source.slice(source.indexOf("async function publishSuggestion"), source.indexOf("async function handleSuggestionReaction"));
-  assert.match(publish, /await addSuggestionReactions\\(message\\)/);
+  assert.match(publish, /await addSuggestionReactions\(message\)/);
   assert.doesNotMatch(publish, /components:/);
   assert.match(source, /emoji === "⚠️"/);
   assert.match(source, /sendSuggestionReactionReport/);
