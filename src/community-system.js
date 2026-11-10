@@ -67,7 +67,7 @@ export function buildSuggestionsPanelPayload() {
   const embed = new EmbedBuilder()
     .setColor(COLOR)
     .setTitle(SUGGESTIONS_PANEL_TITLE)
-    .setDescription("Have an idea to make the server better? Share it with everyone and let the community vote ♡");
+    .setDescription("Have an idea to make the server better? Share it with everyone. Suggestions can receive upvotes and downvotes from the community ♡");
   return {
     embeds: [embed],
     components: [new ActionRowBuilder().addComponents(
@@ -77,11 +77,9 @@ export function buildSuggestionsPanelPayload() {
 }
 
 export function buildSuggestionComponents(messageId) {
-  if (!/^(?:0|\d{17,20})$/.test(messageId ?? "")) throw new Error("Invalid suggestion message ID.");
+  if (!/^(?:0|\\d{17,20})$/.test(messageId ?? "")) throw new Error("Invalid suggestion message ID.");
   return [new ActionRowBuilder().addComponents(
-    button(`suggestion-vote:${messageId}:up`, "⬆️", ButtonStyle.Primary),
-    button(`suggestion-vote:${messageId}:down`, "⬇️", ButtonStyle.Primary),
-    button(`report:suggestion:${messageId}`, "⚠️", ButtonStyle.Danger),
+    reportButton("suggestion", messageId),
   )];
 }
 
@@ -373,7 +371,7 @@ async function handleCommunityButton(interaction) {
     const [, messageId, direction] = id.split(":");
     if (!["up", "down"].includes(direction) || !/^\d{17,20}$/.test(messageId ?? "") ||
         !interaction.inGuild() || interaction.channelId !== SUGGESTIONS_CHANNEL_ID ||
-        interaction.message?.id !== messageId || !hasSuggestionButtons(interaction.message, messageId)) {
+        interaction.message?.id !== messageId || !isSuggestionMessage(interaction.message)) {
       return replyEphemeral(interaction, "This suggestion vote is no longer valid.");
     }
     return handleSuggestionVote(interaction, { suggestionStore, messageId, direction });
@@ -1032,16 +1030,8 @@ async function createPrivateReportsChannel(interaction, settings) {
   return channel;
 }
 
-function hasSuggestionButtons(message, messageId) {
-  const expected = new Set([
-    `${PREFIX}suggestion-vote:${messageId}:up`,
-    `${PREFIX}suggestion-vote:${messageId}:down`,
-    `${PREFIX}report:suggestion:${messageId}`,
-  ]);
-  const actual = new Set(message?.components?.flatMap((row) =>
-    row.components.map((component) => component.customId),
-  ) ?? []);
-  return [...expected].every((id) => actual.has(id));
+function hasSuggestionReportButton(message, messageId) {
+  return hasReportButton(message, "suggestion", messageId);
 }
 
 async function publishSuggestion(interaction, suggestionStore, mode) {
@@ -1055,12 +1045,7 @@ async function publishSuggestion(interaction, suggestionStore, mode) {
   const embed = new EmbedBuilder()
     .setColor(COLOR)
     .setTitle(formatEmbedTitle("Suggestion"))
-    .setDescription(body)
-    .addFields(
-      { name: "⬆️ Upvotes", value: "0", inline: true },
-      { name: "⬇️ Downvotes", value: "0", inline: true },
-      { name: "⚠️ Reports", value: "0", inline: true },
-    );
+    .setDescription(body);
   if (mode === "named") {
     embed.setAuthor({
       name: interaction.member?.displayName ?? interaction.user.globalName ?? interaction.user.username,
@@ -1069,11 +1054,12 @@ async function publishSuggestion(interaction, suggestionStore, mode) {
   }
   const message = await channel.send({
     embeds: [embed],
+    components: buildSuggestionComponents("0"),
     allowedMentions: { parse: [] },
   });
+  await message.edit({ components: buildSuggestionComponents(message.id) });
   await message.react("⬆️");
   await message.react("⬇️");
-  await message.react("⚠️");
   return interaction.editReply("Your suggestion has been published ♡");
 }
 
@@ -1086,80 +1072,19 @@ async function handleSuggestionReaction(reaction, user, { suggestionStore, setti
       message.author?.id !== message.client.user?.id || !isSuggestionMessage(message)) return;
 
   const emoji = reaction.emoji.name;
-  if (emoji === "⚠️") {
-    if (added) await submitSuggestionReactionReport(message, user, settings);
-    await updateSuggestionReportCount(message, reaction.count);
-    return;
-  }
   const direction = emoji === "⬆️" ? "up" : emoji === "⬇️" ? "down" : null;
   if (!direction || !suggestionStore) return;
   const counts = added
     ? suggestionStore.setVote(message.id, user.id, direction)
     : suggestionStore.removeVote(message.id, user.id, direction);
-  await updateSuggestionVoteCounts(message, counts);
-}
-
-async function updateSuggestionReportCount(message, reactionCount) {
-  const original = message.embeds[0];
-  const embed = EmbedBuilder.from(original);
-  // Sugar's own seed reaction is not a community report.
-  const reports = Math.max(0, Number(reactionCount ?? 1) - 1);
-  const fields = (original.fields ?? []).map((field) =>
-    field.name === "⚠️ Reports" ? { ...field, value: String(reports) } : field,
-  );
-  if (!fields.some((field) => field.name === "⚠️ Reports")) {
-    fields.push({ name: "⚠️ Reports", value: String(reports), inline: true });
-  }
-  embed.setFields(fields);
-  await message.edit({ embeds: [embed] });
 }
 
 function isSuggestionMessage(message) {
-  const fields = message.embeds?.[0]?.fields ?? [];
-  return fields.some((field) => field.name === "⬆️ Upvotes") &&
-    fields.some((field) => field.name === "⬇️ Downvotes");
-}
-
-async function updateSuggestionVoteCounts(message, counts) {
-  const original = message.embeds[0];
-  const embed = EmbedBuilder.from(original);
-  embed.setFields((original.fields ?? []).map((field) => {
-    if (field.name === "⬆️ Upvotes") return { ...field, value: String(counts.up) };
-    if (field.name === "⬇️ Downvotes") return { ...field, value: String(counts.down) };
-    return field;
-  }));
-  await message.edit({ embeds: [embed] });
-}
-
-async function submitSuggestionReactionReport(message, user, settings) {
-  const context = { guild: message.guild, guildId: message.guild.id, client: message.client };
-  let reportChannel = await getConfiguredReportsChannel(context, settings);
-  if (!reportChannel) {
-    try {
-      reportChannel = await createPrivateReportsChannel(context, settings);
-    } catch (error) {
-      console.error(`[community] could not prepare reports channel for suggestion ${message.id}: ${error.message}`);
-      return;
-    }
-  }
-  const everyonePermissions = reportChannel.permissionsFor(message.guild.roles.everyone);
-  if (!everyonePermissions || everyonePermissions.has(PermissionFlagsBits.ViewChannel)) {
-    console.warn("[community] suggestion reaction report skipped because the reports channel is not private.");
-    return;
-  }
-  const embed = new EmbedBuilder()
-    .setColor(0xef4444)
-    .setTitle(formatEmbedTitle("Community Report"))
-    .setDescription("Reported with ⚠️ reaction.")
-    .addFields(
-      { name: "Type", value: "suggestion", inline: true },
-      { name: "Reported by", value: `<@${user.id}>`, inline: true },
-      { name: "Reported post", value: `[Jump to message](https://discord.com/channels/${message.guild.id}/${message.channelId}/${message.id})` },
-      ...(message.embeds[0]?.title ? [{ name: "Post title", value: cleanText(message.embeds[0].title, 200) }] : []),
-      ...(message.embeds[0]?.description ? [{ name: "Post content", value: cleanText(message.embeds[0].description, 900) }] : []),
-    )
-    .setTimestamp();
-  await reportChannel.send(buildReportNotificationPayload(embed));
+  const embed = message.embeds?.[0];
+  const fields = embed?.fields ?? [];
+  return embed?.title === formatEmbedTitle("Suggestion") ||
+    (fields.some((field) => field.name === "⬆️ Upvotes") &&
+     fields.some((field) => field.name === "⬇️ Downvotes"));
 }
 
 async function handleSuggestionVote(interaction, { suggestionStore, messageId, direction }) {
@@ -1187,7 +1112,7 @@ async function submitCommunityReport(interaction, { reportKind, messageId, setti
   }
   const target = await interaction.channel.messages.fetch(messageId).catch(() => null);
   const validTargetButton = reportKind === "suggestion"
-    ? hasSuggestionButtons(target, messageId)
+    ? hasSuggestionReportButton(target, messageId)
     : hasReportButton(target, reportKind, messageId);
   if (!target || target.author?.id !== interaction.client.user.id || !validTargetButton) {
     return interaction.editReply("This post can no longer be reported.");
