@@ -90,8 +90,9 @@ test("access, rules, and guide panels contain the required confirmations and com
   const ruleText = rules.embeds[0].data.fields.map((field) => field.value).join("\n");
   assert.match(ruleText, /\$5 USD once, for life/);
   assert.match(ruleText, /VIP, Seller, and a custom role/);
-  assert.match(ruleText, /every month/);
-  assert.match(ruleText, /donations are open/i);
+  assert.match(ruleText, /monthly hosting costs/);
+  assert.match(ruleText, /NSFW content in NSFW channels/i);
+  assert.doesNotMatch(ruleText, /Porn category|nsfw.*category/i);
   assert.match(ruleText, /server boosts/i);
   assert.match(guide.embeds[0].data.description, /\/priv-chat commands/);
   assert.match(guide.embeds[0].data.description, /\/mod-delete/);
