@@ -9,6 +9,8 @@ import {
 } from "../src/ticket-system.js";
 import { REPORTS_CHANNEL_ID } from "../src/community-system.js";
 
+const EXCLUDED_CATEGORY_ID = "1568680126294663330";
+
 function message(overrides = {}) {
   return {
     id: "message-1",
@@ -38,13 +40,15 @@ test("bot, webhook, system, and DM messages are ignored", () => {
   assert.equal(shouldAutoReactToMessage(message({ guild: null })), false);
 });
 
-test("support panel, ticket category, transcript, and report channels are excluded", () => {
+test("support panel, ticket category, transcript, report, and configured category channels are excluded", () => {
   for (const channelId of [TICKET_PANEL_CHANNEL_ID, TICKET_TRANSCRIPTS_CHANNEL_ID, REPORTS_CHANNEL_ID]) {
     assert.equal(shouldAutoReactToMessage(message({ channelId })), false, channelId);
   }
-  assert.equal(shouldAutoReactToMessage(message({
-    channel: { name: "ticket-general-member", parentId: TICKET_CATEGORY_ID, topic: null, isTextBased: () => true },
-  })), false);
+  for (const parentId of [TICKET_CATEGORY_ID, EXCLUDED_CATEGORY_ID]) {
+    assert.equal(shouldAutoReactToMessage(message({
+      channel: { name: "category-child", parentId, topic: null, isTextBased: () => true },
+    })), false, parentId);
+  }
   assert.equal(shouldAutoReactToMessage(message({
     channel: { name: "private-ticket", parentId: null, topic: "sugar-ticket:open:123:456", isTextBased: () => true },
   })), false);

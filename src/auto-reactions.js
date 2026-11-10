@@ -13,6 +13,10 @@ const EXCLUDED_CHANNEL_IDS = new Set([
   REPORTS_CHANNEL_ID,
 ]);
 
+const EXCLUDED_CATEGORY_IDS = new Set([
+  "1568680126294663330",
+]);
+
 const STICKY_PANEL_KEYS = ["confessions", "love-letters", "suggestions"];
 
 export function shouldAutoReactToMessage(message, { stickyPanels } = {}) {
@@ -21,7 +25,7 @@ export function shouldAutoReactToMessage(message, { stickyPanels } = {}) {
 
   const channel = message.channel;
   if (!channel || EXCLUDED_CHANNEL_IDS.has(message.channelId)) return false;
-  if (channel.parentId === TICKET_CATEGORY_ID) return false;
+  if (channel.parentId === TICKET_CATEGORY_ID || EXCLUDED_CATEGORY_IDS.has(channel.parentId)) return false;
   if (typeof channel.topic === "string" && channel.topic.startsWith("sugar-ticket:")) return false;
   if (/^ticket(?:-|$)/i.test(channel.name ?? "")) return false;
 
