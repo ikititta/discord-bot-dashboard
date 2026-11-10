@@ -106,10 +106,10 @@ test("access, rules, and guide panels contain the required confirmations and upd
   assert.equal(guide.embeds[0].data.title, `୨୧ ${toRoyalBold("Kittisugar Guide!")} ♡`);
   assert.match(guideText, /A little guide of Kittisugar/);
   for (const title of ["Start", "Community", "Help", "Commands", "Sugar AI"]) {
-    assert.ok(guideText.includes(`୨୧ ${toRoyalBold(title)}`), `missing guide heading: ${title}`);
+    assert.ok(guideText.includes(`## ୨୧ ${toRoyalBold(title)}`), `missing large guide heading: ${title}`);
   }
   assert.equal((guideText.match(/• <#\d{18}>/g) ?? []).length, 10);
-  assert.match(guideText, /\n• <#\d{18}>\nRead the welcome message/);
+  assert.match(guideText, /## ୨୧ .*Start.*\n\n• <#\d{18}>\nRead the welcome message/);
   assert.ok(guideText.includes("`/delete amount:` — delete your own recent messages."));
   assert.ok(guideText.includes("`/vip-delete amount:` — VIP message cleanup."));
   assert.ok(guideText.includes("`/mod-delete amount: [member:]` — moderator cleanup."));
