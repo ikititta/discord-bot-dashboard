@@ -86,12 +86,14 @@ export function attachStickyPanel(client, {
       // deployment. Editing our own message does not require moving it.
       await previous.edit(buildPayload());
       currentMessage = previous;
+      console.info(`[${logger}] sticky panel ${key}: ready in channel ${channelId} (refreshed ${previous.id})`);
       if (store.get(key) !== previous.id) store.set(key, previous.id);
       return previous;
     }
     const message = await channel.send(buildPayload());
     currentMessage = message;
     store.set(key, message.id);
+    console.info(`[${logger}] sticky panel ${key}: ready in channel ${channelId} (created ${message.id})`);
     if (previous) {
       await previous.delete().catch((error) => {
         if (error?.code !== 10008) logFailure(error);
@@ -116,17 +118,21 @@ export function attachStickyPanel(client, {
     const next = await channel.send(buildPayload());
     currentMessage = next;
     store.set(key, next.id);
+    console.info(`[${logger}] sticky panel ${key}: moved after message ${next.id} in channel ${channelId}`);
     await previous.delete().catch((error) => {
       if (error?.code !== 10008) logFailure(error);
     });
   }
 
   client.once(Events.ClientReady, () => {
+    console.info(`[${logger}] sticky panel ${key}: client ready; checking channel ${channelId}`);
     void enqueue(ensure);
   });
 
   client.on(Events.MessageCreate, (message) => {
     if (message.channelId !== channelId) return;
+    // Log only metadata so message contents stay private.
+    console.info(`[${logger}] sticky panel ${key}: received message ${message.id} (bot=${Boolean(message.author?.bot)})`);
     // Ignore this sticky panel only. Any other message, including another
     // bot's post, is activity local to this channel.
     if (message.id === currentMessage?.id || message.id === store.get(key) || isPanel(message)) return;
