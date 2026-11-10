@@ -387,6 +387,7 @@ test("/mod-delete can target messages authored by bots", async () => {
   const botMessage = makeMessage(1, BOT_ID, { author: { bot: true } });
   const harness = makeHarness({
     commandName: "mod-delete",
+    targetId: BOT_ID,
     memberRoleIds: [MOD_ROLE_ID],
     config: { moderatorRoleIds: [MOD_ROLE_ID] },
     messages: [botMessage],
