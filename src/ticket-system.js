@@ -51,11 +51,11 @@ export function buildTicketPanelPayload() {
     .setTitle(PANEL_TITLE)
     .setDescription(
       "Need help with something? Choose the option that best matches your request to open a private ticket with our team.\n\n" +
-      "**General Help** — Questions or general assistance.\n" +
+      "**General** — Questions or general assistance.\n" +
       "**Report** — Report a user, message, or rule violation.\n" +
+      "**Appeal** — Appeal a warning, punishment, or restriction.\n" +
       "**Partnership** — Collaboration and server partnership inquiries.\n" +
       "**Apply** — Apply to become a member of our staff team.\n" +
-      "**Appeal** — Appeal a warning, punishment, or restriction.\n" +
       "**Error** — Report bugs, errors, or technical problems.\n" +
       "**Others** — Requests that don't fit the other categories.\n\n" +
       `Have a suggestion? Share it in <#${SUGGESTIONS_CHANNEL_ID}>!`,
