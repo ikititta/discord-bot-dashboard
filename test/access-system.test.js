@@ -96,11 +96,10 @@ test("access, rules, and guide panels contain the required confirmations and upd
   assert.match(ruleText, /NSFW content in NSFW channels/i);
   assert.doesNotMatch(ruleText, /Porn category|nsfw.*category/i);
   assert.match(ruleText, /server boosts/i);
-  assert.match(ruleText, /^## 01 · Respect/m);
-  assert.match(ruleText, /^## 02 · Content/m);
-  assert.match(ruleText, /^## 03 · Promotions & Selling/m);
-  assert.match(ruleText, /^## 04 · Warnings/m);
-  assert.match(ruleText, /^## 05 · Support Kittisugar ♡/m);
+  for (const heading of ["01 · Respect", "02 · Content", "03 · Promotions & Selling", "04 · Warnings", "05 · Support Kittisugar ♡"]) {
+    assert.ok(ruleText.includes(`## ${toRoyalBold(heading)}`), `missing fancy Rules heading: ${heading}`);
+  }
+  assert.doesNotMatch(ruleText, /\n\n##/);
 
   const guideText = guide.embeds[0].data.description;
   assert.equal(guide.embeds[0].data.title, `୨୧ ${toRoyalBold("Kittisugar Guide!")} ♡`);
