@@ -80,7 +80,7 @@ export function buildAccessPanelPayload(guild, { rulesChannel, guideChannel } = 
 }
 
 export function buildRulesPayload(guild) {
-  const promotionChannel = guild ? channelMention(guild, ["promotions", "promotion", "selling", "advertising", "marketplace"]) : "**promotions / selling channel**";
+  const promotionChannel = guild ? channelMention(guild, ["promotions", "promotion", "promos", "promo", "selling", "advertising", "advertise", "marketplace"]) : "**promotions / selling channel**";
   const pornCategory = guild?.channels?.cache?.find((channel) =>
     channel.type === ChannelType.GuildCategory && ["porn", "porno", "nsfw"].includes(normalizeName(channel.name)),
   );
