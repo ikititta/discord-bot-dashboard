@@ -15,7 +15,7 @@ test("support panel uses the requested title, English guidance, and suggestions 
   assert.match(embed.description, /\*\*Appeal\*\*/);
   assert.match(embed.description, /\*\*Partnership\*\*/);
   assert.match(embed.description, /\*\*Apply\*\* — Apply to become a member of our staff team\./);
-  assert.match(embed.description, /\*\*Other\*\*/);
+  assert.match(embed.description, /\*\*Others\*\*/);
   assert.ok(embed.description.endsWith(`<#${SUGGESTIONS_CHANNEL_ID}>!`));
 });
 
@@ -26,22 +26,22 @@ test("support panel offers seven categorized buttons with appropriate Discord st
   const buttons = payload.components.flatMap((row) => row.toJSON().components);
   assert.deepEqual(buttons.map((item) => item.custom_id), [
     "sugar-ticket:category:general",
-    "sugar-ticket:category:error",
     "sugar-ticket:category:report",
-    "sugar-ticket:category:appeal",
     "sugar-ticket:category:partnership",
     "sugar-ticket:category:apply",
+    "sugar-ticket:category:appeal",
+    "sugar-ticket:category:error",
     "sugar-ticket:category:other",
   ]);
   assert.deepEqual(buttons.map((item) => item.label), [
     "General Help ♡",
-    "Error ♡",
     "Report ♡",
-    "Appeal ♡",
     "Partnership ♡",
     "Apply ♡",
-    "Other ♡",
+    "Appeal ♡",
+    "Error ♡",
+    "Others ♡",
   ]);
-  assert.deepEqual(buttons.map((item) => item.style), [1, 2, 2, 4, 1, 3, 2]);
+  assert.deepEqual(buttons.map((item) => item.style), [1, 4, 3, 1, 4, 2, 2]);
   assert.ok(payload.components.every((row) => row.toJSON().components.length <= 5));
 });
