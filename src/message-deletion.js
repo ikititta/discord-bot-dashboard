@@ -4,7 +4,6 @@ import {
   ButtonBuilder,
   ButtonStyle,
   Events,
-  MessageType,
   PermissionFlagsBits,
   SlashCommandBuilder,
 } from "discord.js";
@@ -114,9 +113,6 @@ async function handleDeleteCommand(interaction, context) {
     let targetId = interaction.user.id;
     if (definition.kind === "moderator") {
       const targetUser = interaction.options.getUser("member", false);
-      if (targetUser?.bot) {
-        throw new UserFacingError("Choose a human server member to moderate.");
-      }
       if (targetUser) {
         if (targetUser.id !== interaction.user.id) {
           const targetMember = await fetchGuildMember(interaction.guild, targetUser.id);
@@ -381,12 +377,9 @@ function isEligibleMessage(message, targetId) {
       !message.deleted &&
       typeof message.author?.id === "string" &&
       (targetId === null || message.author.id === targetId) &&
-      !message.author?.bot &&
-      !message.webhookId &&
-      !message.system &&
-      !message.pinned &&
-      !(Array.isArray(message.components) && message.components.length) &&
-      (message.type === undefined || message.type === MessageType.Default),
+      // Messages from bots, webhooks, pinned posts, embeds, images, and components
+      // are valid deletion targets. The command scope (self vs. moderator) is
+      // enforced separately by targetId, not by message format or author type.
   );
 }
 
@@ -451,8 +444,8 @@ async function fetchGuildMember(guild, userId) {
 }
 
 function validateModeratorTarget(member, config) {
-  if (!member || member.user?.bot) {
-    throw new UserFacingError("Moderators can only target human server members.");
+  if (!member) {
+    throw new UserFacingError("That member is not available in this server.");
   }
   const moderatorRoleIds = Array.isArray(config?.moderatorRoleIds) ? config.moderatorRoleIds : [];
   if (moderatorRoleIds.length && memberHasAnyRole(member, moderatorRoleIds)) {
