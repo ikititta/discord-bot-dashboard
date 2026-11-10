@@ -269,7 +269,9 @@ export async function ensureStartChannels(guild, client) {
   const guide = await ensureTextChannel(guild, category, GUIDE_CHANNEL_NAME, newRole, client.user.id);
 
   await upsertPanel(access, client, `୨୧ ${toRoyalBold("Get Access!")} ♡`, buildAccessPanelPayload(guild, { rulesChannel: rules, guideChannel: guide }));
-  await upsertPanel(rules, client, "୨୧ Kittisugar Rules ♡", buildRulesPayload(guild));
+
+  // Rules and Guide are now member-managed text channels; Sugar must not
+  // automatically publish or refresh embeds in either channel.
   const dashboard = guild.channels.cache.find((channel) =>
     channel.type === ChannelType.GuildText && normalizeName(channel.name) === "dashboard",
   );
@@ -279,7 +281,6 @@ export async function ensureStartChannels(guild, client) {
       console.error(`[access] could not pin the dashboard guide in guild ${guild.id}: ${error.message}`);
     });
   }
-  await upsertPanel(guide, client, "୨୧ Kittisugar Guide ♡", buildGuidePayload(guild));
 
   console.info(`[access] start category ready for guild ${guild.id}`);
   return { category, access, rules, guide };
