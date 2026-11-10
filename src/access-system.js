@@ -12,9 +12,9 @@ const PREFIX = "sugar-access:";
 const ENTER_ID = `${PREFIX}enter`;
 const COLOR = 0xffd9ff;
 const START_CATEGORY_NAME = "start";
-const ACCESS_CHANNEL_NAME = "get-access";
-const RULES_CHANNEL_NAME = "rules";
-const GUIDE_CHANNEL_NAME = "guide";
+const ACCESS_CHANNEL_NAME = "🔑｜୨୧•𝓰𝓮𝓽-𝓪𝓬𝓬𝓮𝓼𝓼";
+const RULES_CHANNEL_NAME = "📜｜୨୧•𝓻𝓾𝓵𝓮𝓼";
+const GUIDE_CHANNEL_NAME = "🧭｜୨୧•𝓰𝓾𝓲𝓭𝓮";
 const NEW_ROLE_NAME = "new";
 const MEMBER_ROLE_NAME = "member";
 
@@ -52,7 +52,7 @@ function buildEnterButton(guild) {
   const button = new ButtonBuilder()
     .setCustomId(ENTER_ID)
     .setLabel("Enter Server ♡")
-    .setStyle(ButtonStyle.Success);
+    .setStyle(ButtonStyle.Primary);
 
   const pinkCheck = guild.emojis.cache.find((emoji) =>
     ["pinkcheck", "pinktick", "checkpink"].includes(normalizeName(emoji.name)),
@@ -63,7 +63,7 @@ function buildEnterButton(guild) {
   return button;
 }
 
-export function buildAccessPanelPayload(guild) {
+export function buildAccessPanelPayload(guild, { rulesChannel, guideChannel } = {}) {
   const embed = new EmbedBuilder()
     .setColor(COLOR)
     .setTitle("୨୧ Welcome to Kittisugar ♡")
@@ -100,12 +100,20 @@ export function buildRulesPayload() {
   return { embeds: [embed] };
 }
 
-export function buildGuidePayload() {
+function channelMention(guild, names) {
+  const wanted = new Set(names.map(normalizeName));
+  const channel = guild.channels.cache.find((item) =>
+    item.type === ChannelType.GuildText && wanted.has(normalizeName(item.name)),
+  );
+  return channel ? `<#${channel.id}>` : `**${names[0]}**`;
+}
+
+export function buildGuidePayload(guild) {
   const embed = new EmbedBuilder()
     .setColor(COLOR)
     .setTitle("୨୧ Kittisugar Guide ♡")
     .setDescription(
-      "A little map of the server and its features. Channel names are written as plain text so you can find them in the channel list.",
+      "A little map of Kittisugar and its features. Tap any channel mention to open it ♡",
     )
     .addFields(
       { name: "START", value: "**get-access** — complete the entry confirmation.\n**rules** — read the community rules.\n**guide** — learn how the server works." },
@@ -183,6 +191,7 @@ async function ensureTextChannel(guild, category, name, newRole, botId) {
       reason: "Set up the Kittisugar New-member access flow",
     });
   }
+  if (channel.name !== name) await channel.setName(name, "Apply Kittisugar start-channel naming style");
   await applyStartPermissions(channel, guild, newRole, botId);
   return channel;
 }
@@ -210,9 +219,9 @@ export async function ensureStartChannels(guild, client) {
   const rules = await ensureTextChannel(guild, category, RULES_CHANNEL_NAME, newRole, client.user.id);
   const guide = await ensureTextChannel(guild, category, GUIDE_CHANNEL_NAME, newRole, client.user.id);
 
-  await upsertPanel(access, client, "୨୧ Welcome to Kittisugar ♡", buildAccessPanelPayload(guild));
+  await upsertPanel(access, client, "୨୧ Welcome to Kittisugar ♡", buildAccessPanelPayload(guild, { rulesChannel: rules, guideChannel: guide }));
   await upsertPanel(rules, client, "୨୧ Kittisugar Rules ♡", buildRulesPayload());
-  await upsertPanel(guide, client, "୨୧ Kittisugar Guide ♡", buildGuidePayload());
+  await upsertPanel(guide, client, "୨୧ Kittisugar Guide ♡", buildGuidePayload(guild));
 
   console.info(`[access] start category ready for guild ${guild.id}`);
   return { category, access, rules, guide };
