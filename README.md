@@ -31,9 +31,10 @@ The application reads secrets from its process environment and does not load loc
 - Private Discord chats, with ownership and access managed through Discord permissions.
 - Join, leave, edited-message, and deleted-message logs.
 - Message-deletion commands with configurable VIP and moderator role IDs.
+- New-member access flow: assigns the New role on join, provides rules and a server guide, and grants Member after the member confirms they have read the rules and are 18 or older.
 - Existing Discord OAuth settings interface and health endpoint.
 
-Legacy welcome/onboarding, automatic join-role assignment, self-role panels, and their age/NSFW visibility controls have been retired from the application. No replacement verification flow is active yet; the new flow will be designed separately after the server requirements are agreed.
+The retired legacy welcome and self-role panels remain retired. The current entry flow is implemented in `src/access-system.js` and uses the existing New and Member roles.
 
 ## Persistent data
 
