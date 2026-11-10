@@ -72,7 +72,7 @@ export function buildForumVisibilityPickerPayload(guild, userId) {
     .setColor(COLOR)
     .setTitle("୨୧ Choose Your Forums")
     .setDescription(
-      "Select the forums you want to hide. Selected options will be hidden only for you; deselect them to show them again.",
+      "Select the forums you want to hide. Deselect them to show them again.",
     );
 
   return {
