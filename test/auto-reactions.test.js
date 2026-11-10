@@ -50,6 +50,15 @@ test("support panel, ticket category, transcript, report, and configured categor
     })), false, parentId);
   }
   assert.equal(shouldAutoReactToMessage(message({
+    channel: {
+      name: "games-post",
+      parentId: "games-forum-channel",
+      parent: { id: "games-forum-channel", parentId: EXCLUDED_CATEGORY_ID },
+      topic: null,
+      isTextBased: () => true,
+    },
+  })), false, "forum post threads inherit the excluded category from their parent forum");
+  assert.equal(shouldAutoReactToMessage(message({
     channel: { name: "private-ticket", parentId: null, topic: "sugar-ticket:open:123:456", isTextBased: () => true },
   })), false);
   assert.equal(shouldAutoReactToMessage(message({
