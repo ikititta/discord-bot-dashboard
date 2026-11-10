@@ -17,7 +17,7 @@ export const ROLE_ORGANIZATION_CONFIG = JSON.parse(
 );
 
 function validateRoleOrganizationConfig(config) {
-  if (config.version !== 1 || !/^\\d{17,20}$/.test(config.guildId)) {
+  if (config.version !== 1 || !/^\d{17,20}$/.test(config.guildId)) {
     throw new Error("Invalid Kittisugar role configuration version or guild ID.");
   }
   if (!config.protectedRoles?.sugarAi || !config.protectedRoles?.serverBooster || !Array.isArray(config.groups) || !config.groups.length) {
@@ -28,7 +28,7 @@ function validateRoleOrganizationConfig(config) {
   if (config.groups.some((group) => !group.key || !group.divider || !Array.isArray(group.roles) || !group.roles.length)) {
     throw new Error("Every Kittisugar role group must have a key, divider, and roles.");
   }
-  if (ids.some((id) => !/^\\d{17,20}$/.test(id)) || new Set(ids).size !== ids.length) {
+  if (ids.some((id) => !/^\d{17,20}$/.test(id)) || new Set(ids).size !== ids.length) {
     throw new Error("Kittisugar role configuration contains invalid or duplicate role IDs.");
   }
   if (dividers.some((name) => typeof name !== "string" || !name.trim()) || new Set(dividers).size !== dividers.length) {
