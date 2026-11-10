@@ -71,7 +71,7 @@ export function buildAccessPanelPayload(guild, { rulesChannel, guideChannel } = 
     .setTitle("୨୧ Welcome to Kittisugar ♡")
     .setDescription(
       `Welcome! Before entering the server, please read ${rulesChannel ? `<#${rulesChannel.id}>` : "**Rules**"} & ${guideChannel ? `<#${guideChannel.id}>` : "**Guide**"} in this category.\n\n` +
-      "By pressing **Enter Server ♡**, you confirm that you have read and agree to follow all server rules and that you are **18 years of age or older**.\n\n" +
+      "By pressing **Enter Server ♡**, you confirm that you have read & agree to follow all server rules and that you are **18 years of age or older**.\n\n" +
       "Once confirmed, Sugar will give you the **Member** role and remove **New**, unlocking the rest of Kittisugar.",
     )
     .setFooter({ text: "Please make sure you meet both requirements before continuing ♡" });
@@ -95,7 +95,7 @@ Keep NSFW content in NSFW channels. VIP members may post it elsewhere. No illega
 Only VIP members may promote or sell in ${promotionChannel}. VIP is **$5 USD once, for life** and includes **VIP, Seller, and a custom role**. No unsolicited ads in chats, profiles, or DMs.`,
       `## ${toRoyalBold("04 · Warnings")}
 Repeated rule-breaking may result in warnings, timeouts, or removal from Kittisugar.`,
-      `## ${toRoyalBold("05 · Support Kittisugar ♡")}
+      `## ${toRoyalBold("05 · Support Kittisugar")}
 Donations help cover Sugar’s monthly hosting costs. Server boosts also unlock a special role and benefits. Thank you for supporting Kittisugar ♡`,
     ].join("\n"))
     .setFooter({ text: "By staying, you agree to follow these rules ♡" });
