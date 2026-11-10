@@ -3,11 +3,10 @@ import assert from "node:assert/strict";
 
 import {
   AGE_OPTIONS,
+  COLOR_OPTIONS,
   GENDER_OPTIONS,
   SEXUALITY_OPTIONS,
   buildSelfRolesPanelPayload,
-  isValidHexColor,
-  normalizeHexColor,
   roleNameForSelection,
 } from "../src/role-onboarding.js";
 
@@ -31,13 +30,14 @@ test("age options are individual ages from 18 through 40 without emoji labels", 
   assert.ok(AGE_OPTIONS.every(([value, label]) => value === label && /^\d+$/.test(label)));
 });
 
-test("validates and normalizes custom HEX chat colors", () => {
-  assert.equal(isValidHexColor("#ffd9ff"), true);
-  assert.equal(isValidHexColor("FFD9FF"), true);
-  assert.equal(isValidHexColor("#fff"), false);
-  assert.equal(isValidHexColor("pink"), false);
-  assert.equal(normalizeHexColor("#ffd9ff"), "FFD9FF");
-  assert.throws(() => normalizeHexColor("pink"), /valid HEX color/);
+test("chat colors are a fixed set of basic named colors", () => {
+  assert.deepEqual(COLOR_OPTIONS.map(([value]) => value), [
+    "red", "orange", "yellow", "green", "cyan", "blue",
+    "purple", "pink", "white", "gray", "brown", "black",
+  ]);
+  assert.ok(COLOR_OPTIONS.every(([value, label, color]) =>
+    /^[a-z]+$/.test(value) && label.length > 0 && Number.isInteger(color)
+  ));
 });
 
 test("creates stable role names and rejects options outside the configured categories", () => {
@@ -48,16 +48,17 @@ test("creates stable role names and rejects options outside the configured categ
   assert.throws(() => roleNameForSelection("interests", "music"), /Unknown role category/);
 });
 
-test("self-roles panel contains four selectors and a custom-color button", () => {
-  const payload = buildSelfRolesPanelPayload();
-  assert.equal(payload.components.length, 5);
-  assert.match(payload.embeds[0].data.description, /Gender · Age · Sexuality · Chat color · NSFW visibility/);
-  const selectorIds = payload.components.slice(0, 4).map((row) => row.components[0].data.custom_id);
-  assert.deepEqual(selectorIds, [
+test("self-roles panel separates every category into its own message and selector", () => {
+  const payloads = buildSelfRolesPanelPayload();
+  assert.equal(payloads.length, 5);
+  assert.deepEqual(payloads.map((payload) => payload.components[0].components[0].data.custom_id), [
     "sugar-selfroles:gender",
     "sugar-selfroles:age",
     "sugar-selfroles:sexuality",
+    "sugar-selfroles:color",
     "sugar-selfroles:nsfw",
   ]);
-  assert.equal(payload.components[4].components[0].data.custom_id, "sugar-selfroles:color");
+  assert.ok(payloads.every((payload) => payload.embeds.length === 1 && payload.components.length === 1));
+  assert.match(payloads[3].embeds[0].data.description, /basic colors/);
+  assert.equal(payloads[3].components[0].components[0].options.length, COLOR_OPTIONS.length);
 });
