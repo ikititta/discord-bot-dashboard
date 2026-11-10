@@ -42,6 +42,8 @@ const PRIVATE_CHAT_PANEL_CONTROL_IDS = new Set([
   `${PREFIX}commands`,
   `${PREFIX}clear-history`,
 ]);
+const pendingPrivateChatCreations = new Map();
+const PENDING_CREATE_TTL_MS = 5 * 60 * 1000;
 const MEMBER_PERMISSIONS = [
   PermissionFlagsBits.ViewChannel,
   PermissionFlagsBits.SendMessages,
@@ -299,8 +301,8 @@ export function buildPrivateChatLobbyGuidePayload() {
     );
 
   const buttons = new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId(`${PREFIX}create`).setLabel("Create private chat").setStyle(ButtonStyle.Primary),
-    new ButtonBuilder().setCustomId(`${PREFIX}commands`).setLabel("Commands").setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder().setCustomId(`${PREFIX}create`).setLabel("Create private chat ♡").setStyle(ButtonStyle.Primary),
+    new ButtonBuilder().setCustomId(`${PREFIX}commands`).setLabel("Commands ♡").setStyle(ButtonStyle.Success),
   );
   return { embeds: [embed], components: [buttons] };
 }
@@ -319,15 +321,15 @@ export function buildPrivateChatWelcomePayload(ownerId, invitees = []) {
     .setDescription(`Your private chat is ready!\n\n${welcome}`);
 
   const firstRow = new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId(`${PREFIX}add`).setLabel("Add people").setStyle(ButtonStyle.Primary),
-    new ButtonBuilder().setCustomId(`${PREFIX}remove`).setLabel("Remove someone").setStyle(ButtonStyle.Secondary),
-    new ButtonBuilder().setCustomId(`${PREFIX}rename`).setLabel("Rename chat").setStyle(ButtonStyle.Secondary),
-    new ButtonBuilder().setCustomId(`${PREFIX}leave`).setLabel("Leave chat").setStyle(ButtonStyle.Secondary),
-    new ButtonBuilder().setCustomId(`${PREFIX}delete`).setLabel("Delete chat").setStyle(ButtonStyle.Danger),
+    new ButtonBuilder().setCustomId(`${PREFIX}add`).setLabel("Add people ♡").setStyle(ButtonStyle.Primary),
+    new ButtonBuilder().setCustomId(`${PREFIX}remove`).setLabel("Remove someone ♡").setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder().setCustomId(`${PREFIX}rename`).setLabel("Rename chat ♡").setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder().setCustomId(`${PREFIX}leave`).setLabel("Leave chat ♡").setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder().setCustomId(`${PREFIX}delete`).setLabel("Delete chat ♡").setStyle(ButtonStyle.Danger),
   );
   const secondRow = new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId(`${PREFIX}commands`).setLabel("Commands").setStyle(ButtonStyle.Secondary),
-    new ButtonBuilder().setCustomId(`${PREFIX}clear-history`).setLabel("Clear History").setStyle(ButtonStyle.Danger),
+    new ButtonBuilder().setCustomId(`${PREFIX}commands`).setLabel("Commands ♡").setStyle(ButtonStyle.Success),
+    new ButtonBuilder().setCustomId(`${PREFIX}clear-history`).setLabel("Clear History ♡").setStyle(ButtonStyle.Danger),
   );
   return {
     embeds: [embed],
@@ -403,7 +405,7 @@ export async function handlePrivateChatInteraction(interaction, { client, store,
   } else if (interaction.isButton()) {
     await handleButton(interaction, { client, store, lobbyChannelId });
   } else if (interaction.isUserSelectMenu()) {
-    await handleUserSelect(interaction, { client, store });
+    await handleUserSelect(interaction, { client, store, lobbyChannelId });
   } else if (interaction.isModalSubmit()) {
     await handleModalSubmit(interaction, { client, store, lobbyChannelId });
   }
@@ -483,6 +485,15 @@ async function handleButton(interaction, { client, store, lobbyChannelId }) {
       return sendEphemeral(interaction, `Create private chats in <#${lobbyChannelId}>.`);
     }
     return interaction.showModal(nameModal("create-modal", "Create Private Chat", ""));
+  }
+
+  if (action === "create-skip") {
+    await interaction.deferReply({ ephemeral: true });
+    const pending = getPendingPrivateChatCreation(interaction, lobbyChannelId);
+    if (!pending) return interaction.editReply("This creation request expired. Please start again.");
+    pendingPrivateChatCreations.delete(interaction.user.id);
+    const channel = await createPrivateChat(interaction, client, store, pending.displayName, []);
+    return interaction.editReply(`Private chat created:\n<#${channel.id}>`);
   }
 
   if (action === "delete-cancel") {
@@ -576,8 +587,16 @@ async function handleButton(interaction, { client, store, lobbyChannelId }) {
   }
 }
 
-async function handleUserSelect(interaction, { client, store }) {
+async function handleUserSelect(interaction, { client, store, lobbyChannelId }) {
   await interaction.deferReply({ ephemeral: true });
+  if (interaction.customId === `${PREFIX}create-select`) {
+    const pending = getPendingPrivateChatCreation(interaction, lobbyChannelId);
+    if (!pending) return interaction.editReply("This creation request expired. Please start again.");
+    pendingPrivateChatCreations.delete(interaction.user.id);
+    const invitees = interaction.values.map((id) => ({ id }));
+    const channel = await createPrivateChat(interaction, client, store, pending.displayName, invitees);
+    return interaction.editReply(`Private chat created:\n<#${channel.id}>`);
+  }
   const context = getPrivateChatContext(interaction, store);
   requireOwner(interaction, context.chat);
   const ids = interaction.values;
@@ -601,8 +620,25 @@ async function handleModalSubmit(interaction, { client, store, lobbyChannelId })
     if (!interaction.inGuild() || interaction.channelId !== lobbyChannelId) {
       return interaction.editReply(`Create private chats in <#${lobbyChannelId}>.`);
     }
-    const channel = await createPrivateChat(interaction, client, store, displayName, []);
-    return interaction.editReply(`Private chat created:\n<#${channel.id}>`);
+    pendingPrivateChatCreations.set(interaction.user.id, {
+      guildId: interaction.guildId,
+      channelId: interaction.channelId,
+      displayName,
+      createdAt: Date.now(),
+    });
+    const selector = new UserSelectMenuBuilder()
+      .setCustomId(`${PREFIX}create-select`)
+      .setPlaceholder("Optionally invite up to five people")
+      .setMinValues(1)
+      .setMaxValues(MAX_PRIVATE_CHAT_MEMBERS);
+    const skip = new ButtonBuilder()
+      .setCustomId(`${PREFIX}create-skip`)
+      .setLabel("Create without inviting ♡")
+      .setStyle(ButtonStyle.Secondary);
+    return interaction.editReply({
+      content: "Choose people to invite, or create the private chat without adding anyone.",
+      components: [new ActionRowBuilder().addComponents(selector), new ActionRowBuilder().addComponents(skip)],
+    });
   }
 
   if (interaction.customId === `${PREFIX}rename-modal`) {
@@ -611,6 +647,18 @@ async function handleModalSubmit(interaction, { client, store, lobbyChannelId })
     await renamePrivateChat(context.channel, context.chat, displayName, store);
     return interaction.editReply(`Private chat renamed to **${displayName.trim()}**.`);
   }
+}
+
+function getPendingPrivateChatCreation(interaction, lobbyChannelId) {
+  const pending = pendingPrivateChatCreations.get(interaction.user.id);
+  if (!pending || Date.now() - pending.createdAt > PENDING_CREATE_TTL_MS) {
+    pendingPrivateChatCreations.delete(interaction.user.id);
+    return null;
+  }
+  if (pending.guildId !== interaction.guildId || pending.channelId !== lobbyChannelId || interaction.channelId !== lobbyChannelId) {
+    return null;
+  }
+  return pending;
 }
 
 function nameModal(customId, title, value) {
@@ -631,8 +679,8 @@ function nameModal(customId, title, value) {
 
 function deleteConfirmationRow() {
   return new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId(`${PREFIX}delete-confirm`).setLabel("Delete chat").setStyle(ButtonStyle.Danger),
-    new ButtonBuilder().setCustomId(`${PREFIX}delete-cancel`).setLabel("Cancel").setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder().setCustomId(`${PREFIX}delete-confirm`).setLabel("Delete chat ♡").setStyle(ButtonStyle.Danger),
+    new ButtonBuilder().setCustomId(`${PREFIX}delete-cancel`).setLabel("Cancel ♡").setStyle(ButtonStyle.Secondary),
   );
 }
 
@@ -640,11 +688,11 @@ function clearHistoryConfirmationRow() {
   return new ActionRowBuilder().addComponents(
     new ButtonBuilder()
       .setCustomId(`${PREFIX}clear-history-confirm`)
-      .setLabel("Confirm clear")
+      .setLabel("Confirm clear ♡")
       .setStyle(ButtonStyle.Danger),
     new ButtonBuilder()
       .setCustomId(`${PREFIX}clear-history-cancel`)
-      .setLabel("Cancel")
+      .setLabel("Cancel ♡")
       .setStyle(ButtonStyle.Secondary),
   );
 }
