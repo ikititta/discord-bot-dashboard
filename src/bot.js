@@ -15,6 +15,7 @@ import { attachTicketSystem } from "./ticket-system.js";
 import { attachCommunitySystem } from "./community-system.js";
 import { attachQuoteSystem } from "./quote-system.js";
 import { attachAccessSystem } from "./access-system.js";
+import { attachModerationSystem } from "./moderation-system.js";
 
 const COLORS = { join: 0x4ade80, leave: 0xf87171, edit: 0xfbbf24, delete: 0xf87171 };
 
@@ -41,6 +42,7 @@ export function createBot({
   communityStore,
   suggestionStore,
   stickyPanels,
+  autoModeration,
 }) {
   const client = new Client({
     intents: [
@@ -148,6 +150,7 @@ export function createBot({
   attachCommunitySystem(client, { store: communityStore, suggestionStore, stickyPanels, settings });
   attachQuoteSystem(client, { token, applicationId });
   attachAccessSystem(client);
+  if (autoModeration) attachModerationSystem(client, { settings, store: autoModeration });
 
   client.login(token).catch((error) => {
     if (String(error?.code) === "TokenInvalid" || String(error).includes("TOKEN_INVALID")) {
