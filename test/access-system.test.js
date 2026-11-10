@@ -85,7 +85,7 @@ test("access, rules, and guide panels contain the required confirmations and com
   assert.match(access.embeds[0].data.description, /read and agree/i);
   assert.match(access.embeds[0].data.description, /18 years of age or older/i);
   assert.equal(access.components[0].components[0].data.label, "Enter Server ♡");
-  assert.equal(access.components[0].components[0].data.style, 3);
+  assert.equal(access.components[0].components[0].data.style, 1);
   assert.match(rules.embeds[0].data.description, /18\+/);
   assert.match(guide.embeds[0].data.fields.map((field) => field.value).join("\n"), /\/priv-chat create/);
   assert.match(guide.embeds[0].data.fields.map((field) => field.value).join("\n"), /\/mod-delete/);
