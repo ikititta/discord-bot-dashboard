@@ -93,7 +93,7 @@ test("access, rules, and guide panels contain the required confirmations and com
   assert.match(ruleText, /every month/);
   assert.match(ruleText, /donations are open/i);
   assert.match(ruleText, /server boosts/i);
-  assert.match(guide.embeds[0].data.description, /\/priv-chat create/);
+  assert.match(guide.embeds[0].data.description, /\/priv-chat commands/);
   assert.match(guide.embeds[0].data.description, /\/mod-delete/);
   const guideText = guide.embeds[0].data.description;
   assert.match(guideText, /selfroles/i);
