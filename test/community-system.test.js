@@ -220,10 +220,23 @@ test("community reports ping all configured moderation roles without broad menti
 });
 
 
+test("new suggestions use reactions and never attach voting or report buttons", async () => {
+  const source = fs.readFileSync(new URL("../src/community-system.js", import.meta.url), "utf8");
+  const publish = source.slice(source.indexOf("async function publishSuggestion"), source.indexOf("async function handleSuggestionReaction"));
+  assert.match(publish, /await message\.react\("⬆️"\)/);
+  assert.match(publish, /await message\.react\("⬇️"\)/);
+  assert.match(publish, /await message\.react\("⚠️"\)/);
+  assert.doesNotMatch(publish, /components:/);
+  const panel = buildSuggestionsPanelPayload();
+  assert.equal(panel.components[0].toJSON().components[0].custom_id, "sugar-community:suggestion-start");
+});
+
 test("suggestion publication mode is validated and suggestion embeds omit timestamps", () => {
   const source = fs.readFileSync(new URL("../src/community-system.js", import.meta.url), "utf8");
   assert.match(source, /suggestion:submit:\$\{mode\}/);
   assert.match(source, /if \(mode === "named"\)/);
-  const publish = source.slice(source.indexOf("async function publishSuggestion"), source.indexOf("async function handleSuggestionVote"));
+  const publish = source.slice(source.indexOf("async function publishSuggestion"), source.indexOf("async function handleSuggestionReaction"));
   assert.doesNotMatch(publish, /\.setTimestamp\(\)/);
+  assert.match(publish, /name: "⚠️ Reports", value: "0"/);
+  assert.match(source, /async function updateSuggestionReportCount/);
 });

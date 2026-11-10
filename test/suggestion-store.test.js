@@ -33,3 +33,18 @@ test("suggestion store rejects invalid votes and corrupt state", () => {
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test("reaction votes set and remove one direction per member", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "sugar-suggestion-votes-"));
+  try {
+    const store = new SuggestionStore(dir);
+    const messageId = "123456789012345678";
+    const userId = "223456789012345678";
+    assert.deepEqual(store.setVote(messageId, userId, "up"), { up: 1, down: 0 });
+    assert.deepEqual(store.setVote(messageId, userId, "down"), { up: 0, down: 1 });
+    assert.deepEqual(store.removeVote(messageId, userId, "up"), { up: 0, down: 1 });
+    assert.deepEqual(store.removeVote(messageId, userId, "down"), { up: 0, down: 0 });
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});

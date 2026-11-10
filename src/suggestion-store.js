@@ -23,6 +23,35 @@ export class SuggestionStore {
     return this.counts(messageId);
   }
 
+  setVote(messageId, userId, direction) {
+    if (!/^\d{17,20}$/.test(messageId ?? "") ||
+        !/^\d{17,20}$/.test(userId ?? "") ||
+        !["up", "down"].includes(direction)) {
+      throw new Error("Invalid suggestion vote.");
+    }
+    const votes = this.data[messageId] ?? {};
+    votes[userId] = direction;
+    this.data[messageId] = votes;
+    this.#write();
+    return this.counts(messageId);
+  }
+
+  removeVote(messageId, userId, direction) {
+    if (!/^\d{17,20}$/.test(messageId ?? "") ||
+        !/^\d{17,20}$/.test(userId ?? "") ||
+        !["up", "down"].includes(direction)) {
+      throw new Error("Invalid suggestion vote.");
+    }
+    const votes = this.data[messageId] ?? {};
+    if (votes[userId] === direction) {
+      delete votes[userId];
+      if (Object.keys(votes).length) this.data[messageId] = votes;
+      else delete this.data[messageId];
+      this.#write();
+    }
+    return this.counts(messageId);
+  }
+
   counts(messageId) {
     const votes = this.data[messageId] ?? {};
     return {

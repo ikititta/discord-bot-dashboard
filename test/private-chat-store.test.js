@@ -163,7 +163,7 @@ test("the lobby creation guide keeps its buttons and uses the 👤 name example"
   );
   assert.deepEqual(
     payload.components[0].components.map((button) => button.data.label),
-    ["Create private chat", "Commands"],
+    ["Create private chat ♡", "Commands ♡"],
   );
 });
 
@@ -198,7 +198,7 @@ test("private-chat creation builders make separate, styled welcome and command e
     ],
   );
   assert.equal(welcome.components[1].components[0].data.custom_id, "private-chat:commands");
-  assert.equal(welcome.components[1].components[0].data.label, "Commands");
+  assert.equal(welcome.components[1].components[0].data.label, "Commands ♡");
   assert.equal(guide.embeds[0].data.title, `${toRoyalBold("Private Chat Commands")} 🎀`);
   assert.equal(guide.embeds[0].data.description, "Use these commands inside this private channel");
   assert.doesNotMatch(guide.embeds[0].data.description, new RegExp(toRoyalBold("Use these commands inside this private channel")));
@@ -348,11 +348,20 @@ test("slash and modal creation replies put the dynamic channel mention on its ow
       lobbyChannelId: "923456789012345678",
     });
 
-    assert.equal(
-      fixture.events.at(-1).content,
-      `Private chat created:\n<#${fixture.channel.id}>`,
-      `${mode} creation should use a separate line and the actual channel ID`,
-    );
+    if (mode === "modal") {
+      const response = fixture.events.at(-1).content;
+      assert.equal(response.content, "Choose people to invite, or create the private chat without adding anyone.");
+      assert.deepEqual(
+        response.components.map((row) => row.components[0].data.custom_id),
+        ["private-chat:create-select", "private-chat:create-skip"],
+      );
+    } else {
+      assert.equal(
+        fixture.events.at(-1).content,
+        `Private chat created:\n<#${fixture.channel.id}>`,
+        `${mode} creation should use a separate line and the actual channel ID`,
+      );
+    }
   }
 });
 
