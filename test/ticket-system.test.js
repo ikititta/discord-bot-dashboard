@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { buildTicketPanelPayload, SUGGESTIONS_CHANNEL_ID } from "../src/ticket-system.js";
+import { buildTicketPanelPayload, buildTicketCreatedPayload, SUGGESTIONS_CHANNEL_ID, TICKET_CATEGORY_ID, TICKET_TRANSCRIPTS_CHANNEL_ID } from "../src/ticket-system.js";
 
 test("support panel uses the requested title, English guidance, and suggestions mention", () => {
   const payload = buildTicketPanelPayload();
@@ -45,4 +45,19 @@ test("support panel offers seven categorized buttons with appropriate Discord st
   ]);
   assert.deepEqual(buttons.map((item) => item.style), [1, 4, 4, 3, 3, 4, 2]);
   assert.ok(payload.components.every((row) => row.toJSON().components.length <= 5));
+});
+
+test("new tickets use the configured category and transcript destinations", () => {
+  assert.equal(TICKET_CATEGORY_ID, "1569529041017503784");
+  assert.equal(TICKET_TRANSCRIPTS_CHANNEL_ID, "1569529377102766131");
+});
+
+test("ticket controls include close and blue add-people buttons with empty hearts", () => {
+  const payload = buildTicketCreatedPayload("123456789012345", "General");
+  const embed = payload.embeds[0].toJSON();
+  const buttons = payload.components[0].toJSON().components;
+
+  assert.doesNotMatch(embed.description, /keep all relevant details/i);
+  assert.deepEqual(buttons.map((button) => button.label), ["Close Ticket ♡", "Add People ♡"]);
+  assert.deepEqual(buttons.map((button) => button.style), [4, 1]);
 });
