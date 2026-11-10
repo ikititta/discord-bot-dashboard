@@ -103,6 +103,9 @@ test("access, rules, and guide panels contain the required confirmations and com
   assert.match(guideText, /selfroles/i);
   assert.match(guideText, /show or hide channels/i);
   assert.doesNotMatch(guide.embeds[0].data.description, /<#\d{17,20}>/);
-  assert.match(guideText, /## ୨୧ ───── Start ───── ୨୧\n\*\*/);
-  assert.doesNotMatch(guideText, /━━━━━━━━━━━━━━━━━━━━|\n\n୨୧/);
+  assert.match(guideText, new RegExp(`\\*\\*${toRoyalBold("Start")}\\*\\*\\n\\*\\*`));
+  for (const title of ["Start", "Community", "Help", "Commands", "Sugar AI"]) {
+    assert.ok(guideText.includes(`**${toRoyalBold(title)}**`), `missing fancy guide heading: ${title}`);
+  }
+  assert.doesNotMatch(guideText, /##|─────|━━━━━━━━━━━━━━━━━━━━/);
 });
