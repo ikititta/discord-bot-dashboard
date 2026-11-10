@@ -262,7 +262,7 @@ export function attachAccessSystem(client) {
   client.on(Events.GuildMemberAdd, async (member) => {
     const newRole = findRoleByName(member.guild, NEW_ROLE_NAME);
     const memberRole = findRoleByName(member.guild, MEMBER_ROLE_NAME);
-    if (!newRole || !memberRole || member.roles.cache.has(memberRole.id)) return;
+    if (!newRole || (memberRole && member.roles.cache.has(memberRole.id))) return;
     await member.roles.add(newRole, "Assign the New role before Kittisugar access verification").catch((error) => {
       console.error(`[access] could not assign New role to member ${member.id}: ${error.message}`);
     });
