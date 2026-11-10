@@ -1,7 +1,5 @@
 import {
   ActionRowBuilder,
-  ButtonBuilder,
-  ButtonStyle,
   ChannelType,
   EmbedBuilder,
   PermissionFlagsBits,
@@ -237,6 +235,11 @@ export async function ensureSelfRolesChannel(guild, client) {
 
   const recent = await channel.messages.fetch({ limit: 50 });
   const panelPayloads = buildSelfRolesPanelPayload();
+  const legacyPanelTitle = `୨୧ ${toRoyalBold("Self Roles")} ♡`;
+  const legacyPanel = recent.find((message) =>
+    message.author?.id === client.user.id && message.embeds.some((embed) => embed.title === legacyPanelTitle),
+  );
+  if (legacyPanel) await legacyPanel.delete();
   for (const payload of panelPayloads) {
     const title = payload.embeds[0].data.title;
     const existing = recent.find((message) =>
@@ -297,7 +300,7 @@ export async function startRoleOnboarding(interaction) {
 
 export function attachRoleOnboarding(client) {
   client.on("interactionCreate", async (interaction) => {
-    if (!interaction.isButton() && !interaction.isStringSelectMenu() && !interaction.isModalSubmit()) return;
+    if (!interaction.isStringSelectMenu()) return;
     const parsed = parseCustomId(interaction.customId);
     if (!parsed) return;
 
@@ -310,7 +313,6 @@ export function attachRoleOnboarding(client) {
         return interaction.reply({ content: "This onboarding belongs to another member.", ephemeral: true });
       }
 
-      if (!interaction.isStringSelectMenu()) return;
       const category = parsed.category;
       const value = interaction.values[0];
       const member = await interaction.guild.members.fetch(interaction.user.id);
