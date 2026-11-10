@@ -1,3 +1,5 @@
+import { toRoyalBold } from "./embed-format.js";
+
 import {
   ActionRowBuilder,
   ButtonBuilder,
@@ -83,14 +85,14 @@ export function buildRulesPayload(guild) {
   const promotionChannel = guild ? channelMention(guild, ["promotions", "promotion", "promos", "promo", "selling", "advertising", "advertise", "marketplace"]) : "**promotions / selling channel**";
   const embed = new EmbedBuilder()
     .setColor(COLOR)
-    .setTitle("୨୧ Kittisugar Rules ♡")
-    .setDescription("**18+ community · Respect others · Use the right channels.** Just five things to remember:")
+    .setTitle(`୨୧ ${toRoyalBold("Kittisugar Rules")} ♡`)
+    .setDescription("18+ · Respect · Keep content in the right channels.")
     .addFields(
-      { name: "01 · Respect", value: "No harassment, hate, threats, bullying, raids, spam, or sharing private information." },
-      { name: "02 · Content", value: `Keep NSFW content in ${pornLabel}. VIP members may post NSFW content in other channels. No illegal content or non-consensual intimate material.` },
-      { name: "03 · Promotions & selling", value: `Only VIP members may promote or sell, and only in ${promotionChannel}. VIP access costs **$5 USD once, for life**, and includes **VIP, Seller, and a custom role** with their benefits. No unsolicited promotions in chats, profiles, or DMs.` },
-      { name: "04 · Three strikes", value: "**Three rule violations mean removal from Kittisugar.** Sugar may delete content, warn, or apply a timeout when needed." },
-      { name: "05 · Support Kittisugar ♡", value: "Sugar is our own bot, so we pay its hosting and operating costs every month instead of relying on other bots. Donations are open and always appreciated. Server boosts also unlock a special role and benefits. Thank you for helping keep Kittisugar running ♡" },
+      { name: toRoyalBold("01 · Respect"), value: "No harassment, hate, threats, bullying, spam, or sharing private information." },
+      { name: toRoyalBold("02 · Content"), value: "Keep NSFW content in NSFW channels. VIP members may post it elsewhere. No illegal or non-consensual intimate content." },
+      { name: toRoyalBold("03 · Promotions & selling"), value: `Only VIP members may promote or sell in ${promotionChannel}. VIP is **$5 USD once, for life** and includes **VIP, Seller, and a custom role**. No unsolicited ads in chats, profiles, or DMs.` },
+      { name: toRoyalBold("04 · Three strikes"), value: "**Three violations = removal.** Sugar may delete content, warn, or timeout members." },
+      { name: toRoyalBold("05 · Support Kittisugar ♡"), value: "Donations help cover Sugar’s monthly hosting costs. Server boosts also unlock a special role and benefits. Thank you for supporting Kittisugar ♡" },
     )
     .setFooter({ text: "By staying, you agree to follow these rules ♡" });
   return { embeds: [embed] };
@@ -107,7 +109,7 @@ function channelMention(guild, names) {
 export function buildGuidePayload(guild) {
   const embed = new EmbedBuilder()
     .setColor(COLOR)
-    .setTitle("୨୧ Kittisugar Guide ♡")
+    .setTitle(`୨୧ ${toRoyalBold("Kittisugar Guide")} ♡`)
     .setDescription(
       "A little map of Kittisugar ♡ Tap any channel mention to open it.\n\n" +
       `${toRoyalBold("୨୧ START HERE")}\n` +
