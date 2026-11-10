@@ -14,10 +14,27 @@ import {
 import { formatEmbedTitle } from "./embed-format.js";
 
 export const TICKET_PANEL_CHANNEL_ID = "1568492748732895313";
+export const SUGGESTIONS_CHANNEL_ID = "1569164719309328455";
 const PREFIX = "sugar-ticket:";
-const PANEL_TITLE = formatEmbedTitle("Kittisugar Support");
+const PANEL_TITLE = formatEmbedTitle("Support");
+const LEGACY_PANEL_TITLE = formatEmbedTitle("Kittisugar Support");
 const PANEL_COLOR = 0xffd9ff;
-const TICKET_CATEGORIES = new Map([["general", "General Support"], ["appeal", "Appeal a Punishment"], ["roles", "Roles & Access"], ["technical", "Technical Issue"], ["other", "Other"]]);
+const TICKET_CATEGORIES = new Map([
+  ["general", "General Help"],
+  ["technical", "Technical Issue"],
+  ["report", "Report"],
+  ["appeal", "Appeal"],
+  ["partnership", "Partnership"],
+  ["other", "Other"],
+]);
+const TICKET_BUTTON_STYLES = new Map([
+  ["general", ButtonStyle.Primary],
+  ["technical", ButtonStyle.Secondary],
+  ["report", ButtonStyle.Danger],
+  ["appeal", ButtonStyle.Secondary],
+  ["partnership", ButtonStyle.Success],
+  ["other", ButtonStyle.Secondary],
+]);
 const MEMBER_PERMISSIONS = [
   PermissionFlagsBits.ViewChannel,
   PermissionFlagsBits.SendMessages,
@@ -31,21 +48,31 @@ export function buildTicketPanelPayload() {
     .setColor(PANEL_COLOR)
     .setTitle(PANEL_TITLE)
     .setDescription(
-      "Need help or want to appeal a moderation action? Open a private ticket and our team will get back to you.\n\n" +
-      "Please describe your situation clearly. Only you and the moderation team can see your ticket.",
+      "Need help with something? Choose the option that best matches your request to open a private ticket with our team.\n\n" +
+      "**General Help** — Questions or general assistance.\n" +
+      "**Technical Issue** — Bugs, errors, or technical problems.\n" +
+      "**Report** — Report a user, message, or rule violation.\n" +
+      "**Appeal** — Appeal a warning, punishment, or restriction.\n" +
+      "**Partnership** — Collaboration and server partnership inquiries.\n" +
+      "**Other** — Requests that don't fit the other categories.\n\n" +
+      `Have a suggestion? Share it in <#${SUGGESTIONS_CHANNEL_ID}>!`,
     );
-  const row = new ActionRowBuilder().addComponents(
-    ...[...TICKET_CATEGORIES].map(([value, label]) =>
-      new ButtonBuilder()
-        .setCustomId(`${PREFIX}category:${value}`)
-        .setLabel(`${label} ♡`)
-        .setStyle(ButtonStyle.Primary),
-    ),
+
+  const buttons = [...TICKET_CATEGORIES].map(([value, label]) =>
+    new ButtonBuilder()
+      .setCustomId(`${PREFIX}category:${value}`)
+      .setLabel(`${label} ♡`)
+      .setStyle(TICKET_BUTTON_STYLES.get(value)),
   );
-  return { embeds: [embed], components: [row] };
+  const rows = [
+    new ActionRowBuilder().addComponents(...buttons.slice(0, 3)),
+    new ActionRowBuilder().addComponents(...buttons.slice(3)),
+  ];
+
+  return { embeds: [embed], components: rows };
 }
 
-export function buildTicketCreatedPayload(userId, category = "General Support") {
+export function buildTicketCreatedPayload(userId, category = "General Help") {
   const embed = new EmbedBuilder()
     .setColor(PANEL_COLOR)
     .setTitle(formatEmbedTitle("Support Ticket"))
@@ -123,7 +150,8 @@ export async function ensureTicketPanel(client, panelChannelId = TICKET_PANEL_CH
 
   const recent = await channel.messages.fetch({ limit: 50 });
   const existing = recent.find((message) =>
-    message.author.id === client.user.id && message.embeds.some((embed) => embed.title === PANEL_TITLE),
+    message.author.id === client.user.id &&
+    message.embeds.some((embed) => embed.title === PANEL_TITLE || embed.title === LEGACY_PANEL_TITLE),
   );
   if (existing) {
     await existing.edit(buildTicketPanelPayload());
@@ -135,7 +163,7 @@ export async function ensureTicketPanel(client, panelChannelId = TICKET_PANEL_CH
   return channel.send(buildTicketPanelPayload());
 }
 
-async function handleTicketButton(interaction, context) {
+async function handleTicketButton(interaction, { client, settings, panelChannelId }) {
   const action = interaction.customId.slice(PREFIX.length);
   if (action.startsWith("category:")) {
     return handleTicketCategory(interaction, panelChannelId, action.slice("category:".length));
@@ -148,7 +176,7 @@ async function handleTicketButton(interaction, context) {
     if (!ticket || ticket.guildId !== interaction.guildId) {
       return replyEphemeral(interaction, "This channel is not an active Sugar support ticket.");
     }
-    const config = context.settings.get(interaction.guildId);
+    const config = settings.get(interaction.guildId);
     const isModerator = hasTicketStaffAccess(interaction.member, config.moderatorRoleIds);
     if (interaction.user.id !== ticket.openerId && !isModerator) {
       return replyEphemeral(interaction, "Only the ticket opener or a moderator can close this ticket.");
