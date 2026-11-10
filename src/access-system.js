@@ -137,7 +137,7 @@ export function buildGuidePayload(guild) {
       "`/delete amount:` — delete your own recent messages.\n" +
       "`/vip-delete amount:` — VIP message cleanup.\n" +
       "`/mod-delete amount: [member:]` — moderator cleanup.\n" +
-      "`!quote` — reply to a message and quote it.\n" +
+      "`!quote` — quote a message with an image.\n" +
       "`/priv-chat commands` — see private chat commands.\n" +
       `୨୧ ${guideSectionTitle("Sugar AI")}\n\n` +
       "Mention Sugar or address the bot directly to start a conversation ♡"
