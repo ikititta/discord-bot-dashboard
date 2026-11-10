@@ -106,31 +106,35 @@ function channelMention(guild, names) {
   return channel ? `<#${channel.id}>` : `**${names[0]}**`;
 }
 
+function guideSectionTitle(title) {
+  return toRoyalBold(`୨୧ ───── ${title} ───── ୨୧`);
+}
+
 export function buildGuidePayload(guild) {
   const embed = new EmbedBuilder()
     .setColor(COLOR)
     .setTitle(`୨୧ ${toRoyalBold("Kittisugar Guide")} ♡`)
     .setDescription(
-      "A little map of Kittisugar ♡ Tap any channel mention to open it.\n\n" +
-      `${toRoyalBold("୨୧ Start Here")}\n` +
+      "A little map of Kittisugar ♡ Tap any channel mention to open it.\n" +
+      `${guideSectionTitle("Start")}\n` +
       `**${channelMention(guild, ["getaccess", "get-access"])}**\nRead the welcome message and press Enter Server when you are ready to access the community.\n\n` +
       `**${channelMention(guild, ["rules"])}**\nCheck the server rules before chatting. They explain our 18+, SFW, safety, and promotion policies.\n\n` +
       `**${channelMention(guild, ["guide"])}**\nFind what each channel is for and how to use the server.\n\n` +
-      `━━━━━━━━━━━━━━━━━━━━\n${toRoyalBold("୨୧ Community")}\n` +
+      `\n${guideSectionTitle("Community")}\n` +
       `**${channelMention(guild, ["confessions"])}**\nShare an anonymous confession or create a poll with the channel buttons.\n\n` +
       `**${channelMention(guild, ["loveletters", "love-letters"])}**\nLeave a sweet message or appreciation for someone in the community.\n\n` +
       `**${channelMention(guild, ["suggestions"])}**\nShare ideas and suggestions to help make Kittisugar better.\n\n` +
       `**${channelMention(guild, ["quotes"])}**\nPost memorable, funny, or meaningful quotes from the community.\n\n` +
-      `━━━━━━━━━━━━━━━━━━━━\n${toRoyalBold("୨୧ Help & Private Spaces")}\n` +
+      `\n${guideSectionTitle("Help")}\n` +
       `**${channelMention(guild, ["support"])}**\nOpen a private support ticket when you need help from the team.\n\n` +
       `**${channelMention(guild, ["privatechat", "privatechats", "private-chat"])}**\nCreate and manage private chat rooms. Use /priv-chat commands to see the available options.\n\n` +
       `**${channelMention(guild, ["selfroles", "self-roles"])}**\nChoose or update your age, gender, sexuality, interests, and color roles. These roles also let you show or hide channels.\n\n` +
-      `━━━━━━━━━━━━━━━━━━━━\n${toRoyalBold("୨୧ Useful Commands")}\n` +
+      `\n${guideSectionTitle("Commands")}\n` +
       "/delete amount:<number> — delete your own recent messages.\n" +
       "/vip-delete amount:<number> — VIP message cleanup.\n" +
       "/mod-delete amount:<number> [member:<user>] — moderator cleanup.\n" +
       "!quote — reply to a message and quote it.\n/priv-chat commands — see private chat commands.\n\n" +
-      `${toRoyalBold("୨୧ Sugar AI")}\nMention Sugar or address the bot directly to start a conversation ♡`
+      `${guideSectionTitle("Sugar AI")}\nMention Sugar or address the bot directly to start a conversation ♡`
     )
     .setFooter({ text: "This guide is also pinned in #dashboard and will always be available there ♡" });
   return { embeds: [embed] };
