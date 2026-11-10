@@ -18,6 +18,7 @@ import { attachGeneralQuoteStickyTip } from "./general-quote-sticky.js";
 import { attachAccessSystem } from "./access-system.js";
 import { attachModerationSystem } from "./moderation-system.js";
 import { renameMatchingChannels } from "./channel-renames.js";
+import { attachForumVisibilitySystem } from "./forum-visibility.js";
 
 const COLORS = { join: 0x4ade80, leave: 0xf87171, edit: 0xfbbf24, delete: 0xf87171 };
 
@@ -154,6 +155,7 @@ export function createBot({
   attachQuoteSystem(client, { token, applicationId });
   attachGeneralQuoteStickyTip(client, { store: stickyPanels });
   attachAccessSystem(client);
+  attachForumVisibilitySystem(client);
   if (autoModeration) attachModerationSystem(client, { settings, store: autoModeration });
 
   client.login(token).catch((error) => {
