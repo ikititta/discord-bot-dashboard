@@ -69,12 +69,20 @@ function rgb(color) {
   return `rgb(${color.r}, ${color.g}, ${color.b})`;
 }
 
+function mixColor(color, target, amount) {
+  return {
+    r: Math.round(color.r + (target.r - color.r) * amount),
+    g: Math.round(color.g + (target.g - color.g) * amount),
+    b: Math.round(color.b + (target.b - color.b) * amount),
+  };
+}
+
 function roundedRect(ctx, x, y, width, height, radius) {
   ctx.beginPath();
   ctx.roundRect(x, y, width, height, radius);
 }
 
-export async function buildQuoteCard({ authorName, avatarUrl, content }) {
+export async function buildQuoteCard({ authorName, displayNameValue, avatarUrl, content }) {
   const width = 1400;
   const height = 800;
   const canvas = createCanvas(width, height);
@@ -90,8 +98,12 @@ export async function buildQuoteCard({ authorName, avatarUrl, content }) {
   }
 
   const isLightPhoto = palette.average.luminance >= 145;
-  const backgroundColor = isLightPhoto ? palette.lightest : palette.darkest;
-  const textColor = isLightPhoto ? palette.darkest : palette.lightest;
+  const backgroundColor = isLightPhoto
+    ? mixColor(palette.lightest, { r: 255, g: 255, b: 255 }, 0.2)
+    : mixColor(palette.darkest, { r: 0, g: 0, b: 0 }, 0.24);
+  const textColor = isLightPhoto
+    ? mixColor(palette.darkest, { r: 0, g: 0, b: 0 }, 0.24)
+    : mixColor(palette.lightest, { r: 255, g: 255, b: 255 }, 0.2);
   const middleColor = palette.average;
   const leftWidth = Math.round(width * 0.48);
   const rightX = leftWidth;
@@ -118,32 +130,35 @@ export async function buildQuoteCard({ authorName, avatarUrl, content }) {
 
   const panelPadding = 70;
   const textWidth = rightWidth - panelPadding * 2;
+  const displayName = String(displayNameValue ?? authorName ?? "Unknown").trim().slice(0, 70);
   const username = String(authorName ?? "Unknown").trim().slice(0, 70);
   ctx.textAlign = "center";
   ctx.textBaseline = "alphabetic";
   ctx.fillStyle = rgb(textColor);
-  ctx.font = "600 30px Arial";
-  ctx.fillText(username, rightX + rightWidth / 2, 125, textWidth);
+  ctx.font = "700 40px Arial";
+  ctx.fillText(displayName, rightX + rightWidth / 2, 112, textWidth);
+  ctx.font = "500 23px Arial";
+  ctx.fillText(`@${username}`, rightX + rightWidth / 2, 151, textWidth);
 
   const quote = `“${String(content ?? "").trim().slice(0, MAX_QUOTE_LENGTH)}”`;
-  let fontSize = 58;
+  let fontSize = 76;
   let lines = [];
   do {
-    ctx.font = `italic 600 ${fontSize}px Georgia`;
+    ctx.font = `italic 700 ${fontSize}px Georgia`;
     lines = wrapQuoteText(ctx, quote, textWidth);
-    if (lines.length <= 8 || fontSize <= 34) break;
+    if (lines.length <= 7 || fontSize <= 40) break;
     fontSize -= 3;
-  } while (fontSize > 31);
+  } while (fontSize > 37);
 
-  const lineHeight = Math.round(fontSize * 1.38);
+  const lineHeight = Math.round(fontSize * 1.32);
   const quoteBlockHeight = lines.length * lineHeight;
-  const quoteAreaTop = 175;
-  const quoteAreaBottom = 650;
+  const quoteAreaTop = 185;
+  const quoteAreaBottom = 665;
   const quoteAreaHeight = quoteAreaBottom - quoteAreaTop;
   const startY = quoteAreaTop + Math.max(fontSize, (quoteAreaHeight - quoteBlockHeight) / 2 + fontSize * 0.78);
 
   ctx.fillStyle = rgb(textColor);
-  ctx.font = `italic 600 ${fontSize}px Georgia`;
+  ctx.font = `italic 700 ${fontSize}px Georgia`;
   lines.forEach((line, index) => {
     ctx.fillText(line, rightX + rightWidth / 2, startY + index * lineHeight, textWidth);
   });
@@ -169,6 +184,19 @@ export async function ensureQuotesChannel(guild) {
   return channel;
 }
 
+async function copySourceReactions(sourceMessage, quoteMessage) {
+  const reactions = [...(sourceMessage.reactions?.cache?.values?.() ?? [])];
+  for (const reaction of reactions) {
+    const emoji = reaction.emoji?.id
+      ? `${reaction.emoji.name}:${reaction.emoji.id}`
+      : reaction.emoji?.name;
+    if (!emoji) continue;
+    await quoteMessage.react(emoji).catch((error) => {
+      console.warn(`[quotes] could not copy reaction ${emoji}: ${error.message}`);
+    });
+  }
+}
+
 export async function createQuoteFromReply(commandMessage) {
   const reference = commandMessage.reference;
   if (commandMessage.type !== MessageType.Reply || !reference?.messageId) {
@@ -188,18 +216,21 @@ export async function createQuoteFromReply(commandMessage) {
 
   const image = await buildQuoteCard({
     authorName: original.author.username,
+    displayNameValue: original.member?.displayName ?? original.author.globalName ?? original.author.username,
     avatarUrl: original.author.displayAvatarURL({ extension: "png", size: 512 }),
     content,
   });
   const attachment = new AttachmentBuilder(image, { name: "kittisugar-quote.png" });
   const quotesChannel = await ensureQuotesChannel(original.guild);
-  await quotesChannel.send({ files: [attachment], allowedMentions: { parse: [] } });
+  const publishedQuote = await quotesChannel.send({ files: [attachment], allowedMentions: { parse: [] } });
+  await copySourceReactions(original, publishedQuote);
   if (commandMessage.channelId !== quotesChannel.id) {
-    await commandMessage.channel.send({
+    const channelQuote = await commandMessage.channel.send({
       content: "♡ a quote worth keeping",
       files: [new AttachmentBuilder(image, { name: "kittisugar-quote.png" })],
       allowedMentions: { parse: [] },
     });
+    await copySourceReactions(original, channelQuote);
   }
   await commandMessage.react("♡").catch(() => {});
 }
