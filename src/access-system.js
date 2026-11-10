@@ -87,17 +87,17 @@ export function buildRulesPayload(guild) {
     .setColor(COLOR)
     .setTitle(`୨୧ ${toRoyalBold("Kittisugar Rules")} ♡`)
     .setDescription([
-      `## 01 · Respect
+      `## ${toRoyalBold("01 · Respect")}
 No harassment, hate, threats, bullying, spam, or sharing private information.`,
-      `## 02 · Content
+      `## ${toRoyalBold("02 · Content")}
 Keep NSFW content in NSFW channels. VIP members may post it elsewhere. No illegal or non-consensual intimate content.`,
-      `## 03 · Promotions & Selling
+      `## ${toRoyalBold("03 · Promotions & Selling")}
 Only VIP members may promote or sell in ${promotionChannel}. VIP is **$5 USD once, for life** and includes **VIP, Seller, and a custom role**. No unsolicited ads in chats, profiles, or DMs.`,
-      `## 04 · Warnings
+      `## ${toRoyalBold("04 · Warnings")}
 Repeated rule-breaking may result in warnings, timeouts, or removal from Kittisugar.`,
-      `## 05 · Support Kittisugar ♡
+      `## ${toRoyalBold("05 · Support Kittisugar ♡")}
 Donations help cover Sugar’s monthly hosting costs. Server boosts also unlock a special role and benefits. Thank you for supporting Kittisugar ♡`,
-    ].join("\n\n"))
+    ].join("\n"))
     .setFooter({ text: "By staying, you agree to follow these rules ♡" });
   return { embeds: [embed] };
 }
