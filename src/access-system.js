@@ -157,7 +157,7 @@ export function buildGuidePayload(guild) {
       `## ୨୧ ${guideSectionTitle("Help")}\n\n` +
       `• ${channelMention(guild, ["support"])}\nOpen a private support ticket when you need help from the team.\n` +
       `• ${channelMention(guild, ["privatechat", "privatechats", "private-chat"])}\nCreate and manage private chat rooms. Use /priv-chat commands to see the available options.\n` +
-      `• ${channelMention(guild, ["selfroles", "self-roles"])}\nChoose or update your age, gender, sexuality, and chat color. You can also show or hide NSFW channels.\n` +
+      `• ${channelMention(guild, ["selfroles", "self-roles"])}\nChoose or update your age, gender, sexuality, and chat color. You can also show or hide channels marked NSFW.\n` +
       `## ୨୧ ${guideSectionTitle("Commands")}\n\n` +
       "`/delete amount:` — delete your own recent messages.\n" +
       "`/vip-delete amount:` — VIP message cleanup.\n" +
