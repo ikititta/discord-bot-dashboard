@@ -7,7 +7,7 @@ import {
 import { createCanvas, loadImage } from "@napi-rs/canvas";
 import { registerApplicationCommands } from "./command-registry.js";
 
-const QUOTES_CHANNEL_NAME = "quotes";
+const QUOTES_CHANNEL_NAME = "🖋️｜୨୧•𝓺𝓾𝓸𝓽𝓮𝓼";
 const PINK = "#ffd9ff";
 const MAX_QUOTE_LENGTH = 900;
 const COMMAND = "!quote";
