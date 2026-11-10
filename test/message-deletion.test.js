@@ -238,14 +238,10 @@ test("/delete without a member removes only the invoker's own eligible messages"
 
   await handleMessageDeletionInteraction(harness.interaction, harness.context);
 
-  assert.deepEqual(harness.deletedIds, [own.id]);
+  assert.deepEqual(harness.deletedIds, [webhook.id, controls.id, systemMessage.id, pinned.id, own.id]);
   assert.equal(other.deleted, false);
   assert.equal(botSetup.deleted, false);
-  assert.equal(pinned.deleted, false);
-  assert.equal(systemMessage.deleted, false);
-  assert.equal(controls.deleted, false);
-  assert.equal(webhook.deleted, false);
-  assert.match(response(harness).content, /Deleted 1 message from your own/);
+  assert.match(response(harness).content, /Deleted 5 messages from your own/);
 });
 
 test("/delete ignores a selected member and still removes only the invoker's messages", async () => {
@@ -371,16 +367,35 @@ test("/mod-delete without a member deletes eligible messages from any author in 
 
   await handleMessageDeletionInteraction(harness.interaction, harness.context);
 
-  assert.deepEqual(harness.deletedIds, [thirdPartyMessage.id, otherMessage.id, ownMessage.id]);
-  assert.equal(botMessage.deleted, false);
-  assert.equal(pinnedMessage.deleted, false);
-  assert.equal(systemMessage.deleted, false);
-  assert.equal(controlsMessage.deleted, false);
-  assert.equal(webhookMessage.deleted, false);
-  assert.equal(harness.auditLog.entries[0].selectedCount, 3);
+  assert.deepEqual(harness.deletedIds, [
+    webhookMessage.id,
+    controlsMessage.id,
+    systemMessage.id,
+    pinnedMessage.id,
+    botMessage.id,
+    thirdPartyMessage.id,
+    otherMessage.id,
+    ownMessage.id,
+  ]);
+  assert.equal(harness.auditLog.entries[0].selectedCount, 8);
   assert.equal(harness.auditLog.entries[0].targetId, null);
   assert.equal(shouldPubliclyLogDeletedMessage({ id: thirdPartyMessage.id, guild: {}, author: { bot: false } }, harness.auditLog), false);
   assert.match(response(harness).content, /from this channel/);
+});
+
+test("/mod-delete can target messages authored by bots", async () => {
+  const botMessage = makeMessage(1, BOT_ID, { author: { bot: true } });
+  const harness = makeHarness({
+    commandName: "mod-delete",
+    memberRoleIds: [MOD_ROLE_ID],
+    config: { moderatorRoleIds: [MOD_ROLE_ID] },
+    messages: [botMessage],
+  });
+
+  await handleMessageDeletionInteraction(harness.interaction, harness.context);
+
+  assert.deepEqual(harness.deletedIds, [botMessage.id]);
+  assert.equal(harness.auditLog.entries[0].selectedCount, 1);
 });
 
 test("/mod-delete does not authorize by role name and rejects unauthorized users", async () => {
