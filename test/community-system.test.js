@@ -63,26 +63,18 @@ test("confessions panel offers anonymous, named, and poll actions", () => {
   assert.equal(payload.embeds[0].toJSON().title, "୨୧ 𝒄𝒐𝒏𝒇𝒆𝒔𝒔ions ♡");
 });
 
-test("Suggestions panel offers anonymous or named submissions and emoji-only voting/report buttons", () => {
+test("Suggestions panel offers anonymous or named submissions and native vote/report reactions", () => {
   const panel = buildSuggestionsPanelPayload();
   assert.equal(panel.embeds[0].toJSON().title, "୨୧ Suggestions ♡");
   assert.equal(panel.components[0].toJSON().components[0].custom_id, "sugar-community:suggestion-start");
-
   const modes = buildSuggestionModePicker();
   assert.equal(modes.ephemeral, true);
-  assert.deepEqual(modes.components[0].toJSON().components.map((item) => item.label), [
-    "Anonymously ♡", "With My Name ♡",
-  ]);
-  const buttons = buildSuggestionComponents("123456789012345678")[0].toJSON().components;
-  assert.deepEqual(buttons.map((item) => item.label), ["⬆️", "⬇️", "⚠️"]);
-  assert.deepEqual(buttons.map((item) => item.style), [1, 1, 4]);
-  assert.deepEqual(buttons.map((item) => item.custom_id), [
-    "sugar-community:suggestion-vote:123456789012345678:up",
-    "sugar-community:suggestion-vote:123456789012345678:down",
-    "sugar-community:report:suggestion:123456789012345678",
-  ]);
+  assert.deepEqual(modes.components[0].toJSON().components.map((item) => item.label), ["Anonymously ♡", "With My Name ♡"]);
+  assert.deepEqual(buildSuggestionComponents(), []);
+  const source = fs.readFileSync(new URL("../src/community-system.js", import.meta.url), "utf8");
+  assert.match(source, /for \\(const emoji of \\[\\"⬆️\\", \\"⬇️\\", \\"⚠️\\"\\]\\)/);
+  assert.match(source, /sendSuggestionReactionReport/);
 });
-
 test("love letters panel offers anonymous and named public submissions", () => {
   const payload = buildLoveLettersPanelPayload();
   const buttons = payload.components[0].toJSON().components;
@@ -220,24 +212,14 @@ test("community reports ping all configured moderation roles without broad menti
 });
 
 
-test("suggestions use up/down reactions and a reason-required report button", async () => {
+test("suggestions publish with native upvote, downvote, and report reactions", async () => {
   const source = fs.readFileSync(new URL("../src/community-system.js", import.meta.url), "utf8");
   const publish = source.slice(source.indexOf("async function publishSuggestion"), source.indexOf("async function handleSuggestionReaction"));
-  assert.match(publish, /await message\\.react\\("⬆️"\\)/);
-  assert.match(publish, /await message\\.react\\("⬇️"\\)/);
-  assert.doesNotMatch(publish, /await message\\.react\\("⚠️"\\)/);
-  assert.match(publish, /components: buildSuggestionComponents\\("0"\\)/);
-  assert.match(source, /setLabel\\("Why are you reporting this\\?"\\)/);
-  const panel = buildSuggestionsPanelPayload();
-  assert.equal(panel.components[0].toJSON().components[0].custom_id, "sugar-community:suggestion-start");
-  const report = buildSuggestionComponents("123456789012345678");
-  assert.deepEqual(report[0].toJSON().components.map((component) => component.data.custom_id), [
-    "sugar-community:suggestion-vote:123456789012345678:up",
-    "sugar-community:suggestion-vote:123456789012345678:down",
-    "sugar-community:report:suggestion:123456789012345678",
-  ]);
+  assert.match(publish, /await addSuggestionReactions\\(message\\)/);
+  assert.doesNotMatch(publish, /components:/);
+  assert.match(source, /emoji === "⚠️"/);
+  assert.match(source, /sendSuggestionReactionReport/);
 });
-
 test("suggestion publication mode is validated and suggestion embeds omit timestamps", () => {
   const source = fs.readFileSync(new URL("../src/community-system.js", import.meta.url), "utf8");
   assert.match(source, /suggestion:submit:\$\{mode\}/);
