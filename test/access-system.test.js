@@ -77,11 +77,13 @@ test("verification rolls back Member if removing New fails", async () => {
   assert.equal(member.roles.cache.has("new"), true);
 });
 
-test("access, rules, and guide panels contain the required confirmations and command guide", () => {
+test("access, rules, and guide panels contain the required confirmations and updated guide", () => {
   const guild = { emojis: { cache: [] } };
   const access = buildAccessPanelPayload(guild);
   const rules = buildRulesPayload();
-  const guide = buildGuidePayload();
+  const channelNames = ["get-access", "rules", "guide", "confessions", "loveletters", "suggestions", "quotes", "support", "private-chat", "self-roles"];
+  const channels = channelNames.map((name, index) => ({ name, id: String(100000000000000000 + index), type: 0 }));
+  const guide = buildGuidePayload({ channels: { cache: { find: (predicate) => channels.find(predicate) } } });
 
   assert.match(access.embeds[0].data.description, /read and agree/i);
   assert.match(access.embeds[0].data.description, /18 years of age or older/i);
@@ -97,15 +99,20 @@ test("access, rules, and guide panels contain the required confirmations and com
   assert.match(ruleText, /server boosts/i);
   assert.equal(rules.embeds[0].data.fields[3].name, `**${toRoyalBold("04 · WARNINGS")}**`);
   assert.equal(rules.embeds[0].data.fields[0].name, `**${toRoyalBold("01 · RESPECT")}**`);
-  assert.match(guide.embeds[0].data.description, /\/priv-chat commands/);
-  assert.match(guide.embeds[0].data.description, /\/mod-delete/);
+
   const guideText = guide.embeds[0].data.description;
-  assert.match(guideText, /selfroles/i);
-  assert.match(guideText, /show or hide channels/i);
-  assert.doesNotMatch(guide.embeds[0].data.description, /<#\d{17,20}>/);
-  assert.match(guideText, new RegExp(`\\*\\*${toRoyalBold("Start")}\\*\\*\\n\\*\\*`));
+  assert.equal(guide.embeds[0].data.title, `୨୧ ${toRoyalBold("Kittisugar Guide")} ! ♡`);
+  assert.match(guideText, /A little guide of Kittisugar/);
   for (const title of ["Start", "Community", "Help", "Commands", "Sugar AI"]) {
-    assert.ok(guideText.includes(`**${toRoyalBold(title)}**`), `missing fancy guide heading: ${title}`);
+    assert.ok(guideText.includes(`୨୧ ${toRoyalBold(title)}`), `missing guide heading: ${title}`);
   }
-  assert.doesNotMatch(guideText, /##|─────|━━━━━━━━━━━━━━━━━━━━/);
+  assert.equal((guideText.match(/• <#\d{18}>/g) ?? []).length, 10);
+  assert.match(guideText, /\n\n• <#\d{18}>\nRead the welcome message/);
+  assert.ok(guideText.includes("`/delete amount:` — delete your own recent messages."));
+  assert.ok(guideText.includes("`/vip-delete amount:` — VIP message cleanup."));
+  assert.ok(guideText.includes("`/mod-delete amount: [member:]` — moderator cleanup."));
+  assert.ok(guideText.includes("`!quote` — reply to a message and quote it."));
+  assert.ok(guideText.includes("`/priv-chat commands` — see private chat commands."));
+  assert.match(guideText, /show or hide channels/i);
+  assert.match(guideText, /This guide is also pinned in #dashboard/);
 });
