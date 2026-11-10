@@ -287,6 +287,16 @@ export function attachCommunitySystem(client, { store, stickyPanels, settings, s
       });
     }
   });
+  client.on(Events.MessageReactionAdd, (reaction, user) => {
+    void handleSuggestionReaction(reaction, user, { suggestionStore, settings }, true).catch((error) => {
+      console.error(`[community] suggestion reaction add failed: ${error.message}`);
+    });
+  });
+  client.on(Events.MessageReactionRemove, (reaction, user) => {
+    void handleSuggestionReaction(reaction, user, { suggestionStore, settings }, false).catch((error) => {
+      console.error(`[community] suggestion reaction remove failed: ${error.message}`);
+    });
+  });
 }
 
 async function renameSuggestionsChannel(client) {
@@ -1058,11 +1068,81 @@ async function publishSuggestion(interaction, suggestionStore, mode) {
   }
   const message = await channel.send({
     embeds: [embed],
-    components: buildSuggestionComponents("0"),
     allowedMentions: { parse: [] },
   });
-  await message.edit({ components: buildSuggestionComponents(message.id) });
+  await message.react("⬆️");
+  await message.react("⬇️");
+  await message.react("⚠️");
   return interaction.editReply("Your suggestion has been published ♡");
+}
+
+async function handleSuggestionReaction(reaction, user, { suggestionStore, settings }, added) {
+  if (user?.bot) return;
+  if (reaction.partial) await reaction.fetch();
+  const message = reaction.message;
+  if (message.partial) await message.fetch();
+  if (!message.guild || message.channelId !== SUGGESTIONS_CHANNEL_ID ||
+      message.author?.id !== message.client.user?.id || !isSuggestionMessage(message)) return;
+
+  const emoji = reaction.emoji.name;
+  if (emoji === "⚠️") {
+    if (added) await submitSuggestionReactionReport(message, user, settings);
+    return;
+  }
+  const direction = emoji === "⬆️" ? "up" : emoji === "⬇️" ? "down" : null;
+  if (!direction || !suggestionStore) return;
+  const counts = added
+    ? suggestionStore.setVote(message.id, user.id, direction)
+    : suggestionStore.removeVote(message.id, user.id, direction);
+  await updateSuggestionVoteCounts(message, counts);
+}
+
+function isSuggestionMessage(message) {
+  const fields = message.embeds?.[0]?.fields ?? [];
+  return fields.some((field) => field.name === "⬆️ Upvotes") &&
+    fields.some((field) => field.name === "⬇️ Downvotes");
+}
+
+async function updateSuggestionVoteCounts(message, counts) {
+  const original = message.embeds[0];
+  const embed = EmbedBuilder.from(original);
+  embed.setFields((original.fields ?? []).map((field) => {
+    if (field.name === "⬆️ Upvotes") return { ...field, value: String(counts.up) };
+    if (field.name === "⬇️ Downvotes") return { ...field, value: String(counts.down) };
+    return field;
+  }));
+  await message.edit({ embeds: [embed] });
+}
+
+async function submitSuggestionReactionReport(message, user, settings) {
+  const context = { guild: message.guild, guildId: message.guild.id, client: message.client };
+  let reportChannel = await getConfiguredReportsChannel(context, settings);
+  if (!reportChannel) {
+    try {
+      reportChannel = await createPrivateReportsChannel(context, settings);
+    } catch (error) {
+      console.error(`[community] could not prepare reports channel for suggestion ${message.id}: ${error.message}`);
+      return;
+    }
+  }
+  const everyonePermissions = reportChannel.permissionsFor(message.guild.roles.everyone);
+  if (!everyonePermissions || everyonePermissions.has(PermissionFlagsBits.ViewChannel)) {
+    console.warn("[community] suggestion reaction report skipped because the reports channel is not private.");
+    return;
+  }
+  const embed = new EmbedBuilder()
+    .setColor(0xef4444)
+    .setTitle(formatEmbedTitle("Community Report"))
+    .setDescription("Reported with ⚠️ reaction.")
+    .addFields(
+      { name: "Type", value: "suggestion", inline: true },
+      { name: "Reported by", value: `<@${user.id}>`, inline: true },
+      { name: "Reported post", value: `[Jump to message](https://discord.com/channels/${message.guild.id}/${message.channelId}/${message.id})` },
+      ...(message.embeds[0]?.title ? [{ name: "Post title", value: cleanText(message.embeds[0].title, 200) }] : []),
+      ...(message.embeds[0]?.description ? [{ name: "Post content", value: cleanText(message.embeds[0].description, 900) }] : []),
+    )
+    .setTimestamp();
+  await reportChannel.send(buildReportNotificationPayload(embed));
 }
 
 async function handleSuggestionVote(interaction, { suggestionStore, messageId, direction }) {
