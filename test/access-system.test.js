@@ -3,7 +3,10 @@ import assert from "node:assert/strict";
 import { toRoyalBold } from "../src/embed-format.js";
 
 import {
+  applyNewRoleVisibility,
   assignMemberAccess,
+  canNewRoleViewChannel,
+  NEW_USER_VISIBLE_CATEGORY_ID,
   buildAccessPanelPayload,
   buildGuidePayload,
   buildRulesPayload,
@@ -34,6 +37,53 @@ function createMember(initialRoles = []) {
 test("normalizes styled and spaced channel and role names", () => {
   assert.equal(normalizeName("Get Access"), "getaccess");
   assert.equal(normalizeName("🖋️｜୨୧•𝓺𝓾𝓸𝓽𝓮𝓼"), "quotes");
+});
+
+test("New role can only view the configured category and its child channels", () => {
+  assert.equal(canNewRoleViewChannel({ id: NEW_USER_VISIBLE_CATEGORY_ID }), true);
+  assert.equal(canNewRoleViewChannel({ id: "child", parentId: NEW_USER_VISIBLE_CATEGORY_ID }), true);
+  assert.equal(canNewRoleViewChannel({ id: "other-category" }), false);
+  assert.equal(canNewRoleViewChannel({ id: "other-channel", parentId: "other-category" }), false);
+  assert.equal(canNewRoleViewChannel({ id: "uncategorized" }), false);
+});
+
+test("applies New-role visibility without breaking synced category permissions", async () => {
+  const calls = [];
+  const makeChannel = (id, type, parentId = null, permissionsLocked = false) => ({
+    id,
+    type,
+    parentId,
+    permissionsLocked,
+    permissionOverwrites: {
+      edit: async (_role, permissions) => calls.push([id, permissions.ViewChannel]),
+    },
+  });
+  const target = makeChannel(NEW_USER_VISIBLE_CATEGORY_ID, 4);
+  const targetSyncedChild = makeChannel("target-synced", 0, NEW_USER_VISIBLE_CATEGORY_ID, true);
+  const targetUnsyncedChild = makeChannel("target-unsynced", 0, NEW_USER_VISIBLE_CATEGORY_ID, false);
+  const other = makeChannel("other-category", 4);
+  const otherSyncedChild = makeChannel("other-synced", 0, "other-category", true);
+  const otherUnsyncedChild = makeChannel("other-unsynced", 0, "other-category", false);
+  const uncategorized = makeChannel("uncategorized", 0);
+  const thread = { id: "thread", parentId: NEW_USER_VISIBLE_CATEGORY_ID, isThread: () => true };
+  const channels = [target, targetSyncedChild, targetUnsyncedChild, other, otherSyncedChild, otherUnsyncedChild, uncategorized, thread];
+  const guild = { channels: { cache: { get: (id) => channels.find((channel) => channel.id === id), values: () => channels.values() } } };
+
+  assert.equal(await applyNewRoleVisibility(guild, { id: "new" }), true);
+  assert.deepEqual(calls, [
+    [NEW_USER_VISIBLE_CATEGORY_ID, true],
+    ["target-unsynced", true],
+    ["other-category", false],
+    ["other-unsynced", false],
+    ["uncategorized", false],
+  ]);
+});
+
+test("does not change permissions if the configured visible category is missing", async () => {
+  let edits = 0;
+  const guild = { channels: { cache: { get: () => null, values: () => [ { permissionOverwrites: { edit: async () => edits++ } } ] } } };
+  assert.equal(await applyNewRoleVisibility(guild, { id: "new" }), false);
+  assert.equal(edits, 0);
 });
 
 test("verification adds Member and removes New", async () => {
