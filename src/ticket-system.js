@@ -32,9 +32,9 @@ const TICKET_BUTTON_STYLES = new Map([
   ["general", ButtonStyle.Primary],
   ["report", ButtonStyle.Danger],
   ["appeal", ButtonStyle.Danger],
-  ["partnership", ButtonStyle.Primary],
+  ["partnership", ButtonStyle.Success],
   ["apply", ButtonStyle.Success],
-  ["error", ButtonStyle.Secondary],
+  ["error", ButtonStyle.Danger],
   ["other", ButtonStyle.Secondary],
 ]);
 const MEMBER_PERMISSIONS = [
@@ -68,8 +68,8 @@ export function buildTicketPanelPayload() {
       .setStyle(TICKET_BUTTON_STYLES.get(value)),
   );
   const rows = [
-    new ActionRowBuilder().addComponents(...buttons.slice(0, 4)),
-    new ActionRowBuilder().addComponents(...buttons.slice(4)),
+    new ActionRowBuilder().addComponents(...buttons.slice(0, 5)),
+    new ActionRowBuilder().addComponents(...buttons.slice(5)),
   ];
 
   return { embeds: [embed], components: rows };
