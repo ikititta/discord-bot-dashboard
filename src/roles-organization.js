@@ -193,14 +193,13 @@ async function handleOrganizationButton(interaction) {
     if (!divider.editable) throw new Error("Sugar cannot manage the " + key + " divider role.");
     dividerRoles.push({ key, role: divider });
   }
-  const ordered = [];
+  const ordered = [plan.owner];
   for (const group of plan.groups) {
     const divider = dividerRoles.find((item) => item.key === group.divider)?.role;
     if (divider) ordered.push(divider);
     ordered.push(...group.roles);
   }
   // Owner remains above every reorganized role. Discord-managed integration roles are untouched.
-  ordered.push(plan.owner);
   const updates = ordered.reverse().map((role, index) => ({ role: role.id, position: index + 1 }));
   await guild.roles.setPositions(updates, "Apply the confirmed Kittisugar role organization");
   return interaction.editReply({ content: "୨୧ Role organization applied ♡ The colors are above staff and community, and Booster is in Community. No existing permissions or role colors were changed.", embeds: [], components: [] });
