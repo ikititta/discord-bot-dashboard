@@ -16,7 +16,7 @@ export const FORUM_VISIBILITY_CATEGORY_ID = "1568680126294663330";
 const PREFIX = "sugar-forum-visibility:";
 const OPEN_ID = `${PREFIX}open`;
 const APPLY_ID = `${PREFIX}apply`;
-const PANEL_TITLE = `୨୧ ${toRoyalBold("Forum Visibility")}`;
+const PANEL_TITLE = `୨୧ ${toRoyalBold("Forum Visibility")} ♡`;
 const COLOR = 0xffd9ff;
 
 export function buildForumVisibilityPanelPayload() {
