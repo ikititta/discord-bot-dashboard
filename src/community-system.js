@@ -217,8 +217,8 @@ export function attachCommunitySystem(client, { store, stickyPanels, settings, s
   }
   if (stickyPanels) {
     const legacyPanelMessageId = stickyPanels.get("suggestences");
-    if (legacyPanelMessageId && !stickyPanels.get("suggestions")) {
-      stickyPanels.set("suggestions", legacyPanelMessageId);
+    if (legacyPanelMessageId && !stickyPanels.get("🗳️｜୨୧•𝓼𝓾𝓰𝓰𝓮𝓼𝓽𝓲𝓸𝓷𝓼")) {
+      stickyPanels.set("🗳️｜୨୧•𝓼𝓾𝓰𝓰𝓮𝓼𝓽𝓲𝓸𝓷𝓼", legacyPanelMessageId);
     }
     if (legacyPanelMessageId) stickyPanels.set("suggestences", null);
     attachStickyPanel(client, {
@@ -246,7 +246,7 @@ export function attachCommunitySystem(client, { store, stickyPanels, settings, s
     });
     attachStickyPanel(client, {
       store: stickyPanels,
-      key: "suggestions",
+      key: "🗳️｜୨୧•𝓼𝓾𝓰𝓰𝓮𝓼𝓽𝓲𝓸𝓷𝓼",
       channelId: SUGGESTIONS_CHANNEL_ID,
       titles: [SUGGESTIONS_PANEL_TITLE, LEGACY_SUGGESTIONS_PANEL_TITLE],
       buildPayload: buildSuggestionsPanelPayload,
@@ -299,23 +299,23 @@ export function attachCommunitySystem(client, { store, stickyPanels, settings, s
 
 async function renameSuggestionsChannel(client) {
   const channel = await client.channels.fetch(SUGGESTIONS_CHANNEL_ID).catch(() => null);
-  if (!channel || channel.type !== ChannelType.GuildText || channel.name === "suggestions") return;
+  if (!channel || channel.type !== ChannelType.GuildText || channel.name === "🗳️｜୨୧•𝓼𝓾𝓰𝓰𝓮𝓼𝓽𝓲𝓸𝓷𝓼") return;
   const botMember = channel.guild.members.me;
   if (!botMember?.permissions.has(PermissionFlagsBits.ManageChannels)) {
     console.warn("[community] Sugar needs Manage Channels permission to rename the suggestions channel.");
     return;
   }
-  await channel.setName("suggestions", "Use the correct English spelling for the Suggestions channel");
+  await channel.setName("🗳️｜୨୧•𝓼𝓾𝓰𝓰𝓮𝓼𝓽𝓲𝓸𝓷𝓼", "Set the requested Kittisugar Suggestions channel name");
 }
 
 export async function ensureCommunityPanels(client) {
   const confessions = await upsertPanel(client, CONFESSIONS_CHANNEL_ID, CONFESSION_PANEL_TITLE, buildConfessionsPanelPayload(), { pinOnCreate: false });
   const letters = await upsertPanel(client, LOVE_LETTERS_CHANNEL_ID, LOVE_PANEL_TITLE, buildLoveLettersPanelPayload(), { pinOnCreate: false });
   const suggestionsChannel = await client.channels.fetch(SUGGESTIONS_CHANNEL_ID).catch(() => null);
-  if (suggestionsChannel?.type === ChannelType.GuildText && suggestionsChannel.name !== "suggestions") {
+  if (suggestionsChannel?.type === ChannelType.GuildText && suggestionsChannel.name !== "🗳️｜୨୧•𝓼𝓾𝓰𝓰𝓮𝓼𝓽𝓲𝓸𝓷𝓼") {
     const botMember = suggestionsChannel.guild.members.me;
     if (botMember?.permissions.has(PermissionFlagsBits.ManageChannels)) {
-      await suggestionsChannel.setName("suggestions", "Use the correct English spelling for the Suggestions channel");
+      await suggestionsChannel.setName("🗳️｜୨୧•𝓼𝓾𝓰𝓰𝓮𝓼𝓽𝓲𝓸𝓷𝓼", "Set the requested Kittisugar Suggestions channel name");
     }
   }
   const suggestions = await upsertPanel(client, SUGGESTIONS_CHANNEL_ID, SUGGESTIONS_PANEL_TITLE, buildSuggestionsPanelPayload(), {
