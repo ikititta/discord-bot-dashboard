@@ -376,7 +376,7 @@ function isEligibleMessage(message, targetId) {
     message &&
       !message.deleted &&
       typeof message.author?.id === "string" &&
-      (targetId === null || message.author.id === targetId) &&
+      (targetId === null || message.author.id === targetId)
       // Messages from bots, webhooks, pinned posts, embeds, images, and components
       // are valid deletion targets. The command scope (self vs. moderator) is
       // enforced separately by targetId, not by message format or author type.
