@@ -8,114 +8,48 @@ import {
   SlashCommandBuilder,
 } from "discord.js";
 
+import { readFileSync } from "node:fs";
+
 import { registerApplicationCommands } from "./command-registry.js";
 
-export const KITTISUGAR_GUILD_ID = "1567093019377930363";
+export const ROLE_ORGANIZATION_CONFIG = JSON.parse(
+  readFileSync(new URL("../config/roles.json", import.meta.url), "utf8"),
+);
+
+function validateRoleOrganizationConfig(config) {
+  if (config.version !== 1 || !/^\\d{17,20}$/.test(config.guildId)) {
+    throw new Error("Invalid Kittisugar role configuration version or guild ID.");
+  }
+  if (!config.protectedRoles?.sugarAi || !config.protectedRoles?.serverBooster || !Array.isArray(config.groups) || !config.groups.length) {
+    throw new Error("Kittisugar role configuration is missing protected roles or groups.");
+  }
+  const ids = config.groups.flatMap((group) => group.roles.map((role) => role.id));
+  const dividers = config.groups.map((group) => group.divider);
+  if (config.groups.some((group) => !group.key || !group.divider || !Array.isArray(group.roles) || !group.roles.length)) {
+    throw new Error("Every Kittisugar role group must have a key, divider, and roles.");
+  }
+  if (ids.some((id) => !/^\\d{17,20}$/.test(id)) || new Set(ids).size !== ids.length) {
+    throw new Error("Kittisugar role configuration contains invalid or duplicate role IDs.");
+  }
+  if (dividers.some((name) => typeof name !== "string" || !name.trim()) || new Set(dividers).size !== dividers.length) {
+    throw new Error("Kittisugar role configuration contains invalid or duplicate dividers.");
+  }
+  if (config.groups.some((group) => group.roles.some((role) => !role.name || typeof role.name !== "string"))) {
+    throw new Error("Every configured Kittisugar role must have a display name.");
+  }
+}
+
+validateRoleOrganizationConfig(ROLE_ORGANIZATION_CONFIG);
+
+export const KITTISUGAR_GUILD_ID = ROLE_ORGANIZATION_CONFIG.guildId;
 const COMMAND_NAME = "roles-organize";
 const COLOR = 0xffd9ff;
-const DIVIDERS = [
-  "୨୧ ── 𝓐𝓓𝓜𝓘𝓝 ── ୨୧",
-  "୨୧ ── 𝓒𝓞𝓛𝓞𝓡𝓔𝓢 ── ୨୧",
-  "୨୧ ── 𝓒𝓞𝓜𝓤𝓝𝓘𝓓𝓐𝓓 ── ୨୧",
-  "୨୧ ── 𝓔𝓓𝓐𝓓𝓔𝓢 ── ୨୧",
-  "୨୧ ── 𝓘𝓓𝓔𝓝𝓣𝓘𝓓𝓐𝓓 ── ୨୧",
-  "୨୧ ── 𝓐𝓒𝓒𝓔𝓢𝓞 ── ୨୧",
-];
-
-const ROLE_GROUPS = [
-  {
-    divider: DIVIDERS[0],
-    roles: [
-      ["1567796193268858950", "꒰ 𝒪𝓌𝓃𝑒𝓇 ! ꒱"],
-      ["1568188570890403910", "꒰ 𝒶𝒹𝓂𝒾𝓃 ! ꒱"],
-      ["1568188595171500123", "꒰ 𝓂ℴ𝒹 ! ꒱"],
-      ["1569493295686746152", "꒰ 𝓈𝓉𝒶𝒻𝒻 ! ꒱"],
-    ],
-  },
-  {
-    divider: DIVIDERS[1],
-    roles: [
-      ["1569780848545235045", "꒰ 𝓅𝒾𝓃𝓀 ! ꒱"],
-      ["1569807135775395941", "꒰ 𝓇ℯ𝒹 ! ꒱"],
-      ["1569807145598329052", "꒰ ℴ𝓇𝒶𝓃𝑔ℯ ! ꒱"],
-      ["1569807155253485708", "꒰ 𝓎ℯ𝓁𝓁ℴ𝓌 ! ꒱"],
-      ["1569807169283686491", "꒰ 𝑔𝓇ℯℯ𝓃 ! ꒱"],
-      ["1569807182415921174", "꒰ 𝒸𝓎𝒶𝓃 ! ꒱"],
-      ["1569807196437356585", "꒰ 𝒷𝓁𝓊ℯ ! ꒱"],
-      ["1569807215194415277", "꒰ 𝓅𝓊𝓇𝓅𝓁ℯ ! ꒱"],
-      ["1569807243006705706", "꒰ 𝓌𝒽𝒾𝓉ℯ ! ꒱"],
-      ["1569807253555388487", "꒰ 𝑔𝓇𝒶𝓎 ! ꒱"],
-      ["1569807265060626653", "꒰ 𝒷𝓇ℴ𝓌𝓃 ! ꒱"],
-      ["1569807276469129357", "꒰ 𝒷𝓁𝒶𝒸𝓀 ! ꒱"],
-    ],
-  },
-  {
-    divider: DIVIDERS[2],
-    roles: [
-      ["1568188492704522330", "꒰ 𝓃ℯ𝓌 ! ꒱"],
-      ["1568188534836428812", "꒰ 𝓂ℯ𝓂𝒷ℯ𝓇 ! ꒱"],
-      ["1568188714247524382", "꒰ 𝓋ℯ𝓇𝒾𝒻𝒾ℯ𝒹 ! ꒱"],
-      ["1568188640113463437", "꒰ 𝒱ℐ𝒫 ! ꒱"],
-      ["1569809500955738164", "꒰ 𝓑𝓸𝓸𝓼𝓽𝓮𝓻 ! ꒱"],
-    ],
-  },
-  {
-    divider: DIVIDERS[3],
-    roles: [
-      ["1569242096932622376", "꒰ 𝒜𝑔ℯ · 18- ! ꒱"],
-      ["1569242097440260126", "꒰ 𝒜𝑔ℯ · 18 ! ꒱"],
-      ["1569242100057378907", "꒰ 𝒜𝑔ℯ · 19 ! ꒱"],
-      ["1569242100883525744", "꒰ 𝒜𝑔ℯ · 20 ! ꒱"],
-      ["1569242101907193866", "꒰ 𝒜𝑔ℯ · 21 ! ꒱"],
-      ["1569242102414573698", "꒰ 𝒜𝑔ℯ · 22 ! ꒱"],
-      ["1569242103383597167", "꒰ 𝒜𝑔ℯ · 23 ! ꒱"],
-      ["1569242104322854993", "꒰ 𝒜𝑔ℯ · 24 ! ꒱"],
-      ["1569242104935354411", "꒰ 𝒜𝑔ℯ · 25 ! ꒱"],
-      ["1569242105153331312", "꒰ 𝒜𝑔ℯ · 26 ! ꒱"],
-      ["1569242106130731080", "꒰ 𝒜𝑔ℯ · 27 ! ꒱"],
-      ["1569242106797629471", "꒰ 𝒜𝑔ℯ · 28 ! ꒱"],
-      ["1569242107527430164", "꒰ 𝒜𝑔ℯ · 29 ! ꒱"],
-      ["1569242107821170802", "꒰ 𝒜𝑔ℯ · 30 ! ꒱"],
-      ["1569242109020733440", "꒰ 𝒜𝑔ℯ · 31 ! ꒱"],
-      ["1569242109918052453", "꒰ 𝒜𝑔ℯ · 32 ! ꒱"],
-      ["1569242110920499230", "꒰ 𝒜𝑔ℯ · 33 ! ꒱"],
-      ["1569242111600107611", "꒰ 𝒜𝑔ℯ · 34 ! ꒱"],
-      ["1569242112397017088", "꒰ 𝒜𝑔ℯ · 35 ! ꒱"],
-      ["1569242112921313371", "꒰ 𝒜𝑔ℯ · 36 ! ꒱"],
-      ["1569242113067978756", "꒰ 𝒜𝑔ℯ · 37 ! ꒱"],
-      ["1569242114036994118", "꒰ 𝒜𝑔ℯ · 38 ! ꒱"],
-      ["1569242114582249554", "꒰ 𝒜𝑔ℯ · 39 ! ꒱"],
-      ["1569242115077177400", "꒰ 𝒜𝑔ℯ · 40 ! ꒱"],
-    ],
-  },
-  {
-    divider: DIVIDERS[4],
-    roles: [
-      ["1569638102949953567", "꒰ 𝒻ℯ𝓂𝒶𝓁ℯ ! ꒱"],
-      ["1569807000278269983", "꒰ 𝓂𝒶𝓁ℯ ! ꒱"],
-      ["1569807011217145948", "꒰ 𝓉𝓇𝒶𝓃𝓈 ! ꒱"],
-      ["1569807020809396455", "꒰ 𝓃ℴ𝓃-𝒷𝒾𝓃𝒶𝓇𝓎 ! ꒱"],
-      ["1569638169660489903", "꒰ 𝓈𝓉𝓇𝒶𝒾𝑔𝒽𝓉 ! ꒱"],
-      ["1569807071765856307", "꒰ 𝑔𝒶𝓎-𝓁ℯ𝓈𝒷𝒾𝒶𝓃 ! ꒱"],
-      ["1569807083769958422", "꒰ 𝒷𝒾𝓈ℯ𝓍𝓊𝒶𝓁 ! ꒱"],
-      ["1569807093966438591", "꒰ 𝓅𝒶𝓃𝓈ℯ𝓍𝓊𝒶𝓁 ! ꒱"],
-      ["1569807104917770284", "꒰ 𝒶𝓈ℯ𝓍𝓊𝒶𝓁 ! ꒱"],
-      ["1569807116590649558", "꒰ 𝓅𝓇ℯ𝒻ℯ𝓇-𝓃ℴ𝓉-𝓉ℴ-𝓈𝒶𝓎 ! ꒱"],
-    ],
-  },
-  {
-    divider: DIVIDERS[5],
-    roles: [
-      ["1568483423608381600", "꒰ 𝓝𝓢𝓕𝓦 ! ꒱"],
-      ["1569637397774340116", "꒰ 𝓃𝓈𝒻𝓌-𝒽𝒾𝒹𝒹ℯ𝓃 ! ꒱"],
-    ],
-  },
-];
-
-const EXPECTED_SPECIAL_ROLES = {
-  sugarAi: "1567669697061724263",
-  serverBooster: "1569802495792914593",
-};
+const DIVIDERS = ROLE_ORGANIZATION_CONFIG.groups.map((group) => group.divider);
+const ROLE_GROUPS = ROLE_ORGANIZATION_CONFIG.groups.map((group) => ({
+  divider: group.divider,
+  roles: group.roles.map(({ id, name }) => [id, name]),
+}));
+const EXPECTED_SPECIAL_ROLES = ROLE_ORGANIZATION_CONFIG.protectedRoles;
 
 export function buildRoleOrganizationPlan(roles, guildId = KITTISUGAR_GUILD_ID) {
   if (guildId !== KITTISUGAR_GUILD_ID) throw new Error("This organizer is restricted to the Kittisugar server.");
