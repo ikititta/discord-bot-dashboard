@@ -115,18 +115,18 @@ export function buildGuidePayload(guild) {
     .setTitle(`୨୧ ${toRoyalBold("Kittisugar Guide!")} ♡`)
     .setDescription(
       "A little guide of Kittisugar ♡ Tap any channel mention to open it.\n\n" +
-      `୨୧ ${guideSectionTitle("Start")}\n\n` +
-      `• ${channelMention(guild, ["getaccess", "get-access"])}\nRead the welcome message and press Enter Server when you are ready to access the community.\n\n` +
-      `• ${channelMention(guild, ["rules"])}\nCheck the server rules before chatting. They explain our 18+, SFW, safety, and promotion policies.\n\n` +
+      `୨୧ ${guideSectionTitle("Start")}\n` +
+      `• ${channelMention(guild, ["getaccess", "get-access"])}\nRead the welcome message and press Enter Server when you are ready to access the community.\n` +
+      `• ${channelMention(guild, ["rules"])}\nCheck the server rules before chatting. They explain our 18+, SFW, safety, and promotion policies.\n` +
       `• ${channelMention(guild, ["guide"])}\nFind what each channel is for and how to use the server.\n\n` +
-      `୨୧ ${guideSectionTitle("Community")}\n\n` +
-      `• ${channelMention(guild, ["confessions"])}\nShare an anonymous confession or create a poll with the channel buttons.\n\n` +
-      `• ${channelMention(guild, ["loveletters", "love-letters"])}\nLeave a sweet message or appreciation for someone in the community.\n\n` +
-      `• ${channelMention(guild, ["suggestions"])}\nShare ideas and suggestions to help make Kittisugar better.\n\n` +
+      `୨୧ ${guideSectionTitle("Community")}\n` +
+      `• ${channelMention(guild, ["confessions"])}\nShare an anonymous confession or create a poll with the channel buttons.\n` +
+      `• ${channelMention(guild, ["loveletters", "love-letters"])}\nLeave a sweet message or appreciation for someone in the community.\n` +
+      `• ${channelMention(guild, ["suggestions"])}\nShare ideas and suggestions to help make Kittisugar better.\n` +
       `• ${channelMention(guild, ["quotes"])}\nPost memorable, funny, or meaningful quotes from the community.\n\n` +
-      `୨୧ ${guideSectionTitle("Help")}\n\n` +
-      `• ${channelMention(guild, ["support"])}\nOpen a private support ticket when you need help from the team.\n\n` +
-      `• ${channelMention(guild, ["privatechat", "privatechats", "private-chat"])}\nCreate and manage private chat rooms. Use /priv-chat commands to see the available options.\n\n` +
+      `୨୧ ${guideSectionTitle("Help")}\n` +
+      `• ${channelMention(guild, ["support"])}\nOpen a private support ticket when you need help from the team.\n` +
+      `• ${channelMention(guild, ["privatechat", "privatechats", "private-chat"])}\nCreate and manage private chat rooms. Use /priv-chat commands to see the available options.\n` +
       `• ${channelMention(guild, ["selfroles", "self-roles"])}\nChoose or update your age, gender, sexuality, interests, and color roles. These roles also let you show or hide channels.\n\n` +
       `୨୧ ${guideSectionTitle("Commands")}\n\n` +
       "`/delete amount:` — delete your own recent messages.\n\n" +
