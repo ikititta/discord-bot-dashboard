@@ -281,7 +281,7 @@ export async function createQuoteFromReply(commandMessage) {
   await copySourceReactions(original, publishedQuote);
   if (commandMessage.channelId !== quotesChannel.id) {
     const channelQuote = await commandMessage.channel.send({
-      content: `♡ a quote worth keeping · ${mention}`,
+      content: `♡ a quote worth keeping\n${mention}`,
       files: [new AttachmentBuilder(image, { name: "kittisugar-quote.png" })],
       allowedMentions: { parse: [], users: [original.author.id] },
     });
