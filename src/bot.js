@@ -46,12 +46,13 @@ export function createBot({
       // Privileged. Turn Server Members on in the Developer Portal.
       GatewayIntentBits.GuildMembers,
       GatewayIntentBits.GuildMessages,
+      GatewayIntentBits.GuildMessageReactions,
       // Privileged. Turn Message Content on to log what a deleted message said.
       GatewayIntentBits.MessageContent,
     ],
     // Without these, a deleted or edited message that is not in the cache
     // (anything from before the bot started) arrives empty and is dropped.
-    partials: [Partials.Message, Partials.Channel, Partials.User],
+    partials: [Partials.Message, Partials.Channel, Partials.User, Partials.Reaction],
   });
 
   client.once(Events.ClientReady, () => {
