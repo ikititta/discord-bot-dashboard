@@ -16,13 +16,14 @@ test("support panel uses the requested title, English guidance, and suggestions 
   assert.match(embed.description, /\*\*Partnership\*\*/);
   assert.match(embed.description, /\*\*Apply\*\* — Apply to become a member of our staff team\./);
   assert.match(embed.description, /\*\*Others\*\*/);
+  assert.match(embed.description, /\*\*Buy VIP\*\* — Questions about purchasing VIP or getting VIP access\./);
   assert.ok(embed.description.endsWith(`<#${SUGGESTIONS_CHANNEL_ID}>!`));
 });
 
 test("support panel offers seven categorized buttons with appropriate Discord styles", () => {
   const payload = buildTicketPanelPayload();
   assert.equal(payload.components.length, 2);
-  assert.deepEqual(payload.components.map((row) => row.toJSON().components.length), [5, 2]);
+  assert.deepEqual(payload.components.map((row) => row.toJSON().components.length), [5, 3]);
 
   const buttons = payload.components.flatMap((row) => row.toJSON().components);
   assert.deepEqual(buttons.map((item) => item.custom_id), [
@@ -33,6 +34,7 @@ test("support panel offers seven categorized buttons with appropriate Discord st
     "sugar-ticket:category:apply",
     "sugar-ticket:category:error",
     "sugar-ticket:category:other",
+    "sugar-ticket:category:buy-vip",
   ]);
   assert.deepEqual(buttons.map((item) => item.label), [
     "General ♡",
@@ -42,8 +44,9 @@ test("support panel offers seven categorized buttons with appropriate Discord st
     "Apply ♡",
     "Error ♡",
     "Others ♡",
+    "Buy VIP ♡",
   ]);
-  assert.deepEqual(buttons.map((item) => item.style), [1, 4, 4, 3, 3, 4, 2]);
+  assert.deepEqual(buttons.map((item) => item.style), [1, 4, 4, 3, 3, 4, 2, 1]);
   assert.ok(payload.components.every((row) => row.toJSON().components.length <= 5));
 });
 
