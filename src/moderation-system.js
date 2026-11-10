@@ -83,7 +83,7 @@ export function detectMessageViolation(message, recentMessages = []) {
   const isVip = message?.member?.roles?.cache?.some((role) => ["vip", "seller"].includes(normalize(role.name))) ?? false;
   const channel = normalize(message?.channel?.name);
   const inPromotionChannel = PROMOTION_CHANNELS.has(channel);
-  if (!isVip && !inPromotionChannel && (INVITE_LINK.test(content) || (PROMOTION_WORDS.test(content) && URL.test(content)))) {
+  if ((!isVip || !inPromotionChannel) && (INVITE_LINK.test(content) || (PROMOTION_WORDS.test(content) && URL.test(content)))) {
     URL.lastIndex = 0;
     return "unauthorized promotion";
   }
@@ -128,16 +128,15 @@ export function attachModerationSystem(client, { settings, store }) {
 
   client.on(Events.GuildMemberAdd, async (member) => {
     const now = Date.now();
-    const recent = (joins.get(member.guild.id) ?? []).filter((time) => now - time <= RAID_WINDOW_MS);
-    recent.push(now);
+    const recent = (joins.get(member.guild.id) ?? []).filter((entry) => now - entry.at <= RAID_WINDOW_MS);
+    recent.push({ at: now, member });
     joins.set(member.guild.id, recent);
     if (recent.length < RAID_JOIN_THRESHOLD) return;
 
     // Only very recently created accounts are automatically restricted, to reduce false positives.
-    const suspicious = [...member.guild.members.cache.values()].filter((candidate) =>
-      candidate.joinedTimestamp && now - candidate.joinedTimestamp <= RAID_WINDOW_MS &&
-      now - candidate.user.createdTimestamp < RAID_ACCOUNT_AGE_MS,
-    );
+    const suspicious = recent
+      .map((entry) => entry.member)
+      .filter((candidate) => now - candidate.user.createdTimestamp < RAID_ACCOUNT_AGE_MS);
     for (const candidate of suspicious) {
       await candidate.timeout(RAID_TIMEOUT_MS, "Temporary anti-raid restriction: rapid join burst").catch((error) => {
         console.error(`[anti-raid] could not timeout ${candidate.id}: ${error.message}`);
