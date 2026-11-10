@@ -1045,8 +1045,7 @@ async function publishSuggestion(interaction, suggestionStore, mode) {
   const embed = new EmbedBuilder()
     .setColor(COLOR)
     .setTitle(formatEmbedTitle("Suggestion"))
-    .setDescription(body)
-    ;
+    .setDescription(body);
   if (mode === "named") {
     embed.setAuthor({
       name: interaction.member?.displayName ?? interaction.user.globalName ?? interaction.user.username,
