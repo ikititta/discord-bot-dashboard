@@ -106,6 +106,7 @@ test("access, rules, and guide panels contain the required confirmations and upd
   const guideText = guide.embeds[0].data.description;
   assert.equal(guide.embeds[0].data.title, `୨୧ ${toRoyalBold("Kittisugar Guide!")} ♡`);
   assert.match(guideText, /A little guide of Kittisugar/);
+  assert.doesNotMatch(guideText, /\n\n(?:## )?୨୧ .*?(?:Start|Community|Help|Commands|Sugar AI)/);
   for (const title of ["Start", "Community", "Help", "Commands", "Sugar AI"]) {
     assert.ok(guideText.includes(`## ୨୧ ${toRoyalBold(title)}`), `missing large guide heading: ${title}`);
   }
