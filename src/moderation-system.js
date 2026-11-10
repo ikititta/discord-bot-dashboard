@@ -10,7 +10,7 @@ const SPAM_WINDOW_MS = 8_000;
 const SPAM_MESSAGE_THRESHOLD = 5;
 const REPEAT_THRESHOLD = 3;
 const STRIKE_LIMIT = 3;
-const PROMOTION_CHANNELS = new Set(["promotions", "promotion", "selling", "advertising", "marketplace"]);
+const PROMOTION_CHANNELS = new Set(["promotions", "promotion", "promos", "promo", "selling", "advertising", "advertise", "marketplace"]);
 const PROMOTION_WORDS = /\b(?:promot(?:e|ion|ing)|advertis(?:e|ing)|selling|for sale|commission(?:s)?|my shop|my store|discount code|subscribe to|my services|buy now)\b/i;
 const INVITE_LINK = /(?:discord\.gg\/|discord(?:app)?\.com\/invite\/)/i;
 
