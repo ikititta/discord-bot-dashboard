@@ -79,24 +79,22 @@ export function buildAccessPanelPayload(guild, { rulesChannel, guideChannel } = 
   };
 }
 
-export function buildRulesPayload() {
+export function buildRulesPayload(guild) {
+  const promotionChannel = guild ? channelMention(guild, ["promotions", "promotion", "selling", "advertising", "marketplace"]) : "**promotions / selling channel**";
   const embed = new EmbedBuilder()
     .setColor(COLOR)
     .setTitle("୨୧ Kittisugar Rules ♡")
     .setDescription(
-      "Kittisugar is an **18+ SFW community**. By entering, you agree to follow these rules:",
+      "**18+ · SFW · Be respectful.** By staying here, you agree to these essentials:",
     )
     .addFields(
-      { name: "01 · Be respectful", value: "Treat everyone with respect. Harassment, hate speech, threats, bullying, and targeted hostility are not allowed." },
-      { name: "02 · Keep it SFW", value: "No nudity, sexual content, or suggestive images, videos, profile pictures, banners, or other content." },
-      { name: "03 · No promotions", value: "Do not advertise or promote servers, accounts, products, or services in chats, profiles, or DMs." },
-      { name: "04 · Protect privacy", value: "Do not share anyone's private information, personal messages, or screenshots without their permission." },
-      { name: "05 · No spam or disruption", value: "Avoid spam, raids, excessive pings, flooding, and deliberately disrupting conversations." },
-      { name: "06 · Use channels appropriately", value: "Keep conversations in their relevant spaces and follow each channel's purpose." },
-      { name: "07 · Follow Discord rules", value: "You must follow Discord's Terms of Service and Community Guidelines." },
-      { name: "08 · Listen to staff", value: "Follow moderator instructions. Use the support system to ask questions or appeal a moderation decision." },
+      { name: "01 · Respect & safety", value: "No harassment, hate, bullying, threats, spam, raids, or sharing private information." },
+      { name: "02 · SFW only", value: "No nudity, sexual or suggestive content, including images, videos, avatars, or banners." },
+      { name: "03 · Promotions & selling", value: `Promotions, advertising, and selling are only allowed in ${promotionChannel}. Access costs **$5 USD one time (lifetime)** and includes **VIP, Seller, and a custom role**, plus their server benefits. No unsolicited ads in chats, profiles, or DMs.` },
+      { name: "04 · Keep the server tidy", value: "Use the right channels, follow staff instructions, and respect Discord's Terms of Service and Community Guidelines." },
+      { name: "05 · Support Kittisugar ♡", value: "Sugar is our own bot, maintained independently instead of relying on third-party bots. Hosting and operation have a monthly cost. Donations are always welcome, and server boosts also unlock a role and benefits. Every bit of support is genuinely appreciated." },
     )
-    .setFooter({ text: "Kittisugar is for adults aged 18+ · Keep the community safe and SFW ♡" });
+    .setFooter({ text: "Kittisugar is an 18+ SFW community ♡" });
   return { embeds: [embed] };
 }
 
@@ -113,35 +111,21 @@ export function buildGuidePayload(guild) {
     .setColor(COLOR)
     .setTitle("୨୧ Kittisugar Guide ♡")
     .setDescription(
-      "A little map of Kittisugar and its features. Tap any channel mention to open it ♡",
+      "Your quick guide to the server. Tap a channel mention to open it ♡\n\n" +
+      `**Start here:** ${channelMention(guild, ["getaccess", "get-access"])}, ${channelMention(guild, ["rules"])}, and ${channelMention(guild, ["guide"])}.\n` +
+      `**Community:** ${channelMention(guild, ["confessions"])}, ${channelMention(guild, ["loveletters", "love-letters"])}, ${channelMention(guild, ["suggestions"])}, and ${channelMention(guild, ["quotes"])}.\n` +
+      `**Help:** ${channelMention(guild, ["support"])} for private support tickets.\n` +
+      `**Private chats:** ${channelMention(guild, ["privatechat", "privatechats", "private-chat"])} to create and manage private rooms.\n` +
+      `**Self roles:** ${channelMention(guild, ["selfroles", "self-roles"])} lets you change the roles chosen when you joined and show or hide channels.\n\n` +
+      "**Useful commands**\n" +
+      "`/delete amount:<number>` — delete your own recent messages.\n" +
+      "`/vip-delete amount:<number>` — VIP message cleanup.\n" +
+      "`/mod-delete amount:<number> [member:<user>]` — moderator cleanup.\n" +
+      "`!quote` — reply to a message and quote it.\n" +
+      "`/priv-chat commands` — private-chat help.\n\n" +
+      "**Sugar AI:** mention Sugar or address the bot directly to chat with it."
     )
-    .addFields(
-      { name: "START", value: `${channelMention(guild, ["getaccess", "get-access"])} — complete the entry confirmation.\n${channelMention(guild, ["rules"])} — read the community rules.\n${channelMention(guild, ["guide"])} — learn how the server works.` },
-      { name: "COMMUNITY", value: `${channelMention(guild, ["confessions"])} — share anonymous confessions and create polls.\n${channelMention(guild, ["loveletters", "love-letters"])} — send a sweet message, anonymously or with your name.\n${channelMention(guild, ["suggestions"])} — share ideas and vote with reactions.\n${channelMention(guild, ["quotes"])} — a gallery of messages worth keeping.` },
-      { name: "SUPPORT", value: `${channelMention(guild, ["support"])} — open a private ticket for general help, reports, appeals, partnerships, staff applications, errors, or other requests.` },
-      { name: "PRIVATE CHATS", value: `${channelMention(guild, ["privatechat", "privatechats", "private-chat"])} — create a private space, invite or remove people, rename it, or delete it.` },
-      {
-        name: "SERVER COMMANDS",
-        value:
-          "`/delete amount:<number>` — delete up to 20 of your own recent messages.\n" +
-          "`/vip-delete amount:<number>` — VIP members can delete up to 100 of their own recent messages.\n" +
-          "`/mod-delete amount:<number> [member:<user>]` — moderators can delete up to 100 recent messages, from the channel or a selected member.\n" +
-          "`!quote` — reply to a message and send `!quote` to publish it as a quote.",
-      },
-      {
-        name: "PRIVATE CHAT COMMANDS",
-        value:
-          "`/priv-chat create name:<name>` — create a private chat and optionally invite up to five people.\n" +
-          "`/priv-chat add user:<person>` — invite someone (owner only).\n" +
-          "`/priv-chat remove user:<person>` — remove an invitee (owner only).\n" +
-          "`/priv-chat rename name:<name>` — rename the chat (owner only).\n" +
-          "`/priv-chat delete` — permanently delete the chat (owner confirmation required).\n" +
-          "`/priv-chat leave` — leave a private chat.\n" +
-          "`/priv-chat commands` — show the private-chat command guide.",
-      },
-      { name: "SUGAR AI", value: "Mention **Sugar** or address the bot directly to chat with the AI. Ordinary messages are not sent to the AI." },
-    )
-    .setFooter({ text: "Have fun, be kind, and enjoy your stay ♡" });
+    .setFooter({ text: "This guide is also posted in #dashboard and will always be available there ♡" });
   return { embeds: [embed] };
 }
 
@@ -220,7 +204,13 @@ export async function ensureStartChannels(guild, client) {
   const guide = await ensureTextChannel(guild, category, GUIDE_CHANNEL_NAME, newRole, client.user.id);
 
   await upsertPanel(access, client, "୨୧ Welcome to Kittisugar ♡", buildAccessPanelPayload(guild, { rulesChannel: rules, guideChannel: guide }));
-  await upsertPanel(rules, client, "୨୧ Kittisugar Rules ♡", buildRulesPayload());
+  await upsertPanel(rules, client, "୨୧ Kittisugar Rules ♡", buildRulesPayload(guild));
+  const dashboard = guild.channels.cache.find((channel) =>
+    channel.type === ChannelType.GuildText && normalizeName(channel.name) === "dashboard",
+  );
+  if (dashboard) {
+    await upsertPanel(dashboard, client, "୨୧ Kittisugar Guide ♡", buildGuidePayload(guild));
+  }
   await upsertPanel(guide, client, "୨୧ Kittisugar Guide ♡", buildGuidePayload(guild));
 
   console.info(`[access] start category ready for guild ${guild.id}`);
