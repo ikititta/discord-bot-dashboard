@@ -21,18 +21,20 @@ const LEGACY_PANEL_TITLE = formatEmbedTitle("Kittisugar Support");
 const PANEL_COLOR = 0xffd9ff;
 const TICKET_CATEGORIES = new Map([
   ["general", "General Help"],
-  ["technical", "Technical Issue"],
+  ["error", "Error"],
   ["report", "Report"],
   ["appeal", "Appeal"],
   ["partnership", "Partnership"],
+  ["apply", "Apply"],
   ["other", "Other"],
 ]);
 const TICKET_BUTTON_STYLES = new Map([
   ["general", ButtonStyle.Primary],
-  ["technical", ButtonStyle.Secondary],
-  ["report", ButtonStyle.Danger],
-  ["appeal", ButtonStyle.Secondary],
-  ["partnership", ButtonStyle.Success],
+  ["error", ButtonStyle.Secondary],
+  ["report", ButtonStyle.Secondary],
+  ["appeal", ButtonStyle.Danger],
+  ["partnership", ButtonStyle.Primary],
+  ["apply", ButtonStyle.Success],
   ["other", ButtonStyle.Secondary],
 ]);
 const MEMBER_PERMISSIONS = [
@@ -50,10 +52,11 @@ export function buildTicketPanelPayload() {
     .setDescription(
       "Need help with something? Choose the option that best matches your request to open a private ticket with our team.\n\n" +
       "**General Help** — Questions or general assistance.\n" +
-      "**Technical Issue** — Bugs, errors, or technical problems.\n" +
+      "**Error** — Report bugs, errors, or technical problems.\n" +
       "**Report** — Report a user, message, or rule violation.\n" +
       "**Appeal** — Appeal a warning, punishment, or restriction.\n" +
       "**Partnership** — Collaboration and server partnership inquiries.\n" +
+      "**Apply** — Apply to become a member of our staff team.\n" +
       "**Other** — Requests that don't fit the other categories.\n\n" +
       `Have a suggestion? Share it in <#${SUGGESTIONS_CHANNEL_ID}>!`,
     );
@@ -65,8 +68,8 @@ export function buildTicketPanelPayload() {
       .setStyle(TICKET_BUTTON_STYLES.get(value)),
   );
   const rows = [
-    new ActionRowBuilder().addComponents(...buttons.slice(0, 3)),
-    new ActionRowBuilder().addComponents(...buttons.slice(3)),
+    new ActionRowBuilder().addComponents(...buttons.slice(0, 4)),
+    new ActionRowBuilder().addComponents(...buttons.slice(4)),
   ];
 
   return { embeds: [embed], components: rows };
