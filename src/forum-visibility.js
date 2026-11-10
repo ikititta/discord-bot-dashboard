@@ -22,9 +22,9 @@ export function buildForumVisibilityPanelPayload() {
     .setColor(COLOR)
     .setTitle(PANEL_TITLE)
     .setDescription(
-      "Customize which forums appear in your channel list. Choose the forums you want to hide and change your selection anytime.",
+      "Customize which forums appear in your channel list. Choose the forums you want to hide and change your selection anytime.\n\n**Your choices can be changed whenever you like.**",
     )
-    .setFooter({ text: "Your choices can be changed whenever you like." });
+    ;
 
   const button = new ButtonBuilder()
     .setCustomId(OPEN_ID)
