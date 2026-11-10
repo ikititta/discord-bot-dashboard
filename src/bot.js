@@ -16,6 +16,7 @@ import { attachCommunitySystem } from "./community-system.js";
 import { attachQuoteSystem } from "./quote-system.js";
 import { attachGeneralQuoteStickyTip } from "./general-quote-sticky.js";
 import { attachAccessSystem } from "./access-system.js";
+import { attachRolesAuditSystem } from "./roles-audit.js";
 import { attachModerationSystem } from "./moderation-system.js";
 import { renameMatchingChannels } from "./channel-renames.js";
 import { attachForumVisibilitySystem } from "./forum-visibility.js";
@@ -155,6 +156,7 @@ export function createBot({
   attachQuoteSystem(client, { token, applicationId });
   attachGeneralQuoteStickyTip(client, { store: stickyPanels });
   attachAccessSystem(client);
+  attachRolesAuditSystem(client, { token, applicationId });
   attachForumVisibilitySystem(client);
   if (autoModeration) attachModerationSystem(client, { settings, store: autoModeration });
 
