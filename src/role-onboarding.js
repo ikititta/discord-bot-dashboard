@@ -4,11 +4,8 @@ import {
   ButtonStyle,
   ChannelType,
   EmbedBuilder,
-  ModalBuilder,
   PermissionFlagsBits,
   StringSelectMenuBuilder,
-  TextInputBuilder,
-  TextInputStyle,
 } from "discord.js";
 
 import { toRoyalBold } from "./embed-format.js";
@@ -62,20 +59,26 @@ export const SEXUALITY_OPTIONS = [
   ["prefer-not-to-say", "Prefer not to say"],
 ];
 
+export const COLOR_OPTIONS = [
+  ["red", "Red", 0xe74c3c],
+  ["orange", "Orange", 0xe67e22],
+  ["yellow", "Yellow", 0xf1c40f],
+  ["green", "Green", 0x2ecc71],
+  ["cyan", "Cyan", 0x1abc9c],
+  ["blue", "Blue", 0x3498db],
+  ["purple", "Purple", 0x9b59b6],
+  ["pink", "Pink", 0xff69b4],
+  ["white", "White", 0xffffff],
+  ["gray", "Gray", 0x95a5a6],
+  ["brown", "Brown", 0x8b5a2b],
+  ["black", "Black", 0x23272a],
+];
+
 const CATEGORY_OPTIONS = {
   gender: GENDER_OPTIONS,
   age: AGE_OPTIONS,
   sexuality: SEXUALITY_OPTIONS,
 };
-
-export function isValidHexColor(value) {
-  return /^#?[0-9a-fA-F]{6}$/.test(String(value ?? "").trim());
-}
-
-export function normalizeHexColor(value) {
-  if (!isValidHexColor(value)) throw new Error("Enter a valid HEX color, such as #FFD9FF.");
-  return String(value).trim().replace(/^#/, "").toUpperCase();
-}
 
 export function roleNameForSelection(category, value) {
   if (!Object.hasOwn(CATEGORY_OPTIONS, category)) throw new Error("Unknown role category.");
@@ -90,19 +93,11 @@ function makeEmbed(title, description) {
 
 function selectStepPayload({ step, mode, userId }) {
   const prefix = mode === "onboard" ? `${PREFIX}${userId}:` : SELF_PREFIX;
-  if (step === "color") {
-    return {
-      embeds: [makeEmbed("Chat Color", "Choose a custom color for your messages. Press the button and enter a HEX code, for example **#FFD9FF**.")],
-      components: [new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setCustomId(`${prefix}color`).setLabel("Choose a color ♡").setStyle(ButtonStyle.Primary),
-      )],
-    };
-  }
-
   const settings = {
     gender: { title: "Gender", description: "Select your gender.", options: GENDER_OPTIONS },
     age: { title: "Age", description: "Please select your age.", options: AGE_OPTIONS },
     sexuality: { title: "Sexuality", description: "Select the option that best describes you.", options: SEXUALITY_OPTIONS },
+    color: { title: "Chat color", description: "Choose one of the basic colors for your name.", options: COLOR_OPTIONS.map(([value, label]) => [value, label]) },
     nsfw: {
       title: "NSFW Channels",
       description: "Choose whether NSFW channels and forums should be visible to you. Discord's age restrictions will still apply.",
@@ -124,26 +119,24 @@ function selectStepPayload({ step, mode, userId }) {
 }
 
 export function buildSelfRolesPanelPayload() {
-  const rows = [
-    ["gender", "Gender", GENDER_OPTIONS],
-    ["age", "Age", AGE_OPTIONS],
-    ["sexuality", "Sexuality", SEXUALITY_OPTIONS],
-    ["nsfw", "NSFW visibility", [["show", "Show NSFW channels"], ["hide", "Hide NSFW channels"]]],
-  ].map(([category, label, options]) => new ActionRowBuilder().addComponents(
-    new StringSelectMenuBuilder()
-      .setCustomId(`${SELF_PREFIX}${category}`)
-      .setPlaceholder(`Choose ${label.toLowerCase()}...`)
-      .setMinValues(1)
-      .setMaxValues(1)
-      .addOptions(options.map(([value, optionLabel]) => ({ label: optionLabel, value }))),
-  ));
-  rows.push(new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId(`${SELF_PREFIX}color`).setLabel("Choose chat color ♡").setStyle(ButtonStyle.Primary),
-  ));
-  return {
-    embeds: [makeEmbed("Self Roles", "Choose or update your roles at any time. Your previous role in the same category will be replaced automatically.\n\n**Gender · Age · Sexuality · Chat color · NSFW visibility**")],
-    components: rows,
-  };
+  const categories = [
+    ["gender", "Gender", "Choose your gender.", GENDER_OPTIONS],
+    ["age", "Age", "Please select your age.", AGE_OPTIONS],
+    ["sexuality", "Sexuality", "Select the option that best describes you.", SEXUALITY_OPTIONS],
+    ["color", "Chat color", "Choose one of the basic colors for your name.", COLOR_OPTIONS.map(([value, label]) => [value, label])],
+    ["nsfw", "NSFW visibility", "Choose whether NSFW channels and forums should be visible to you.", [["show", "Show NSFW channels"], ["hide", "Hide NSFW channels"]]],
+  ];
+  return categories.map(([category, title, description, options]) => ({
+    embeds: [makeEmbed(title, `${description} Your previous role in this category will be replaced automatically.`)],
+    components: [new ActionRowBuilder().addComponents(
+      new StringSelectMenuBuilder()
+        .setCustomId(`${SELF_PREFIX}${category}`)
+        .setPlaceholder(`Choose ${title.toLowerCase()}...`)
+        .setMinValues(1)
+        .setMaxValues(1)
+        .addOptions(options.map(([value, label]) => ({ label, value }))),
+    )],
+  }));
 }
 
 async function getOrCreateRole(guild, name, color) {
@@ -181,9 +174,10 @@ async function applyChoice(member, category, value) {
   }
 
   if (category === "color") {
-    const hex = normalizeHexColor(value);
-    const name = `color-${hex.toLowerCase()}`;
-    const role = await getOrCreateRole(member.guild, name, Number.parseInt(hex, 16));
+    const selected = COLOR_OPTIONS.find(([key]) => key === String(value));
+    if (!selected) throw new Error("That color is not available.");
+    const [key, , discordColor] = selected;
+    const role = await getOrCreateRole(member.guild, `color-${key}`, discordColor);
     await replaceCategoryRole(member, "color", role);
     return;
   }
@@ -191,22 +185,6 @@ async function applyChoice(member, category, value) {
   const name = roleNameForSelection(category, value);
   const role = await getOrCreateRole(member.guild, name);
   await replaceCategoryRole(member, category, role);
-}
-
-function colorModal(mode, userId) {
-  const prefix = mode === "onboard" ? `${PREFIX}${userId}:` : SELF_PREFIX;
-  const input = new TextInputBuilder()
-    .setCustomId("hex")
-    .setLabel("HEX color")
-    .setPlaceholder("#FFD9FF")
-    .setStyle(TextInputStyle.Short)
-    .setMinLength(6)
-    .setMaxLength(7)
-    .setRequired(true);
-  return new ModalBuilder()
-    .setCustomId(`${prefix}color-modal`)
-    .setTitle("Choose your chat color")
-    .addComponents(new ActionRowBuilder().addComponents(input));
 }
 
 export async function ensureNsfwHiddenVisibility(guild, role) {
@@ -258,13 +236,15 @@ export async function ensureSelfRolesChannel(guild, client) {
   });
 
   const recent = await channel.messages.fetch({ limit: 50 });
-  const title = `୨୧ ${toRoyalBold("Self Roles")} ♡`;
-  const existing = recent.find((message) =>
-    message.author?.id === client.user.id && message.embeds.some((embed) => embed.title === title),
-  );
-  const payload = buildSelfRolesPanelPayload();
-  if (existing) await existing.edit(payload);
-  else await channel.send(payload);
+  const panelPayloads = buildSelfRolesPanelPayload();
+  for (const payload of panelPayloads) {
+    const title = payload.embeds[0].data.title;
+    const existing = recent.find((message) =>
+      message.author?.id === client.user.id && message.embeds.some((embed) => embed.title === title),
+    );
+    if (existing) await existing.edit(payload);
+    else await channel.send(payload);
+  }
 
   const hiddenRole = await getOrCreateRole(guild, NSFW_HIDDEN_ROLE);
   await ensureNsfwHiddenVisibility(guild, hiddenRole);
@@ -330,23 +310,6 @@ export function attachRoleOnboarding(client) {
         return interaction.reply({ content: "This onboarding belongs to another member.", ephemeral: true });
       }
 
-      if (interaction.isButton() && parsed.category === "color") {
-        return interaction.showModal(colorModal(parsed.mode, parsed.userId));
-      }
-
-      if (interaction.isModalSubmit() && parsed.category === "color-modal") {
-        const hex = interaction.fields.getTextInputValue("hex");
-        const member = await interaction.guild.members.fetch(interaction.user.id);
-        await applyChoice(member, "color", hex);
-        if (parsed.mode === "onboard") {
-          return interaction.reply({
-            ...selectStepPayload({ step: "nsfw", mode: "onboard", userId: interaction.user.id }),
-            ephemeral: true,
-          });
-        }
-        return interaction.reply({ content: `Your chat color is now **#${normalizeHexColor(hex)}** ♡`, ephemeral: true });
-      }
-
       if (!interaction.isStringSelectMenu()) return;
       const category = parsed.category;
       const value = interaction.values[0];
@@ -357,7 +320,7 @@ export function attachRoleOnboarding(client) {
         return interaction.reply({
           content: category === "nsfw"
             ? (value === "hide" ? "NSFW channels and forums are now hidden for you ♡" : "NSFW channels and forums are now visible when Discord allows access ♡")
-            : `Your ${category} role has been updated ♡`,
+            : category === "color" ? "Your chat color role has been updated ♡" : `Your ${category} role has been updated ♡`,
           ephemeral: true,
         });
       }
