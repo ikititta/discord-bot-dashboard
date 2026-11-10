@@ -86,13 +86,18 @@ export function buildRulesPayload(guild) {
   const embed = new EmbedBuilder()
     .setColor(COLOR)
     .setTitle(`୨୧ ${toRoyalBold("Kittisugar Rules")} ♡`)
-    .addFields(
-      { name: `**${toRoyalBold("01 · RESPECT")}**`, value: "No harassment, hate, threats, bullying, spam, or sharing private information." },
-      { name: `**${toRoyalBold("02 · CONTENT")}**`, value: "Keep NSFW content in NSFW channels. VIP members may post it elsewhere. No illegal or non-consensual intimate content." },
-      { name: `**${toRoyalBold("03 · PROMOTIONS & SELLING")}**`, value: `Only VIP members may promote or sell in ${promotionChannel}. VIP is **$5 USD once, for life** and includes **VIP, Seller, and a custom role**. No unsolicited ads in chats, profiles, or DMs.` },
-      { name: `**${toRoyalBold("04 · WARNINGS")}**`, value: "Repeated rule-breaking may result in warnings, timeouts, or removal from Kittisugar." },
-      { name: `**${toRoyalBold("05 · SUPPORT KITTISUGAR ♡")}**`, value: "Donations help cover Sugar’s monthly hosting costs. Server boosts also unlock a special role and benefits. Thank you for supporting Kittisugar ♡" },
-    )
+    .setDescription([
+      `## 01 · Respect
+No harassment, hate, threats, bullying, spam, or sharing private information.`,
+      `## 02 · Content
+Keep NSFW content in NSFW channels. VIP members may post it elsewhere. No illegal or non-consensual intimate content.`,
+      `## 03 · Promotions & Selling
+Only VIP members may promote or sell in ${promotionChannel}. VIP is **$5 USD once, for life** and includes **VIP, Seller, and a custom role**. No unsolicited ads in chats, profiles, or DMs.`,
+      `## 04 · Warnings
+Repeated rule-breaking may result in warnings, timeouts, or removal from Kittisugar.`,
+      `## 05 · Support Kittisugar ♡
+Donations help cover Sugar’s monthly hosting costs. Server boosts also unlock a special role and benefits. Thank you for supporting Kittisugar ♡`,
+    ].join("\n\n"))
     .setFooter({ text: "By staying, you agree to follow these rules ♡" });
   return { embeds: [embed] };
 }
@@ -129,15 +134,15 @@ export function buildGuidePayload(guild) {
       `• ${channelMention(guild, ["privatechat", "privatechats", "private-chat"])}\nCreate and manage private chat rooms. Use /priv-chat commands to see the available options.\n` +
       `• ${channelMention(guild, ["selfroles", "self-roles"])}\nChoose or update your age, gender, sexuality, interests, and color roles. These roles also let you show or hide channels.\n\n` +
       `୨୧ ${guideSectionTitle("Commands")}\n\n` +
-      "`/delete amount:` — delete your own recent messages.\n\n" +
-      "`/vip-delete amount:` — VIP message cleanup.\n\n" +
-      "`/mod-delete amount: [member:]` — moderator cleanup.\n\n" +
-      "`!quote` — reply to a message and quote it.\n\n" +
+      "`/delete amount:` — delete your own recent messages.\n" +
+      "`/vip-delete amount:` — VIP message cleanup.\n" +
+      "`/mod-delete amount: [member:]` — moderator cleanup.\n" +
+      "`!quote` — reply to a message and quote it.\n" +
       "`/priv-chat commands` — see private chat commands.\n\n" +
       `୨୧ ${guideSectionTitle("Sugar AI")}\n\n` +
       "Mention Sugar or address the bot directly to start a conversation ♡"
     )
-    .setFooter({ text: "This guide is also pinned in #dashboard and will always be available there ♡" });
+    .setFooter({ text: "This guide is also pinned in dashboard and will always be available there ♡" });
   return { embeds: [embed] };
 }
 
