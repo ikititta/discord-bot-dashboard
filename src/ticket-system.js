@@ -201,7 +201,7 @@ async function handleTicketButton(interaction, { client, settings, panelChannelI
       return replyEphemeral(interaction, "This channel is not an active Sugar support ticket.");
     }
     const config = settings.get(interaction.guildId);
-    const isModerator = hasTicketStaffAccess(interaction.member, config.moderatorRoleIds);
+    const isModerator = hasTicketStaffAccess(interaction.member, getStaffRoleIds(interaction.guild, config.moderatorRoleIds));
     if (interaction.user.id !== ticket.openerId && !isModerator) {
       return replyEphemeral(interaction, "Only the ticket opener or a moderator can close this ticket.");
     }
@@ -296,7 +296,7 @@ async function addPersonToTicket(interaction, { settings }) {
   const ticket = parseTicketTopic(interaction.channel.topic);
   if (!ticket || ticket.guildId !== interaction.guildId || ticket.status !== "open") return replyEphemeral(interaction, "This is not an active Sugar support ticket.");
   const config = settings.get(interaction.guildId);
-  if (!hasTicketStaffAccess(interaction.member, config.moderatorRoleIds)) return replyEphemeral(interaction, "Only the staff team can add people to a ticket.");
+  if (!hasTicketStaffAccess(interaction.member, getStaffRoleIds(interaction.guild, config.moderatorRoleIds))) return replyEphemeral(interaction, "Only the staff team can add people to a ticket.");
   const raw = interaction.fields.getTextInputValue("member-id").trim();
   const match = /^(?:<@!?(\d{5,25})>|(\d{5,25}))$/.exec(raw);
   const memberId = match?.[1] || match?.[2];
