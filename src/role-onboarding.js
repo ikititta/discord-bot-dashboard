@@ -11,8 +11,31 @@ import {
   TextInputStyle,
 } from "discord.js";
 
-import { findRoleByName, normalizeName, assignMemberAccess } from "./access-system.js";
 import { toRoyalBold } from "./embed-format.js";
+
+function normalizeRoleName(value) {
+  return String(value ?? "").normalize("NFKD").toLowerCase().replace(/\\p{M}/gu, "").replace(/[^a-z0-9]/g, "");
+}
+
+function findRoleByName(guild, name) {
+  const expected = normalizeRoleName(name);
+  return guild.roles.cache.find((role) => normalizeRoleName(role.name) === expected) ?? null;
+}
+
+async function assignMemberAccess(member, { newRole, memberRole }) {
+  if (!member.roles.cache.has(newRole.id)) {
+    if (member.roles.cache.has(memberRole.id)) return false;
+    throw new Error("You do not have the New role.");
+  }
+  await member.roles.add(memberRole, "Member completed Kittisugar role onboarding");
+  try {
+    await member.roles.remove(newRole, "Remove New after successful Kittisugar onboarding");
+  } catch (error) {
+    await member.roles.remove(memberRole, "Roll back Member because New could not be removed").catch(() => {});
+    throw error;
+  }
+  return true;
+}
 
 const PREFIX = "sugar-onboard:";
 const SELF_PREFIX = "sugar-selfroles:";
@@ -137,7 +160,7 @@ async function replaceCategoryRole(member, category, selectedRole) {
   const prefix = `${category}-`;
   await member.roles.add(selectedRole, `Set Kittisugar ${category} self-role`);
   const oldRoles = member.roles.cache.filter((role) =>
-    role.id !== selectedRole.id && normalizeName(role.name).startsWith(normalizeName(prefix)),
+    role.id !== selectedRole.id && normalizeRoleName(role.name).startsWith(normalizeRoleName(prefix)),
   );
   if (oldRoles.size) {
     await member.roles.remove([...oldRoles.values()], `Replace previous Kittisugar ${category} self-role`);
@@ -209,7 +232,7 @@ export async function ensureSelfRolesChannel(guild, client) {
   }
 
   let channel = guild.channels.cache.find((item) =>
-    item.type === ChannelType.GuildText && normalizeName(item.name) === "selfroles",
+    item.type === ChannelType.GuildText && normalizeRoleName(item.name) === "selfroles",
   );
   if (!channel) {
     channel = await guild.channels.create({
