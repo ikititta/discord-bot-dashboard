@@ -11,9 +11,8 @@ const SPAM_MESSAGE_THRESHOLD = 5;
 const REPEAT_THRESHOLD = 3;
 const STRIKE_LIMIT = 3;
 const PROMOTION_CHANNELS = new Set(["promotions", "promotion", "selling", "advertising", "marketplace"]);
-const PROMOTION_WORDS = /\b(?:promot(?:e|ion|ing)|advertis(?:e|ing)|selling|for sale|commission|shop|store|discount|subscribe|my services|buy now)\b/i;
+const PROMOTION_WORDS = /\b(?:promot(?:e|ion|ing)|advertis(?:e|ing)|selling|for sale|commission(?:s)?|my shop|my store|discount code|subscribe to|my services|buy now)\b/i;
 const INVITE_LINK = /(?:discord\.gg\/|discord(?:app)?\.com\/invite\/)/i;
-const URL = /https?:\/\/\S+/gi;
 
 export class AutoModerationStore {
   constructor(dataDir) {
@@ -83,11 +82,9 @@ export function detectMessageViolation(message, recentMessages = []) {
   const isVip = message?.member?.roles?.cache?.some((role) => ["vip", "seller"].includes(normalize(role.name))) ?? false;
   const channel = normalize(message?.channel?.name);
   const inPromotionChannel = PROMOTION_CHANNELS.has(channel);
-  if ((!isVip || !inPromotionChannel) && (INVITE_LINK.test(content) || (PROMOTION_WORDS.test(content) && URL.test(content)))) {
-    URL.lastIndex = 0;
+  if ((!isVip || !inPromotionChannel) && (INVITE_LINK.test(content) || PROMOTION_WORDS.test(content))) {
     return "unauthorized promotion";
   }
-  URL.lastIndex = 0;
   return null;
 }
 
