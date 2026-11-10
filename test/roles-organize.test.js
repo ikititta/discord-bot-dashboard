@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { buildRoleOrganizationPlan, KITTISUGAR_GUILD_ID } from "../src/roles-organize.js";
+import { buildRoleOrganizationPlan, KITTISUGAR_GUILD_ID, ROLE_ORGANIZATION_CONFIG } from "../src/roles-organize.js";
 
 const makeRole = (id, name, { managed = false } = {}) => ({
   id, name, managed, editable: !managed,
@@ -139,4 +139,14 @@ test("safe positioning rejects duplicate role IDs instead of assigning colliding
   duplicateA.position = 2;
   duplicateB.position = 3;
   assert.throws(() => buildSafeRolePositions([duplicateA, duplicateB], 10), /Duplicate role/);
+});
+
+
+test("role organizer reads its complete role catalog from config/roles.json", () => {
+  assert.deepEqual(ROLE_ORGANIZATION_CONFIG.groups.map(({ key }) => key), [
+    "admin", "colors", "community", "ages", "identity", "access",
+  ]);
+  assert.equal(ROLE_ORGANIZATION_CONFIG.groups.reduce((count, group) => count + group.roles.length, 0), 57);
+  assert.equal(ROLE_ORGANIZATION_CONFIG.protectedRoles.sugarAi, "1567669697061724263");
+  assert.equal(ROLE_ORGANIZATION_CONFIG.protectedRoles.serverBooster, "1569802495792914593");
 });
