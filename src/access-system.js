@@ -119,7 +119,7 @@ export function buildGuidePayload(guild) {
     .setColor(COLOR)
     .setTitle(`୨୧ ${toRoyalBold("Kittisugar Guide!")} ♡`)
     .setDescription(
-      "A little guide of Kittisugar ♡ Tap any channel mention to open it.\n\n" +
+      "A little guide of Kittisugar ♡ Tap any channel mention to open it.\n" +
       `## ୨୧ ${guideSectionTitle("Start")}\n\n` +
       `• ${channelMention(guild, ["getaccess", "get-access"])}\nRead the welcome message and press Enter Server when you are ready to access the community.\n` +
       `• ${channelMention(guild, ["rules"])}\nCheck the server rules before chatting. They explain our 18+, SFW, safety, and promotion policies.\n` +
@@ -138,7 +138,7 @@ export function buildGuidePayload(guild) {
       "`/vip-delete amount:` — VIP message cleanup.\n" +
       "`/mod-delete amount: [member:]` — moderator cleanup.\n" +
       "`!quote` — reply to a message and quote it.\n" +
-      "`/priv-chat commands` — see private chat commands.\n\n" +
+      "`/priv-chat commands` — see private chat commands.\n" +
       `୨୧ ${guideSectionTitle("Sugar AI")}\n\n` +
       "Mention Sugar or address the bot directly to start a conversation ♡"
     )
