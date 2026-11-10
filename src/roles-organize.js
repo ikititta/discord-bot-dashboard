@@ -308,69 +308,102 @@ export async function handleRoleOrganization(interaction) {
   });
 }
 
+export function buildSafeRolePositions(orderedRoles, botHighestPosition) {
+  if (!Number.isInteger(botHighestPosition) || botHighestPosition < 2) {
+    throw new Error("Sugar's highest role position is not valid for role organization.");
+  }
+  const roles = orderedRoles.filter(Boolean);
+  const ids = new Set(roles.map((role) => role.id));
+  if (ids.size !== roles.length) throw new Error("Duplicate role detected in the organization plan.");
+  if (roles.some((role) => role.managed || !role.editable)) {
+    throw new Error("A target role is managed or not editable by Sugar.");
+  }
+
+  // Reuse only the exact position slots already occupied by target roles.
+  // This avoids guessed positions, collisions, and crossing managed roles.
+  const slots = roles.map((role) => role.position).sort((a, b) => a - b);
+  if (slots.some((position) => !Number.isInteger(position) || position < 1 || position >= botHighestPosition)) {
+    throw new Error("The current role hierarchy has no safe position slot for every target role.");
+  }
+
+  return [...roles].reverse().map((role, index) => ({
+    role,
+    position: slots[index],
+  }));
+}
+
 export async function applyRoleOrganization(guild, plan) {
   await guild.roles.fetch();
   const me = await guild.members.fetchMe();
   if (!me.permissions.has(PermissionFlagsBits.ManageRoles)) throw new Error("Sugar no longer has Manage Roles.");
-  const currentById = guild.roles.cache;
-  for (const item of plan.ordered) {
-    // Managed roles (Sugar AI) are deliberately preserved and must never be
-    // subjected to the editability check or sent to Discord's position API.
-    if (!item.role || item.managed) continue;
-    const current = currentById.get(item.role.id);
-    if (!current || current.managed || !current.editable) {
-      throw new Error(`Role ${item.role.id} is missing or no longer editable; stopped before applying changes.`);
-    }
-  }
 
-  let renamed = 0;
-  for (const { role, name } of plan.renames) {
-    const current = currentById.get(role.id);
-    if (current.name !== name) {
-      await current.setName(name, "Kittisugar approved role organization");
-      renamed += 1;
-    }
+  const currentById = guild.roles.cache;
+  const targetRoles = plan.ordered
+    .filter((item) => item.role && !item.managed)
+    .map((item) => currentById.get(item.role.id));
+  if (targetRoles.some((role) => !role || role.managed || !role.editable)) {
+    throw new Error("A target role is missing, managed, or above Sugar's highest role. No changes were made.");
   }
 
   let created = 0;
-  const dividerRoles = [];
-  for (const name of plan.dividers) {
-    let divider = guild.roles.cache.find((role) => role.name === name);
-    if (!divider) {
-      divider = await guild.roles.create({
-        name,
-        color: 0,
-        permissions: [],
-        hoist: false,
-        mentionable: false,
-        reason: "Kittisugar approved role category divider",
-      });
-      created += 1;
+  const createdDividerIds = [];
+  try {
+    // Create only the missing neutral dividers. If the later position preflight
+    // fails, remove only the dividers created by this attempt.
+    for (const name of plan.dividers) {
+      let divider = guild.roles.cache.find((role) => role.name === name);
+      if (!divider) {
+        divider = await guild.roles.create({
+          name,
+          color: 0,
+          permissions: [],
+          hoist: false,
+          mentionable: false,
+          reason: "Kittisugar approved role category divider",
+        });
+        created += 1;
+        createdDividerIds.push(divider.id);
+      }
     }
-    dividerRoles.push(divider);
-  }
 
-  const refreshed = await guild.roles.fetch();
-  const orderedRoles = [];
-  for (const item of plan.ordered) {
-    if (item.dividerName) {
-      orderedRoles.push(refreshed.find((role) => role.name === item.dividerName));
-    } else if (item.role && !item.managed) {
-      orderedRoles.push(refreshed.get(item.role.id));
+    const refreshed = await guild.roles.fetch();
+    const orderedRoles = [];
+    for (const item of plan.ordered) {
+      if (item.dividerName) {
+        const divider = refreshed.find((role) => role.name === item.dividerName);
+        if (!divider) throw new Error(`Divider ${item.dividerName} could not be found after creation.`);
+        orderedRoles.push(divider);
+      } else if (item.role && !item.managed) {
+        const role = refreshed.get(item.role.id);
+        if (!role) throw new Error(`Role ${item.role.id} disappeared during organization.`);
+        orderedRoles.push(role);
+      }
     }
-  }
-  const validRoles = orderedRoles.filter(Boolean);
-  const notes = [];
-  const managedServerBooster = refreshed.get(EXPECTED_SPECIAL_ROLES.serverBooster);
-  if (managedServerBooster) notes.push("Server Booster administrado por Discord (posición protegida)");
-  // Discord owns managed roles; only editable roles are sent to setPositions.
-  const highestBotPosition = me.roles.highest.position;
-  const positions = validRoles.map((role, index) => ({
-    role,
-    // Keep every editable role strictly below Sugar's own highest role.
-    position: Math.max(1, highestBotPosition - 1 - index),
-  }));
-  await guild.roles.setPositions(positions);
 
-  return { renamed, created, reordered: positions.length, notes };
+    const positions = buildSafeRolePositions(orderedRoles, me.roles.highest.position);
+    await guild.roles.setPositions(positions);
+
+    let renamed = 0;
+    for (const { role, name } of plan.renames) {
+      const current = (await guild.roles.fetch()).get(role.id);
+      if (!current || current.managed || !current.editable) {
+        throw new Error(`Role ${role.id} became unavailable for renaming after reordering.`);
+      }
+      if (current.name !== name) {
+        await current.setName(name, "Kittisugar approved role organization");
+        renamed += 1;
+      }
+    }
+
+    const notes = [];
+    notes.push("Sugar AI y Server Booster administrado por Discord quedaron intactos");
+    return { renamed, created, reordered: positions.length, notes };
+  } catch (error) {
+    // Best-effort cleanup is limited to neutral dividers created by this run.
+    for (const id of createdDividerIds.reverse()) {
+      const divider = guild.roles.cache.get(id);
+      if (divider?.editable) await divider.delete("Rollback of incomplete Kittisugar role organization").catch(() => {});
+    }
+    throw error;
+  }
 }
