@@ -27,7 +27,7 @@ function guildWith(channels) {
   return { channels: { cache: { values: () => channels.values() } } };
 }
 
-test("forum visibility panel uses the Kittisugar pink embed and a red button that opens the selector", () => {
+test("forum visibility panel uses the Kittisugar pink embed and a blue button that opens the selector", () => {
   const payload = buildForumVisibilityPanelPayload();
   assert.equal(payload.embeds[0].data.color, 0xffd9ff);
   assert.equal(payload.embeds[0].data.title, "୨୧ 𝓕𝓸𝓻𝓾𝓶 𝓥𝓲𝓼𝓲𝓫𝓲𝓵𝓲𝓽𝔂 ♡");
@@ -36,7 +36,7 @@ test("forum visibility panel uses the Kittisugar pink embed and a red button tha
   assert.equal(payload.embeds[0].data.footer, undefined);
   const button = payload.components[0].components[0].toJSON();
   assert.equal(button.custom_id, "sugar-forum-visibility:open");
-  assert.equal(button.style, ButtonStyle.Danger);
+  assert.equal(button.style, ButtonStyle.Primary);
   assert.equal(button.label, "Customize Forums ♡");
 });
 
