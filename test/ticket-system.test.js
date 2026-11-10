@@ -1,19 +1,44 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { buildTicketPanelPayload } from "../src/ticket-system.js";
+import { buildTicketPanelPayload, SUGGESTIONS_CHANNEL_ID } from "../src/ticket-system.js";
 
-test("support panel offers every category as a button", () => {
+test("support panel uses the requested title, English guidance, and suggestions mention", () => {
   const payload = buildTicketPanelPayload();
-  const buttons = payload.components[0].toJSON().components;
+  const embed = payload.embeds[0].toJSON();
+
+  assert.equal(embed.title, "𝑺𝒖𝒑𝒑𝒐𝒓𝒕 🎀");
+  assert.match(embed.description, /Need help with something\?/);
+  assert.match(embed.description, /\*\*General Help\*\*/);
+  assert.match(embed.description, /\*\*Technical Issue\*\*/);
+  assert.match(embed.description, /\*\*Report\*\*/);
+  assert.match(embed.description, /\*\*Appeal\*\*/);
+  assert.match(embed.description, /\*\*Partnership\*\*/);
+  assert.match(embed.description, /\*\*Other\*\*/);
+  assert.ok(embed.description.endsWith(`<#${SUGGESTIONS_CHANNEL_ID}>!`));
+});
+
+test("support panel offers six categorized buttons with appropriate Discord styles", () => {
+  const payload = buildTicketPanelPayload();
+  assert.equal(payload.components.length, 2);
+
+  const buttons = payload.components.flatMap((row) => row.toJSON().components);
   assert.deepEqual(buttons.map((item) => item.custom_id), [
     "sugar-ticket:category:general",
-    "sugar-ticket:category:appeal",
-    "sugar-ticket:category:roles",
     "sugar-ticket:category:technical",
+    "sugar-ticket:category:report",
+    "sugar-ticket:category:appeal",
+    "sugar-ticket:category:partnership",
     "sugar-ticket:category:other",
   ]);
-  assert.ok(buttons.every((item) => item.type === 2));
-  assert.ok(buttons.every((item) => item.style === 1));
-  assert.ok(buttons.every((item) => item.label.endsWith(" ♡")));
+  assert.deepEqual(buttons.map((item) => item.label), [
+    "General Help ♡",
+    "Technical Issue ♡",
+    "Report ♡",
+    "Appeal ♡",
+    "Partnership ♡",
+    "Other ♡",
+  ]);
+  assert.deepEqual(buttons.map((item) => item.style), [1, 2, 4, 2, 3, 2]);
+  assert.ok(payload.components.every((row) => row.toJSON().components.length <= 5));
 });
