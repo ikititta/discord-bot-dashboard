@@ -206,7 +206,10 @@ export async function ensureStartChannels(guild, client) {
     channel.type === ChannelType.GuildText && normalizeName(channel.name) === "dashboard",
   );
   if (dashboard) {
-    await upsertPanel(dashboard, client, "୨୧ Kittisugar Guide ♡", buildGuidePayload(guild));
+    const dashboardGuide = await upsertPanel(dashboard, client, "୨୧ Kittisugar Guide ♡", buildGuidePayload(guild));
+    await dashboardGuide.pin().catch((error) => {
+      console.error(`[access] could not pin the dashboard guide in guild ${guild.id}: ${error.message}`);
+    });
   }
   await upsertPanel(guide, client, "୨୧ Kittisugar Guide ♡", buildGuidePayload(guild));
 
