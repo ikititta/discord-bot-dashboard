@@ -301,13 +301,25 @@ export function attachCommunitySystem(client, { store, stickyPanels, settings, s
 
 async function renameSuggestionsChannel(client) {
   const channel = await client.channels.fetch(SUGGESTIONS_CHANNEL_ID).catch(() => null);
-  if (!channel || channel.type !== ChannelType.GuildText || channel.name === "🗳️｜୨୧•𝓼𝓾𝓰𝓰𝓮𝓼𝓽𝓲𝓸𝓷𝓼") return;
-  const botMember = channel.guild.members.me;
-  if (!botMember?.permissions.has(PermissionFlagsBits.ManageChannels)) {
-    console.warn("[community] Sugar needs Manage Channels permission to rename the suggestions channel.");
-    return;
+  if (!channel || channel.type !== ChannelType.GuildText) return;
+
+  if (channel.name !== "🗳️｜୨୧•𝓼𝓾𝓰𝓰𝓮𝓼𝓽𝓲𝓸𝓷𝓼") {
+    const botMember = channel.guild.members.me;
+    if (!botMember?.permissions.has(PermissionFlagsBits.ManageChannels)) {
+      console.warn("[community] Sugar needs Manage Channels permission to rename the suggestions channel.");
+    } else {
+      await channel.setName("🗳️｜୨୧•𝓼𝓾𝓰𝓰𝓮𝓼𝓽𝓲𝓸𝓷𝓼", "Set the requested Kittisugar Suggestions channel name");
+    }
   }
-  await channel.setName("🗳️｜୨୧•𝓼𝓾𝓰𝓰𝓮𝓼𝓽𝓲𝓸𝓷𝓼", "Set the requested Kittisugar Suggestions channel name");
+
+  // Upgrade existing Sugar suggestion posts so they also show the vote/report controls.
+  const recent = await channel.messages.fetch({ limit: 100 });
+  for (const message of recent.values()) {
+    if (message.author?.id !== client.user?.id || !isSuggestionMessage(message)) continue;
+    await message.edit({ components: buildSuggestionComponents(message.id) }).catch((error) => {
+      console.error(`[community] could not update suggestion controls for ${message.id}: ${error.message}`);
+    });
+  }
 }
 
 export async function ensureCommunityPanels(client) {
