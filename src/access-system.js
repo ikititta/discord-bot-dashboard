@@ -100,7 +100,7 @@ export function buildRulesPayload(guild) {
 
 function channelMention(guild, names) {
   const wanted = new Set(names.map(normalizeName));
-  const channel = guild.channels.cache.find((item) =>
+  const channel = guild?.channels?.cache?.find((item) =>
     item.type === ChannelType.GuildText && wanted.has(normalizeName(item.name)),
   );
   return channel ? `<#${channel.id}>` : `**${names[0]}**`;
