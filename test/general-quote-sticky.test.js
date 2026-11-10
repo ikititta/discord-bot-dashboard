@@ -77,7 +77,7 @@ test("general quote tip is reposted after member messages and is never pinned", 
   assert.notEqual(nextId, firstId);
   assert.equal(h.messages.has(firstId), false);
   assert.equal(h.messages.get(nextId).pinned, false);
-  assert.equal(h.messages.get(nextId).embeds[0].title, "୨୧ fun quote cards ♡");
+  assert.equal(h.messages.get(nextId).embeds[0].title, "୨୧ 𝓕𝓾𝓷 𝓠𝓾𝓸𝓽𝓮 𝓒𝓪𝓻𝓭𝓼");
 });
 
 test("messages from bots do not move the general quote tip", async () => {
