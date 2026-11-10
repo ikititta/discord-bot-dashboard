@@ -1059,6 +1059,7 @@ async function publishSuggestion(interaction, suggestionStore, mode) {
     .addFields(
       { name: "⬆️ Upvotes", value: "0", inline: true },
       { name: "⬇️ Downvotes", value: "0", inline: true },
+      { name: "⚠️ Reports", value: "0", inline: true },
     );
   if (mode === "named") {
     embed.setAuthor({
@@ -1087,6 +1088,7 @@ async function handleSuggestionReaction(reaction, user, { suggestionStore, setti
   const emoji = reaction.emoji.name;
   if (emoji === "⚠️") {
     if (added) await submitSuggestionReactionReport(message, user, settings);
+    await updateSuggestionReportCount(message, reaction.count);
     return;
   }
   const direction = emoji === "⬆️" ? "up" : emoji === "⬇️" ? "down" : null;
@@ -1097,10 +1099,22 @@ async function handleSuggestionReaction(reaction, user, { suggestionStore, setti
   await updateSuggestionVoteCounts(message, counts);
 }
 
+async function updateSuggestionReportCount(message, reactionCount) {
+  const original = message.embeds[0];
+  const embed = EmbedBuilder.from(original);
+  // Sugar's own seed reaction is not a community report.
+  const reports = Math.max(0, Number(reactionCount ?? 1) - 1);
+  embed.setFields((original.fields ?? []).map((field) =>
+    field.name === "⚠️ Reports" ? { ...field, value: String(reports) } : field,
+  ));
+  await message.edit({ embeds: [embed] });
+}
+
 function isSuggestionMessage(message) {
   const fields = message.embeds?.[0]?.fields ?? [];
   return fields.some((field) => field.name === "⬆️ Upvotes") &&
-    fields.some((field) => field.name === "⬇️ Downvotes");
+    fields.some((field) => field.name === "⬇️ Downvotes") &&
+    fields.some((field) => field.name === "⚠️ Reports");
 }
 
 async function updateSuggestionVoteCounts(message, counts) {
