@@ -25,7 +25,13 @@ export function shouldAutoReactToMessage(message, { stickyPanels } = {}) {
 
   const channel = message.channel;
   if (!channel || EXCLUDED_CHANNEL_IDS.has(message.channelId)) return false;
-  if (channel.parentId === TICKET_CATEGORY_ID || EXCLUDED_CATEGORY_IDS.has(channel.parentId)) return false;
+  const parentChannel = channel.parent ?? message.guild.channels?.cache?.get(channel.parentId);
+  const parentCategoryId = parentChannel?.parentId;
+  if (
+    channel.parentId === TICKET_CATEGORY_ID ||
+    EXCLUDED_CATEGORY_IDS.has(channel.parentId) ||
+    EXCLUDED_CATEGORY_IDS.has(parentCategoryId)
+  ) return false;
   if (typeof channel.topic === "string" && channel.topic.startsWith("sugar-ticket:")) return false;
   if (/^ticket(?:-|$)/i.test(channel.name ?? "")) return false;
 
