@@ -1,7 +1,8 @@
 import { ChannelType, EmbedBuilder, Events } from "discord.js";
+import { toRoyalBold } from "./embed-format.js";
 
 const CHANNEL_ID = "1567093021298794658";
-const PANEL_TITLE = "୨୧ fun quote cards ♡";
+const PANEL_TITLE = `୨୧ ${toRoyalBold("Fun Quote Cards")}`;
 const COLOR = 0xffd9ff;
 const KEY_PREFIX = "general-quote-tip:";
 
@@ -9,7 +10,7 @@ export function buildGeneralQuoteTipPayload() {
   const embed = new EmbedBuilder()
     .setColor(COLOR)
     .setTitle(PANEL_TITLE)
-    .setDescription("Try `!quote` when replying to a message to turn it into a fun image and share it with everyone! ♡");
+    .setDescription("Try `!quote` when replying to a message to turn it into a fun image and share it! ♡");
   return { embeds: [embed] };
 }
 
