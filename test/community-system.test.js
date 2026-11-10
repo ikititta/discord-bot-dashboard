@@ -220,15 +220,20 @@ test("community reports ping all configured moderation roles without broad menti
 });
 
 
-test("new suggestions use reactions and never attach voting or report buttons", async () => {
+test("suggestions use up/down reactions and a reason-required report button", async () => {
   const source = fs.readFileSync(new URL("../src/community-system.js", import.meta.url), "utf8");
   const publish = source.slice(source.indexOf("async function publishSuggestion"), source.indexOf("async function handleSuggestionReaction"));
-  assert.match(publish, /await message\.react\("⬆️"\)/);
-  assert.match(publish, /await message\.react\("⬇️"\)/);
-  assert.match(publish, /await message\.react\("⚠️"\)/);
-  assert.doesNotMatch(publish, /components:/);
+  assert.match(publish, /await message\\.react\\("⬆️"\\)/);
+  assert.match(publish, /await message\\.react\\("⬇️"\\)/);
+  assert.doesNotMatch(publish, /await message\\.react\\("⚠️"\\)/);
+  assert.match(publish, /components: buildSuggestionComponents\\("0"\\)/);
+  assert.match(source, /setLabel\\("Why are you reporting this\\?"\\)/);
   const panel = buildSuggestionsPanelPayload();
   assert.equal(panel.components[0].toJSON().components[0].custom_id, "sugar-community:suggestion-start");
+  const report = buildSuggestionComponents("123456789012345678");
+  assert.deepEqual(report[0].toJSON().components.map((component) => component.data.custom_id), [
+    "sugar-community:report:suggestion:123456789012345678",
+  ]);
 });
 
 test("suggestion publication mode is validated and suggestion embeds omit timestamps", () => {
