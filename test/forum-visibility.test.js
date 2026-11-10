@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { ChannelType, PermissionFlagsBits } from "discord.js";
+import { ButtonStyle, ChannelType, PermissionFlagsBits } from "discord.js";
 
 import {
   FORUM_VISIBILITY_CATEGORY_ID,
@@ -27,12 +27,16 @@ function guildWith(channels) {
   return { channels: { cache: { values: () => channels.values() } } };
 }
 
-test("forum visibility panel uses the Kittisugar pink embed and opens a personal selector", () => {
+test("forum visibility panel uses the Kittisugar pink embed and a red button that opens the selector", () => {
   const payload = buildForumVisibilityPanelPayload();
   assert.equal(payload.embeds[0].data.color, 0xffd9ff);
-  assert.equal(payload.embeds[0].data.title, "୨୧ Forum Visibility ♡");
-  assert.match(payload.embeds[0].data.description, /only affects your own view/i);
-  assert.equal(payload.components[0].components[0].data.custom_id, "sugar-forum-visibility:open");
+  assert.equal(payload.embeds[0].data.title, "୨୧ 𝐅𝐨𝐫𝐮𝐦 𝐕𝐢𝐬𝐢𝐛𝐢𝐥𝐢𝐭𝐲");
+  assert.match(payload.embeds[0].data.description, /\\n\\n\\*\\*Your choices can be changed whenever you like\\.\\*\\*/);
+  assert.doesNotMatch(payload.embeds[0].data.description, /only affects your own view/i);
+  assert.equal(payload.embeds[0].data.footer, null);
+  const button = payload.components[0].components[0].toJSON();
+  assert.equal(button.custom_id, "sugar-forum-visibility:open");
+  assert.equal(button.style, ButtonStyle.Danger);
 });
 
 test("only forum channels directly inside the configured category are listed", () => {
