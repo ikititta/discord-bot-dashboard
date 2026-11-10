@@ -86,14 +86,16 @@ test("access, rules, and guide panels contain the required confirmations and com
   assert.match(access.embeds[0].data.description, /18 years of age or older/i);
   assert.equal(access.components[0].components[0].data.label, "Enter Server ♡");
   assert.equal(access.components[0].components[0].data.style, 1);
-  assert.match(rules.embeds[0].data.description, /18\+/);
+  assert.equal(rules.embeds[0].data.description, undefined);
   const ruleText = rules.embeds[0].data.fields.map((field) => field.value).join("\n");
   assert.match(ruleText, /\$5 USD once, for life/);
   assert.match(ruleText, /VIP, Seller, and a custom role/);
   assert.match(ruleText, /monthly hosting costs/);
   assert.match(ruleText, /NSFW content in NSFW channels/i);
   assert.doesNotMatch(ruleText, /Porn category|nsfw.*category/i);
-  assert.match(ruleText, /server boosts/i);\n  assert.match(rules.embeds[0].data.fields[3].name, /Warnings/);\n  assert.match(rules.embeds[0].data.fields[0].name, /^### /);
+  assert.match(ruleText, /server boosts/i);
+  assert.match(rules.embeds[0].data.fields[3].name, /^### /);
+  assert.match(rules.embeds[0].data.fields[0].name, /^### /);
   assert.match(guide.embeds[0].data.description, /\/priv-chat commands/);
   assert.match(guide.embeds[0].data.description, /\/mod-delete/);
   const guideText = guide.embeds[0].data.description;
