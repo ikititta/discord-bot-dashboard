@@ -33,7 +33,7 @@ test("forum visibility panel uses the Kittisugar pink embed and a red button tha
   assert.equal(payload.embeds[0].data.title, "୨୧ 𝐅𝐨𝐫𝐮𝐦 𝐕𝐢𝐬𝐢𝐛𝐢𝐥𝐢𝐭𝐲");
   assert.ok(payload.embeds[0].data.description.includes("\n\n**Your choices can be changed whenever you like.**"));
   assert.doesNotMatch(payload.embeds[0].data.description, /only affects your own view|only for you/i);
-  assert.equal(payload.embeds[0].data.footer, null);
+  assert.equal(payload.embeds[0].data.footer, undefined);
   const button = payload.components[0].components[0].toJSON();
   assert.equal(button.custom_id, "sugar-forum-visibility:open");
   assert.equal(button.style, ButtonStyle.Danger);
