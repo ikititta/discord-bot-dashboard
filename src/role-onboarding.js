@@ -14,7 +14,7 @@ import {
 import { toRoyalBold } from "./embed-format.js";
 
 function normalizeRoleName(value) {
-  return String(value ?? "").normalize("NFKD").toLowerCase().replace(/\\p{M}/gu, "").replace(/[^a-z0-9]/g, "");
+  return String(value ?? "").normalize("NFKD").toLowerCase().replace(/\p{M}/gu, "").replace(/[^a-z0-9]/g, "");
 }
 
 function findRoleByName(guild, name) {
