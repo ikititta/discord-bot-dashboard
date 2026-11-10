@@ -11,6 +11,10 @@ import {
   buildGuidePayload,
   buildRulesPayload,
   normalizeName,
+  isServerBooster,
+  syncBoosterRole,
+  BOOSTER_ROLE_NAME,
+  BOOSTER_ROLE_COLOR,
 } from "../src/access-system.js";
 
 function createMember(initialRoles = []) {
@@ -172,4 +176,23 @@ test("access, rules, and guide panels contain the required confirmations and upd
   assert.match(guide.embeds[0].data.footer.text, /This guide is also pinned in dashboard/);
   assert.doesNotMatch(guideText, /pinned in #dashboard/);
   assert.ok(guideText.includes("`/delete amount:` — delete your own recent messages.\n`/vip-delete amount:` — VIP message cleanup.\n`/mod-delete amount: [member:]` — moderator cleanup."));
+});
+
+test("detects Discord server booster status", () => {
+  assert.equal(isServerBooster({ premiumSinceTimestamp: 123, premiumSince: new Date(123) }), true);
+  assert.equal(isServerBooster({ premiumSinceTimestamp: null, premiumSince: null }), false);
+  assert.equal(BOOSTER_ROLE_NAME, "୨୧ 𝓑𝓸𝓸𝓼𝓽𝓮𝓻");
+  assert.equal(BOOSTER_ROLE_COLOR, 0xff9ad5);
+});
+
+test("automatically adds and removes the custom Booster role as boost status changes", async () => {
+  const role = { id: "booster" };
+  const member = createMember([]);
+  member.premiumSinceTimestamp = 123;
+  assert.equal(await syncBoosterRole(member, role), true);
+  assert.equal(member.roles.cache.has(role.id), true);
+  assert.equal(await syncBoosterRole(member, role), false);
+  member.premiumSinceTimestamp = null;
+  assert.equal(await syncBoosterRole(member, role), true);
+  assert.equal(member.roles.cache.has(role.id), false);
 });
