@@ -20,6 +20,29 @@ const RULES_CHANNEL_NAME = "📃｜୨୧•𝓻𝓾𝓵𝓮𝓼";
 const GUIDE_CHANNEL_NAME = "📖｜୨୧•𝓰𝓾𝓲𝓭𝓮";
 const NEW_ROLE_NAME = "new";
 const MEMBER_ROLE_NAME = "member";
+export const BOOSTER_ROLE_NAME = "୨୧ 𝓑𝓸𝓸𝓼𝓽𝓮𝓻";
+export const BOOSTER_ROLE_COLOR = 0xff9ad5;
+
+export function isServerBooster(member) {
+  return member?.premiumSinceTimestamp != null || member?.premiumSince != null;
+}
+
+export async function ensureBoosterRole(guild) {
+  const existing = findRoleByName(guild, BOOSTER_ROLE_NAME);
+  if (existing) return existing;
+  const botMember = guild.members.me;
+  if (!botMember?.permissions?.has(PermissionFlagsBits.ManageRoles)) throw new Error("Sugar needs Manage Roles to create and assign the Booster role.");
+  return guild.roles.create({ name: BOOSTER_ROLE_NAME, color: BOOSTER_ROLE_COLOR, hoist: false, mentionable: false, reason: "Create the automatic Kittisugar Server Booster role" });
+}
+
+export async function syncBoosterRole(member, boosterRole) {
+  if (!member?.roles || !boosterRole?.id) return false;
+  const hasRole = member.roles.cache.has(boosterRole.id);
+  const shouldHaveRole = isServerBooster(member);
+  if (shouldHaveRole && !hasRole) { await member.roles.add(boosterRole, "Automatically reward a Kittisugar server boost"); return true; }
+  if (!shouldHaveRole && hasRole) { await member.roles.remove(boosterRole, "Automatically remove the Booster role when a server boost ends"); return true; }
+  return false;
+}
 export const NEW_USER_VISIBLE_CATEGORY_ID = "1569548036055507055";
 
 export function normalizeName(value) {
@@ -272,10 +295,23 @@ async function handleEnterButton(interaction) {
   return startRoleOnboarding(interaction);
 }
 
+async function setupBoosterRole(guild) {
+  try {
+    const role = await ensureBoosterRole(guild);
+    const members = await guild.members.fetch();
+    let synced = 0;
+    for (const member of members.values()) {
+      try { if (await syncBoosterRole(member, role)) synced += 1; }
+      catch (error) { console.error("[boosters] could not sync member " + member.id + " in guild " + guild.id + ": " + error.message); }
+    }
+    console.info("[boosters] role ready for guild " + guild.id + "; synchronized " + synced + " member role change(s)");
+  } catch (error) { console.error("[boosters] setup failed for guild " + guild.id + ": " + error.message); }
+}
 export function attachAccessSystem(client) {
   attachRoleOnboarding(client);
   client.once(Events.ClientReady, async () => {
     for (const guild of client.guilds.cache.values()) {
+      await setupBoosterRole(guild);
       try {
         await ensureStartChannels(guild, client);
         await ensureSelfRolesChannel(guild, client);
@@ -289,7 +325,14 @@ export function attachAccessSystem(client) {
     }
   });
 
+  client.on(Events.GuildMemberUpdate, async (_before, member) => {
+    try { const role = findRoleByName(member.guild, BOOSTER_ROLE_NAME); if (role) await syncBoosterRole(member, role); }
+    catch (error) { console.error("[boosters] could not update member " + member.id + " in guild " + member.guild.id + ": " + error.message); }
+  });
+
   client.on(Events.GuildMemberAdd, async (member) => {
+    try { const role = findRoleByName(member.guild, BOOSTER_ROLE_NAME); if (role) await syncBoosterRole(member, role); }
+    catch (error) { console.error("[boosters] could not sync joining member " + member.id + " in guild " + member.guild.id + ": " + error.message); }
     const newRole = findRoleByName(member.guild, NEW_ROLE_NAME);
     const memberRole = findRoleByName(member.guild, MEMBER_ROLE_NAME);
     if (!newRole || (memberRole && member.roles.cache.has(memberRole.id))) return;
