@@ -31,8 +31,8 @@ test("forum visibility panel uses the Kittisugar pink embed and a red button tha
   const payload = buildForumVisibilityPanelPayload();
   assert.equal(payload.embeds[0].data.color, 0xffd9ff);
   assert.equal(payload.embeds[0].data.title, "୨୧ 𝐅𝐨𝐫𝐮𝐦 𝐕𝐢𝐬𝐢𝐛𝐢𝐥𝐢𝐭𝐲");
-  assert.ok(payload.embeds[0].data.description.includes("\\n\\n**Your choices can be changed whenever you like.**"));
-  assert.doesNotMatch(payload.embeds[0].data.description, /only affects your own view/i);
+  assert.ok(payload.embeds[0].data.description.includes("\n\n**Your choices can be changed whenever you like.**"));
+  assert.doesNotMatch(payload.embeds[0].data.description, /only affects your own view|only for you/i);
   assert.equal(payload.embeds[0].data.footer, null);
   const button = payload.components[0].components[0].toJSON();
   assert.equal(button.custom_id, "sugar-forum-visibility:open");
@@ -60,6 +60,7 @@ test("picker marks the member's existing personal hides as selected", () => {
   assert.equal(menu.max_values, 2);
   assert.deepEqual(menu.options.map((option) => option.default), [true, false]);
   assert.match(payload.embeds[0].data.description, /deselect them to show them again/i);
+  assert.doesNotMatch(payload.embeds[0].data.description, /only for you|only affects your own view/i);
 });
 
 test("picker returns no panel when the category has no forum channels", () => {
