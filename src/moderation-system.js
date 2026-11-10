@@ -158,13 +158,13 @@ export function attachModerationSystem(client, { settings, store }) {
     const violation = detectMessageViolation(message, history);
     history.push({ at: now, content: normalized });
     messageHistory.set(key, history);
+    if (messageHistory.size > 5_000) messageHistory.delete(messageHistory.keys().next().value);
     if (!violation) return;
 
     const cooldownKey = `${key}:${violation}`;
+    await message.delete().catch(() => {});
     if (now - (violationCooldowns.get(cooldownKey) ?? 0) < 5_000) return;
     violationCooldowns.set(cooldownKey, now);
-
-    await message.delete().catch(() => {});
     const strike = store.addStrike(message.guild.id, message.author.id, violation);
     if (strike.count >= STRIKE_LIMIT) {
       const kicked = await message.member.kick("Three Kittisugar rule violations (automatic moderation)").then(() => true).catch((error) => {
