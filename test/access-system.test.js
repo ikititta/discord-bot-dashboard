@@ -87,7 +87,7 @@ test("access, rules, and guide panels contain the required confirmations and upd
 
   assert.ok(access.embeds[0].data.description.includes("please read **Rules** & **Guide**"));
   assert.doesNotMatch(access.embeds[0].data.description, /Rules and \*\*Guide\*\*/);
-  assert.match(access.embeds[0].data.description, /read and agree/i);
+  assert.match(access.embeds[0].data.description, /read & agree/i);
   assert.match(access.embeds[0].data.description, /18 years of age or older/i);
   assert.equal(access.components[0].components[0].data.label, "Enter Server ♡");
   assert.equal(access.components[0].components[0].data.style, 1);
@@ -98,7 +98,7 @@ test("access, rules, and guide panels contain the required confirmations and upd
   assert.match(ruleText, /NSFW content in NSFW channels/i);
   assert.doesNotMatch(ruleText, /Porn category|nsfw.*category/i);
   assert.match(ruleText, /server boosts/i);
-  for (const heading of ["01 · Respect", "02 · Content", "03 · Promotions & Selling", "04 · Warnings", "05 · Support Kittisugar ♡"]) {
+  for (const heading of ["01 · Respect", "02 · Content", "03 · Promotions & Selling", "04 · Warnings", "05 · Support Kittisugar"]) {
     assert.ok(ruleText.includes(`## ${toRoyalBold(heading)}`), `missing fancy Rules heading: ${heading}`);
   }
   assert.doesNotMatch(ruleText, /\n\n##/);
