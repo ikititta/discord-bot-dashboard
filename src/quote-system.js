@@ -27,21 +27,46 @@ export function wrapQuoteText(ctx, text, maxWidth) {
   return lines;
 }
 
-function averageAvatarColor(image) {
-  const sample = createCanvas(32, 32);
+function getAvatarPalette(image) {
+  const sample = createCanvas(48, 48);
   const sampleCtx = sample.getContext("2d");
-  sampleCtx.drawImage(image, 0, 0, 32, 32);
-  const pixels = sampleCtx.getImageData(0, 0, 32, 32).data;
+  sampleCtx.drawImage(image, 0, 0, 48, 48);
+  const pixels = sampleCtx.getImageData(0, 0, 48, 48).data;
+  const colors = [];
   let r = 0, g = 0, b = 0, count = 0;
+
   for (let i = 0; i < pixels.length; i += 4) {
     if (pixels[i + 3] < 100) continue;
-    r += pixels[i];
-    g += pixels[i + 1];
-    b += pixels[i + 2];
+    const color = { r: pixels[i], g: pixels[i + 1], b: pixels[i + 2] };
+    color.luminance = 0.2126 * color.r + 0.7152 * color.g + 0.0722 * color.b;
+    colors.push(color);
+    r += color.r;
+    g += color.g;
+    b += color.b;
     count += 1;
   }
-  if (!count) return { r: 255, g: 217, b: 255 };
-  return { r: Math.round(r / count), g: Math.round(g / count), b: Math.round(b / count) };
+
+  if (!count) {
+    const fallback = { r: 255, g: 217, b: 255, luminance: 222 };
+    return { average: fallback, darkest: { r: 80, g: 65, b: 80 }, lightest: fallback };
+  }
+
+  colors.sort((first, second) => first.luminance - second.luminance);
+  const average = {
+    r: Math.round(r / count),
+    g: Math.round(g / count),
+    b: Math.round(b / count),
+  };
+  average.luminance = 0.2126 * average.r + 0.7152 * average.g + 0.0722 * average.b;
+
+  // Use robust percentile samples so one isolated pixel does not dictate the palette.
+  const darkest = colors[Math.floor((colors.length - 1) * 0.08)];
+  const lightest = colors[Math.floor((colors.length - 1) * 0.92)];
+  return { average, darkest, lightest };
+}
+
+function rgb(color) {
+  return `rgb(${color.r}, ${color.g}, ${color.b})`;
 }
 
 function roundedRect(ctx, x, y, width, height, radius) {
@@ -56,16 +81,18 @@ export async function buildQuoteCard({ authorName, avatarUrl, content }) {
   const ctx = canvas.getContext("2d");
 
   let avatar;
-  let accent = { r: 255, g: 217, b: 255 };
+  let palette = getAvatarPalette({ width: 1, height: 1 });
   try {
     avatar = await loadImage(avatarUrl);
-    accent = averageAvatarColor(avatar);
+    palette = getAvatarPalette(avatar);
   } catch {
     // Keep the card complete if Discord's avatar CDN is unavailable.
   }
 
-  const luminance = 0.2126 * accent.r + 0.7152 * accent.g + 0.0722 * accent.b;
-  const quoteColor = luminance < 145 ? "#ffffff" : "#111111";
+  const isLightPhoto = palette.average.luminance >= 145;
+  const backgroundColor = isLightPhoto ? palette.lightest : palette.darkest;
+  const textColor = isLightPhoto ? palette.darkest : palette.lightest;
+  const middleColor = palette.average;
   const leftWidth = Math.round(width * 0.48);
   const rightX = leftWidth;
   const rightWidth = width - rightX;
@@ -77,25 +104,27 @@ export async function buildQuoteCard({ authorName, avatarUrl, content }) {
     const drawH = avatar.height * scale;
     ctx.drawImage(avatar, (leftWidth - drawW) / 2, (height - drawH) / 2, drawW, drawH);
   } else {
-    ctx.fillStyle = `rgb(${accent.r}, ${accent.g}, ${accent.b})`;
+    ctx.fillStyle = rgb(backgroundColor);
     ctx.fillRect(0, 0, leftWidth, height);
   }
 
-  // Continue the avatar's dominant color across the right side, rather than using a default dark panel.
-  const tint = luminance < 145 ? 0.18 : 0.94;
-  const endColor = {
-    r: Math.round(accent.r + (255 - accent.r) * tint),
-    g: Math.round(accent.g + (255 - accent.g) * tint),
-    b: Math.round(accent.b + (255 - accent.b) * tint),
-  };
+  // A three-stop gradient brings the photo's own palette softly through the center.
   const gradient = ctx.createLinearGradient(rightX, 0, width, height);
-  gradient.addColorStop(0, `rgb(${accent.r}, ${accent.g}, ${accent.b})`);
-  gradient.addColorStop(1, `rgb(${endColor.r}, ${endColor.g}, ${endColor.b})`);
+  gradient.addColorStop(0, rgb(backgroundColor));
+  gradient.addColorStop(0.52, rgb(middleColor));
+  gradient.addColorStop(1, rgb(backgroundColor));
   ctx.fillStyle = gradient;
   ctx.fillRect(rightX, 0, rightWidth, height);
 
-  const panelPadding = 76;
+  const panelPadding = 70;
   const textWidth = rightWidth - panelPadding * 2;
+  const username = String(authorName ?? "Unknown").trim().slice(0, 70);
+  ctx.textAlign = "center";
+  ctx.textBaseline = "alphabetic";
+  ctx.fillStyle = rgb(textColor);
+  ctx.font = "600 30px Arial";
+  ctx.fillText(username, rightX + rightWidth / 2, 125, textWidth);
+
   const quote = `“${String(content ?? "").trim().slice(0, MAX_QUOTE_LENGTH)}”`;
   let fontSize = 58;
   let lines = [];
@@ -108,22 +137,19 @@ export async function buildQuoteCard({ authorName, avatarUrl, content }) {
 
   const lineHeight = Math.round(fontSize * 1.38);
   const quoteBlockHeight = lines.length * lineHeight;
-  const quoteAreaTop = 110;
+  const quoteAreaTop = 175;
   const quoteAreaBottom = 650;
   const quoteAreaHeight = quoteAreaBottom - quoteAreaTop;
   const startY = quoteAreaTop + Math.max(fontSize, (quoteAreaHeight - quoteBlockHeight) / 2 + fontSize * 0.78);
 
-  ctx.textAlign = "center";
-  ctx.textBaseline = "alphabetic";
-  ctx.fillStyle = quoteColor;
+  ctx.fillStyle = rgb(textColor);
   ctx.font = `italic 600 ${fontSize}px Georgia`;
   lines.forEach((line, index) => {
     ctx.fillText(line, rightX + rightWidth / 2, startY + index * lineHeight, textWidth);
   });
 
-  ctx.fillStyle = quoteColor;
-  ctx.font = "500 23px Arial";
-  ctx.textAlign = "center";
+  ctx.fillStyle = rgb(textColor);
+  ctx.font = "500 28px Arial";
   ctx.fillText("kittisugar", rightX + rightWidth / 2, 748);
   return canvas.toBuffer("image/png");
 }
@@ -161,7 +187,7 @@ export async function createQuoteFromReply(commandMessage) {
   if (!content) throw new Error("That message has no text to turn into a quote.");
 
   const image = await buildQuoteCard({
-    authorName: original.member?.displayName ?? original.author.globalName ?? original.author.username,
+    authorName: original.author.username,
     avatarUrl: original.author.displayAvatarURL({ extension: "png", size: 512 }),
     content,
   });
