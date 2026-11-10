@@ -15,8 +15,8 @@ const ENTER_ID = `${PREFIX}enter`;
 const COLOR = 0xffd9ff;
 const START_CATEGORY_NAME = "start";
 const ACCESS_CHANNEL_NAME = "🔑｜୨୧•𝓰𝓮𝓽-𝓪𝓬𝓬𝓮𝓼𝓼";
-const RULES_CHANNEL_NAME = "📜｜୨୧•𝓻𝓾𝓵𝓮𝓼";
-const GUIDE_CHANNEL_NAME = "🧭｜୨୧•𝓰𝓾𝓲𝓭𝓮";
+const RULES_CHANNEL_NAME = "📃｜୨୧•𝓻𝓾𝓵𝓮𝓼";
+const GUIDE_CHANNEL_NAME = "📖｜୨୧•𝓰𝓾𝓲𝓭𝓮";
 const NEW_ROLE_NAME = "new";
 const MEMBER_ROLE_NAME = "member";
 
