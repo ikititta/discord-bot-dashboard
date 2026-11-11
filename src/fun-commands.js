@@ -11,7 +11,9 @@ export const FUN_ROLE_IDS = Object.freeze({
 export const FUN_VIP_ROLE_ID = "1568188640113463437";
 export const FUN_MEMBER_ROLE_ID = "1568188534836428812";
 
-const API_BASE = "https://nekos.best/api/v2";
+const GIFUKAI_API_BASE = "https://api.gifukai.com/v1";
+const NEKOS_BEST_API_BASE = "https://nekos.best/api/v2";
+const GIFUKAI_PAIRING_CATEGORIES = new Set(["hug", "kiss", "pat", "cry", "sleep", "pout"]);
 const REQUEST_TIMEOUT_MS = 8_000;
 const COLOR = 0xffd9ff;
 const VIP_STATS_MESSAGE = "Get VIP to see everyone's stats.";
@@ -103,20 +105,60 @@ export function buildFunStatsEmbed({ user, stats, full = false, received = false
   return embed;
 }
 
-export async function fetchAnimeGif(category, { fetchImpl = fetch } = {}) {
+export function resolveGifPairing(actorRole, targetRole = null) {
+  if (targetRole === null) {
+    if (actorRole === "female") return "f";
+    if (actorRole === "male") return "m";
+    return null;
+  }
+  return ({
+    "female:female": "ff",
+    "male:male": "mm",
+    "female:male": "fm",
+    "male:female": "mf",
+  })[`${actorRole}:${targetRole}`] ?? null;
+}
+
+export async function fetchAnimeGif(category, {
+  fetchImpl = fetch,
+  actorRole = "neutral",
+  targetRole = null,
+} = {}) {
   if (!GIF_CATEGORIES.has(category)) throw new Error("Invalid anime GIF category.");
-  const response = await fetchImpl(`${API_BASE}/${category}`, {
+
+  if (GIFUKAI_PAIRING_CATEGORIES.has(category)) {
+    const pairing = resolveGifPairing(actorRole, targetRole);
+    const url = new URL(`${GIFUKAI_API_BASE}/${category}`);
+    if (pairing) url.searchParams.set("pairing", pairing);
+    try {
+      const response = await fetchImpl(url, {
+        headers: { "User-Agent": "SugarDiscordBot/1.0 (https://github.com/ikititta/discord-bot-dashboard)" },
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      });
+      if (!response.ok) throw new Error(`Gifukai returned HTTP ${response.status}.`);
+      const payload = await response.json();
+      const gifUrl = new URL(payload?.url ?? "");
+      if (gifUrl.protocol !== "https:" || gifUrl.hostname !== "cdn.gifukai.com" || !gifUrl.pathname.endsWith(".gif")) {
+        throw new Error("Gifukai returned an invalid GIF URL.");
+      }
+      return { url: gifUrl.toString(), anime: String(payload.anime ?? "").slice(0, 80), pairing };
+    } catch (error) {
+      console.warn(`[fun] paired GIF lookup failed for ${category}; trying the generic anime GIF source: ${error.message}`);
+    }
+  }
+
+  const response = await fetchImpl(`${NEKOS_BEST_API_BASE}/${category}`, {
     headers: { "User-Agent": "SugarDiscordBot/1.0 (https://github.com/ikititta/discord-bot-dashboard)" },
     signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   });
   if (!response.ok) throw new Error(`Anime GIF service returned HTTP ${response.status}.`);
   const payload = await response.json();
   const result = payload?.results?.[0];
-  const url = new URL(result?.url ?? "");
-  if (url.protocol !== "https:" || url.hostname !== "nekos.best" || !url.pathname.endsWith(".gif")) {
+  const gifUrl = new URL(result?.url ?? "");
+  if (gifUrl.protocol !== "https:" || gifUrl.hostname !== "nekos.best" || !gifUrl.pathname.endsWith(".gif")) {
     throw new Error("Anime GIF service returned an invalid GIF URL.");
   }
-  return { url: url.toString(), anime: String(result.anime_name ?? "").slice(0, 80) };
+  return { url: gifUrl.toString(), anime: String(result.anime_name ?? "").slice(0, 80), pairing: null };
 }
 
 function isVerifiedAdult(member) {
@@ -177,6 +219,7 @@ async function handleFunAction(message, store, name, args, fetchImpl) {
 
   let targetMember = null;
   let targetUser = null;
+  let targetRole = null;
   if (definition.needsTarget) {
     targetUser = message.mentions.users.first();
     if (!targetUser) {
@@ -192,6 +235,7 @@ async function handleFunAction(message, store, name, args, fetchImpl) {
       await safeReply(message, { content: "That member must complete Kittisugar's 18+ verification first." });
       return true;
     }
+    targetRole = normalizeFunRole(targetMember);
   } else if (message.mentions.users.size) {
     await safeReply(message, { content: `!${name} is a solo command and doesn't need a mention.` });
     return true;
@@ -209,7 +253,7 @@ async function handleFunAction(message, store, name, args, fetchImpl) {
     : `**${displayName(message.member, message.author)}** ${definition.text}!`;
 
   let gif = null;
-  try { gif = await fetchAnimeGif(definition.gif, { fetchImpl }); }
+  try { gif = await fetchAnimeGif(definition.gif, { fetchImpl, actorRole: normalizeFunRole(message.member), targetRole }); }
   catch (error) { console.warn(`[fun] GIF lookup failed for !${name}: ${error.message}`); }
 
   const embed = new EmbedBuilder().setColor(COLOR).setDescription(actionText);
