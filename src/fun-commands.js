@@ -1,5 +1,4 @@
 import { EmbedBuilder, Events } from "discord.js";
-import { isCommandsThread } from "./commands-channel.js";
 
 const KITTISUGAR_GUILD_ID = "1567093019377930363";
 
@@ -309,15 +308,6 @@ export function attachFunCommands(client, { store, fetchImpl = fetch } = {}) {
 
     const name = match[1].toLowerCase();
     const args = match[2] ?? "";
-    if (!isCommandsThread(message)) {
-      const parentName = String(message.channel?.parent?.name ?? message.channel?.name ?? "")
-        .normalize("NFKD").toLowerCase().replace(/\p{M}/gu, "").replace(/[^a-z0-9]/g, "");
-      if (parentName.includes("commands") &&
-          (getFunCommandDefinition(name) || name === "funhelp" || name === "stats" || name === "vip")) {
-        await safeReply(message, { content: "Please use the 💬 commands thread for fun commands ♡" });
-      }
-      return;
-    }
     try {
       if (BLOCKED_COMMANDS.has(name)) {
         await safeReply(message, { content: "That command isn't available. Please keep interactions consensual ♡" });
