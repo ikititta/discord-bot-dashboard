@@ -4,6 +4,8 @@ import assert from "node:assert/strict";
 import {
   FUN_ROLE_IDS,
   FUN_VIP_ROLE_ID,
+  buildFunActionText,
+  buildFunHelpEmbed,
   buildFunStatsEmbed,
   fetchAnimeGif,
   getFunCommandDefinition,
@@ -36,6 +38,21 @@ test("fun commands use the existing Kittisugar gender role IDs only", () => {
   assert.equal(resolveGifPairing("male", "female"), "mf");
   assert.equal(resolveGifPairing("trans", "male"), null);
   assert.equal(resolveGifPairing("non-binary", "female"), null);
+});
+
+test("fun action messages mention the actor and target with clear past-tense wording", () => {
+  assert.equal(buildFunActionText("111", "222", { text: "has hugged" }), "<@111> has hugged <@222>!");
+  assert.equal(buildFunActionText("111", null, { text: "has cried" }), "<@111> has cried!");
+});
+
+test("fun help explains command types, stats, and VIP access", () => {
+  const embed = buildFunHelpEmbed();
+  assert.match(embed.data.title, /Fun Commands Guide/);
+  const fields = embed.data.fields.map((field) => field.value).join("\\n");
+  assert.match(fields, /!stats/);
+  assert.match(fields, /!vip stats @member/);
+  assert.match(fields, /Two-person commands/);
+  assert.match(fields, /Solo commands/);
 });
 
 test("paired and solo commands enforce the correct mention mode", () => {
