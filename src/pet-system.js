@@ -286,8 +286,8 @@ export function attachPetSystem(client, store) {
   });
   client.on(Events.MessageCreate, async (message) => {
     if (!message.guild || message.author?.bot || message.channel?.type !== ChannelType.GuildText) return;
-    const ownerId = /^Sugar personal pet room for (\p{17,20})$/.exec(message.channel.topic ?? "")?.[1];
-    if (!ownerId || ownerId !== message.author.id || !/^!pet(?:\p|$)/i.test(message.content.trim())) return;
+    const ownerId = /^Sugar personal pet room for (\d{17,20})$/.exec(message.channel.topic ?? "")?.[1];
+    if (!ownerId || ownerId !== message.author.id || !/^!pet(?:\s|$)/i.test(message.content.trim())) return;
     try { await runPetCommand(message, store); }
     catch (error) {
       console.error("[pets] command failed: " + error.message);
