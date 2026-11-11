@@ -1,5 +1,6 @@
 import { ChannelType, EmbedBuilder, Events } from "discord.js";
 
+export const COMMANDS_CHANNEL_ID = "1570221195222057150";
 export const COMMANDS_CHANNEL_NAME = "reputation";
 export const COMMANDS_THREAD_NAME = "💬 𝗰𝗼𝗺𝗺𝗮𝗻𝗱𝘀";
 const PANEL_TITLE = "୨୧ 𝓒𝓸𝓶𝓶𝓪𝓷𝓭𝓼 ♡";
@@ -60,11 +61,9 @@ function normalize(value) {
 
 export async function ensureCommandsBoard(guild, client) {
   let channel = guild.channels.cache.find((item) =>
-    item.type === ChannelType.GuildText && normalize(item.name) === "reputation",
+    item.type === ChannelType.GuildText && item.id === COMMANDS_CHANNEL_ID,
   );
-  if (!channel) channel = await guild.channels.create({
-    name: "reputation", type: ChannelType.GuildText, reason: "Host the Kittisugar commands board with reputation",
-  });
+  if (!channel) throw new Error("Configured reputation channel " + COMMANDS_CHANNEL_ID + " was not found; no channel was created.");
 
   const recent = await channel.messages.fetch({ limit: 100 });
   let panel = [...recent.values()].find((message) =>
@@ -78,23 +77,7 @@ export async function ensureCommandsBoard(guild, client) {
     thread = archived.threads.find((item) => item.name === COMMANDS_THREAD_NAME && item.parentId === channel.id) ?? null;
   }
 
-  const newestMessage = [...recent.values()].sort((a, b) => b.createdTimestamp - a.createdTimestamp)[0];
-  const boardIsLast = panel && newestMessage?.id === panel.id;
-  if (!panel || !boardIsLast) {
-    if (thread && !thread.archived) {
-      await thread.setArchived(true, "Archive the previous commands thread before moving its board");
-    }
-    const previousPanel = panel;
-    panel = await channel.send(buildCommandsPanelPayload());
-    thread = await panel.startThread({
-      name: COMMANDS_THREAD_NAME,
-      autoArchiveDuration: 10080,
-      reason: "Create the Kittisugar commands thread from its bottom-positioned board embed",
-    });
-    if (previousPanel) await previousPanel.delete().catch((error) => {
-      console.error("[commands] previous board message could not be removed: " + error.message);
-    });
-  } else {
+  if (!panel) { panel = await channel.send(buildCommandsPanelPayload()); } else {
     await panel.edit(buildCommandsPanelPayload());
     if (!thread) thread = await channel.threads.fetch(panel.id).catch(() => null);
     if (!thread) {
@@ -125,7 +108,7 @@ export function isCommandsThread(message) {
   const channel = message?.channel;
   if (!message?.guild || !channel?.isThread?.()) return false;
   return normalize(channel.name).includes("commands") &&
-    normalize(channel.parent?.name) === "reputation";
+    channel.parentId === COMMANDS_CHANNEL_ID;
 }
 
 export function attachCommandsChannel(client) {
