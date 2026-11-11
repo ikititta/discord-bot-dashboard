@@ -412,8 +412,10 @@ export function attachFunCommands(client, { store, fetchImpl = fetch, token, app
         await safeReply(message, { content: "All two-person fun interactions are automatic now. No approval settings are needed ♡" });
         return;
       }
-      if (name === "stats" || name === "vip") {
-        await handleStats(message, store, name === "vip" ? `vip ${args}` : `stats ${args}`);
+      if (name === "stats" || name === "vip" || name === "fun") {
+        if (name === "fun" && !/^stats(?:\\s|$)/i.test(args.trim())) return;
+        const statsArgs = name === "vip" ? `vip ${args}` : name === "fun" ? `stats ${args.trim().replace(/^stats\\s*/i, "")}` : `stats ${args}`;
+        await handleStats(message, store, statsArgs);
         return;
       }
       if (!getFunCommandDefinition(name)) return;
