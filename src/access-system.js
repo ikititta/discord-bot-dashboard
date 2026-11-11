@@ -139,7 +139,7 @@ export function buildRulesPayload(guild) {
       `## ${toRoyalBold("01 · Respect")}
 No harassment, hate, threats, bullying, spam, or sharing private information.`,
       `## ${toRoyalBold("02 · Content")}
-Keep NSFW content in NSFW channels. VIP members may post it elsewhere. No illegal or non-consensual intimate content.`,
+Keep NSFW content in NSFW channels. VIP members may post it elsewhere. No illegal or non-consensual intimate content. NSFW interactions require the other member's approval unless they enabled automatic acceptance with `!nsfw-on`. Use `!nsfw-off` to require approval again.`,
       `## ${toRoyalBold("03 · Promotions & Selling")}
 Only VIP members may promote or sell in ${promotionChannel}. VIP is **$5 USD once, for life** and includes **VIP, Seller, and a custom role**. No unsolicited ads in chats, profiles, or DMs.`,
       `## ${toRoyalBold("04 · Warnings")}
@@ -190,7 +190,10 @@ export function buildGuidePayload(guild) {
       "`/mod-delete amount: [member:]` — moderator cleanup.\n" +
       "`!quote` — reply to a message with !quote to create an image quote.\n" +
       "`/priv-chat create|add|remove|rename|leave|delete|commands` — manage your private chat.\n" +
-      "`!funhelp` — view the fun-command guide.\n" +
+      "`/fun help` — view the fun-command guide.\n" +
+      "`!nsfw-on` — automatically accept NSFW interaction requests. `!nsfw-off` — require approval for each request again.\n" +
+      "`!propose @member` / `!marry @member` — propose marriage. `!couple @member` — ask to become a couple; the other member must accept.\n" +
+      "`!breakup` / `!divorce` — end your current relationship.\n" +
       "`!stats` — view your basic fun-command statistics.\n" +
       "`!vip stats` — VIP members can view full statistics.\n" +
       "`!vip stats @member` — VIP members can view another member's statistics.\n" +
