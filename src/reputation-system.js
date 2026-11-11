@@ -166,32 +166,12 @@ const PANEL_TITLE = "୨୧ 𝓡𝓮𝓹𝓾𝓽𝓪𝓽𝓲𝓸𝓷 ♡";
 
 async function ensureStickyReputationPanels(channel, client, store, guild) {
   const recent = await channel.messages.fetch({ limit: 100 });
-  const isReputationPanel = (message) => message.author?.id === client.user.id &&
-    message.embeds.some((embed) => [TOP_TITLE, PANEL_TITLE].includes(embed.title));
-  const isCommandsBoard = (message) => message.author?.id === client.user.id &&
-    message.embeds.some((embed) => embed.title === "୨୧ 𝓒𝓸𝓶𝓶𝓪𝓷𝓭𝓼 ♡");
-  const previous = [...recent.values()].filter(isReputationPanel);
-  const byTitle = new Map(previous.map((message) => [message.embeds[0]?.title, message]));
-  const earliestPanel = previous.length ? Math.min(...previous.map((message) => message.createdTimestamp)) : 0;
-  const hasActivityAfterPanel = [...recent.values()].some((message) =>
-    !isReputationPanel(message) && !isCommandsBoard(message) && message.createdTimestamp > earliestPanel,
-  );
-  const payloads = [[TOP_TITLE, buildTopEmbed(store, guild)], [PANEL_TITLE, makePanelPayload()]];
-  if (previous.length === 2 && !hasActivityAfterPanel) {
-    for (const [title, payload] of payloads) {
-      const existing = byTitle.get(title);
-      if (existing) {
-        await existing.edit(payload);
-        if (existing.pinned) await existing.unpin().catch((error) => console.error("[reputation] could not unpin sticky panel: " + error.message));
-      }
-    }
-    return;
+  for (const [title, payload] of [[TOP_TITLE, buildTopEmbed(store, guild)], [PANEL_TITLE, makePanelPayload()]]) {
+    const matches = [...recent.values()].filter((message) => message.author?.id === client.user.id && message.embeds.some((embed) => embed.title === title)).sort((a, b) => a.createdTimestamp - b.createdTimestamp);
+    const existing = matches.shift();
+    if (existing) await existing.edit(payload); else await channel.send(payload);
+    for (const duplicate of matches) await duplicate.delete().catch((error) => { if (error?.code !== 10008) console.error("[reputation] duplicate panel could not be removed: " + error.message); });
   }
-  const replacements = [];
-  for (const [, payload] of payloads) replacements.push(await channel.send(payload));
-  for (const old of previous) await old.delete().catch((error) => {
-    if (error?.code !== 10008) console.error("[reputation] old sticky panel could not be deleted: " + error.message);
-  });
 }
 
 async function setup(guild, client, store) {
@@ -381,17 +361,6 @@ export function attachReputationSystem(client, store) {
         return ephemeral(interaction, "I couldn't publish that comment. Please try again.");
       }
     }
-  });
-  const commandsStickyQueues = new Map();
-  client.on(Events.MessageCreate, (message) => {
-    if (!message.guild || message.author.bot || message.channel?.parentId !== REPUTATION_CHANNEL_ID || !message.channel?.isThread?.()) return;
-    const state = commandsStickyQueues.get(message.channel.id) ?? { running: Promise.resolve() };
-    state.running = state.running.then(async () => {
-      const thread = await client.channels.fetch(message.channel.id).catch(() => null);
-      if (!thread?.isThread?.()) return;
-      await refreshCommandsThreadSticky(thread, client);
-    }).catch((error) => console.error("[commands] sticky guide failed: " + error.message));
-    commandsStickyQueues.set(message.channel.id, state);
   });
   client.on(Events.MessageCreate, async (message) => {
     if (!message.guild || message.author.bot || !/^!rep(?:\s|$)/i.test(message.content.trim())) return;
