@@ -1,4 +1,4 @@
-import { EmbedBuilder, Events, REST, Routes, SlashCommandBuilder } from "discord.js";
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, Events, REST, Routes, SlashCommandBuilder } from "discord.js";
 
 const KITTISUGAR_GUILD_ID = "1567093019377930363";
 
@@ -304,6 +304,38 @@ async function handleFunAction(message, store, name, args, fetchImpl) {
   return true;
 }
 
+const RELATION_PREFIX = "sugar-relation:";
+function relationshipRow(id) {
+  return new ActionRowBuilder().addComponents(
+    new ButtonBuilder().setCustomId(RELATION_PREFIX + id + ":yes").setLabel("Accept ♡").setStyle(ButtonStyle.Success),
+    new ButtonBuilder().setCustomId(RELATION_PREFIX + id + ":no").setLabel("Decline").setStyle(ButtonStyle.Secondary),
+  );
+}
+async function handleRelationshipButton(interaction, store) {
+  if (!interaction.customId.startsWith(RELATION_PREFIX)) return false;
+  const parts = interaction.customId.slice(RELATION_PREFIX.length).split(":");
+  const result = store.resolveRelationshipProposal(interaction.guildId, parts[0], interaction.user.id, parts[1] === "yes");
+  if (result.error) { await interaction.reply({ content: result.error === "not_target" ? "Only the person who received this proposal can answer ♡" : "This proposal is no longer available.", ephemeral: true }); return true; }
+  await interaction.update({ content: parts[1] === "yes" ? (result.type === "marriage" ? "💍 They said yes! You are now married ♡" : "💗 You are now a couple ♡") : "The proposal was declined.", components: [] });
+  return true;
+}
+async function handleRelationshipCommand(message, store, name) {
+  if (["couple", "propose", "marry"].includes(name)) {
+    const target = message.mentions.users.first();
+    if (!target || target.bot || target.id === message.author.id) { await safeReply(message, { content: "Usage: !" + name + " @member" }); return; }
+    const member = await message.guild.members.fetch(target.id).catch(() => null);
+    if (!member || !isVerifiedAdult(member)) { await safeReply(message, { content: "Both members must have the Member role ♡" }); return; }
+    const type = name === "couple" ? "couple" : "marriage";
+    const proposal = store.createRelationshipProposal({ guildId: message.guild.id, proposerId: message.author.id, targetId: target.id, type });
+    if (proposal.error) { await safeReply(message, { content: proposal.error === "already_in_relationship" ? "One of you is already in a relationship ♡" : "One of you already has a pending proposal." }); return; }
+    await safeReply(message, { content: (type === "marriage" ? "💍 " : "💗 ") + "<@" + message.author.id + "> has proposed to <@" + target.id + ">!", components: [relationshipRow(proposal.id)] }, [message.author.id, target.id]);
+    return;
+  }
+  const expected = name === "divorce" ? "marriage" : "couple";
+  const result = store.endRelationship(message.guild.id, message.author.id, expected);
+  const response = result.error === "no_relationship" ? "You do not have an active relationship." : result.error === "wrong_type" ? (name === "divorce" ? "You are not married." : "You are not dating. Use !divorce if you are married.") : (name === "divorce" ? "The marriage has ended ♡" : "The relationship has ended ♡");
+  await safeReply(message, { content: response });
+}
 const FUN_HELP_COMMAND = new SlashCommandBuilder().setName("fun").setDescription("Fun commands").addSubcommand((sub) => sub.setName("help").setDescription("Show the fun command guide")).toJSON();
 async function registerFunHelpCommand(token, applicationId) {
   const rest = new REST({ version: "10" }).setToken(token);
@@ -315,6 +347,8 @@ export function attachFunCommands(client, { store, fetchImpl = fetch, token, app
   if (!store) throw new Error("The fun-command statistics store is required.");
 
   client.on(Events.InteractionCreate, async (interaction) => {
+    if (interaction.isButton?.()) { try { await handleRelationshipButton(interaction, store); } catch (error) { console.error("[fun] relationship button failed: " + error.message); } }
+
     if (interaction.isChatInputCommand?.() && interaction.commandName === "fun" && interaction.options.getSubcommand() === "help") {
       await interaction.reply({ embeds: [buildFunHelpEmbed()], ephemeral: true }).catch(() => {});
     }
@@ -334,6 +368,11 @@ export function attachFunCommands(client, { store, fetchImpl = fetch, token, app
     try {
       if (BLOCKED_COMMANDS.has(name)) {
         await safeReply(message, { content: "That command isn't available." });
+        return;
+      }
+      if (["couple", "propose", "marry", "breakup", "divorce"].includes(name)) {
+        if (!isVerifiedAdult(message.member)) { await safeReply(message, { content: "Relationships are available to verified Member accounts ♡" }); return; }
+        await handleRelationshipCommand(message, store, name);
         return;
       }
       if (name === "nsfw-on" || name === "nsfw-off") {
