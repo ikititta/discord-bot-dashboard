@@ -167,8 +167,15 @@ export async function fetchAnimeGif(category, {
   return { url: gifUrl.toString(), anime: String(result.anime_name ?? "").slice(0, 80), pairing: null, source: "Nekos.best" };
 }
 
-function isVerifiedAdult(member) {
-  return Boolean(member?.roles?.cache?.has(FUN_MEMBER_ROLE_ID));
+export function isVerifiedAdult(member) {
+  const roles = member?.roles?.cache;
+  if (!roles) return false;
+  // Resolve Member by its live role name as well as the legacy ID. The
+  // onboarding system manages this role by name, so its ID may change.
+  const hasMemberRole = typeof roles.some === "function"
+    ? roles.some((role) => String(role?.name ?? "").normalize("NFKD").toLowerCase().replace(/\\p{M}/gu, "").replace(/[^a-z0-9]/g, "") === "member")
+    : false;
+  return Boolean(roles.has?.(FUN_MEMBER_ROLE_ID) || hasMemberRole);
 }
 
 function isVip(member) {
