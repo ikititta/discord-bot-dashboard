@@ -55,7 +55,8 @@ export function findRoleByName(guild, name) {
 }
 
 export function canNewRoleViewChannel(channel) {
-  return channel.id === NEW_USER_VISIBLE_CATEGORY_ID || channel.parentId === NEW_USER_VISIBLE_CATEGORY_ID;
+  const isSupport = normalizeName(channel.name) === "support";
+  return isSupport || channel.id === NEW_USER_VISIBLE_CATEGORY_ID || channel.parentId === NEW_USER_VISIBLE_CATEGORY_ID;
 }
 
 export async function applyNewRoleVisibility(guild, newRole) {
