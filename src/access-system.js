@@ -192,6 +192,8 @@ export function buildGuidePayload(guild) {
       "`!stats` — view your basic fun-command statistics.\n" +
       "`!vip stats` — VIP members can view full statistics.\n" +
       "`!vip stats @member` — VIP members can view another member's statistics.\n" +
+      "`!rep` — see your reputation. `!rep @member` — view someone else.\n" +
+      "`!rep top` — view the reputation ranking. `!rep comments @member` — read recent comments.\n" +
       `## ୨୧ ${guideSectionTitle("Sugar AI")}\n\n` +
       "Mention Sugar or address the bot directly to start a conversation ♡" + buildServerMap(guild)
     )
