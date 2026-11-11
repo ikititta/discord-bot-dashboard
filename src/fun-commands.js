@@ -1,6 +1,6 @@
 import { EmbedBuilder, Events } from "discord.js";
 
-import { KITTISUGAR_GUILD_ID } from "./community-system.js";
+const KITTISUGAR_GUILD_ID = "1567093019377930363";
 
 export const FUN_ROLE_IDS = Object.freeze({
   female: "1569638102949953567",
