@@ -25,9 +25,10 @@ test("self-role categories use the agreed gender and sexuality options", () => {
   assert.equal(SEXUALITY_OPTIONS.some(([value]) => value === "queer"), false);
 });
 
-test("age options are individual ages from 18 through 40 without emoji labels", () => {
-  assert.equal(AGE_OPTIONS.length, 23);
-  assert.equal(AGE_OPTIONS[0][0], "18");
+test("age options include the 18- manual-review route followed by ages 18 through 40", () => {
+  assert.equal(AGE_OPTIONS.length, 24);
+  assert.deepEqual(AGE_OPTIONS[0], ["18-", "18-"]);
+  assert.equal(AGE_OPTIONS[1][0], "18");
   assert.equal(AGE_OPTIONS.at(-1)[0], "40");
   assert.ok(AGE_OPTIONS.every(([value, label]) => value === label && /^\d+$/.test(label)));
 });
