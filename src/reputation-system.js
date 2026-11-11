@@ -156,13 +156,15 @@ const PANEL_TITLE = "୨୧ 𝓡𝓮𝓹𝓾𝓽𝓪𝓽𝓲𝓸𝓷 ♡";
 
 async function ensureStickyReputationPanels(channel, client, store, guild) {
   const recent = await channel.messages.fetch({ limit: 100 });
-  const isPanel = (message) => message.author?.id === client.user.id &&
-    message.embeds.some((embed) => [TOP_TITLE, PANEL_TITLE, "୨୧ 𝓒𝓸𝓶𝓶𝓪𝓷𝓭𝓼 ♡"].includes(embed.title));
-  const previous = [...recent.values()].filter(isPanel);
+  const isReputationPanel = (message) => message.author?.id === client.user.id &&
+    message.embeds.some((embed) => [TOP_TITLE, PANEL_TITLE].includes(embed.title));
+  const isCommandsBoard = (message) => message.author?.id === client.user.id &&
+    message.embeds.some((embed) => embed.title === "୨୧ 𝓒𝓸𝓶𝓶𝓪𝓷𝓭𝓼 ♡");
+  const previous = [...recent.values()].filter(isReputationPanel);
   const byTitle = new Map(previous.map((message) => [message.embeds[0]?.title, message]));
   const earliestPanel = previous.length ? Math.min(...previous.map((message) => message.createdTimestamp)) : 0;
   const hasActivityAfterPanel = [...recent.values()].some((message) =>
-    !isPanel(message) && message.createdTimestamp > earliestPanel,
+    !isReputationPanel(message) && !isCommandsBoard(message) && message.createdTimestamp > earliestPanel,
   );
   const payloads = [[TOP_TITLE, buildTopEmbed(store, guild)], [PANEL_TITLE, makePanelPayload()]];
   if (previous.length === 2 && !hasActivityAfterPanel) {
@@ -250,7 +252,6 @@ export function attachReputationSystem(client, store) {
       if (isPanel) return;
       const guild = await client.guilds.fetch(message.guild.id);
       await ensureStickyReputationPanels(channel, client, store, guild);
-      await ensureCommandsBoard(guild, client);
     }).catch((error) => console.error("[reputation] sticky panels failed: " + error.message));
     stickyQueues.set(message.guild.id, state);
   });
