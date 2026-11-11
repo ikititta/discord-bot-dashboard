@@ -108,6 +108,13 @@ async function ensureTextChannel(guild, name) {
 async function setup(guild, client, store) {
   const welcomes = await ensureTextChannel(guild, "welcomes");
   const reputation = await ensureTextChannel(guild, "reputation");
+  for (const channel of [welcomes, reputation]) {
+    await channel.permissionOverwrites.edit(guild.roles.everyone, { ViewChannel: true, SendMessages: false },
+      "Keep Kittisugar welcome and reputation channels read-only");
+    await channel.permissionOverwrites.edit(client.user.id, {
+      ViewChannel: true, SendMessages: true, EmbedLinks: true, ReadMessageHistory: true, ManageMessages: true,
+    }, "Allow Sugar to maintain welcome and reputation panels");
+  }
   await upsert(reputation, client, "୨୧ 𝓣𝓸𝓹 𝓡𝓮𝓹𝓾𝓽𝓪𝓽𝓲𝓸𝓷 ♡", buildTopEmbed(store, guild));
   await upsert(reputation, client, "୨୧ 𝓡𝓮𝓹𝓾𝓽𝓪𝓽𝓲𝓸𝓷 ♡", makePanelPayload());
   return { welcomes, reputation };
