@@ -139,7 +139,7 @@ export function buildRulesPayload(guild) {
       `## ${toRoyalBold("01 · Respect")}
 No harassment, hate, threats, bullying, spam, or sharing private information.`,
       `## ${toRoyalBold("02 · Content")}
-Keep NSFW content in NSFW channels. VIP members may post it elsewhere. No illegal or non-consensual intimate content. NSFW interactions require the other member's approval unless they enabled automatic acceptance with `!nsfw-on`. Use `!nsfw-off` to require approval again.`,
+Keep NSFW content in NSFW channels. VIP members may post it elsewhere. No illegal or non-consensual intimate content. NSFW interactions require the other member's approval unless they enabled automatic acceptance with '!nsfw-on'. Use '!nsfw-off' to require approval again.`,
       `## ${toRoyalBold("03 · Promotions & Selling")}
 Only VIP members may promote or sell in ${promotionChannel}. VIP is **$5 USD once, for life** and includes **VIP, Seller, and a custom role**. No unsolicited ads in chats, profiles, or DMs.`,
       `## ${toRoyalBold("04 · Warnings")}
