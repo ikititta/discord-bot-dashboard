@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { randomUUID } from "node:crypto";
 import {
   ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, EmbedBuilder, Events, PermissionFlagsBits,
 } from "discord.js";
@@ -114,9 +115,34 @@ async function ensurePetsChannel(guild, client, store) {
   else await channel.send(panelPayload());
   return channel;
 }
+const PET_VISUAL_TRAITS = {
+  palettes: ["vanilla cream", "strawberry pink", "lavender", "peach", "mint", "powder blue", "cocoa"],
+  eyes: ["glossy round eyes", "sleepy crescent eyes", "sparkling starry eyes", "soft gradient eyes"],
+  markings: ["tiny heart-shaped marking", "freckles", "soft ear gradients", "little forehead star", "cloud-shaped patches", "speckled paws"],
+  accessories: ["satin bow", "tiny bell collar", "flower clip", "lace ribbon", "moon charm", "pearl collar", "no accessory"],
+  personalities: ["gentle", "mischievous", "sleepy", "curious", "playful", "shy", "adventurous"],
+};
+
+function choose(values) {
+  return values[Math.floor(Math.random() * values.length)];
+}
+
 function makePet() {
+  const species = choose(PETS);
   return {
-    name: "Mochi", species: PETS[Math.floor(Math.random() * PETS.length)],
+    id: randomUUID(),
+    name: "Mochi",
+    species,
+    visualIdentity: {
+      palette: choose(PET_VISUAL_TRAITS.palettes),
+      eyes: choose(PET_VISUAL_TRAITS.eyes),
+      markings: choose(PET_VISUAL_TRAITS.markings),
+      accessory: choose(PET_VISUAL_TRAITS.accessories),
+      personality: choose(PET_VISUAL_TRAITS.personalities),
+      artStatus: "not_generated",
+      artPath: null,
+      artCreatedAt: null,
+    },
     level: 1, xp: 0, hunger: 70, happiness: 70, coins: 100,
     inventory: [], room: "cozy room", outfit: "default", slots: 1, additionalPets: [], activePetIndex: 0,
     lastMinigame: null,
