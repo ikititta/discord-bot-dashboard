@@ -72,7 +72,7 @@ async function ensureCommandsChannel(guild, client) {
     const isStaff = role.permissions.has(PermissionFlagsBits.ManageMessages) ||
       role.permissions.has(PermissionFlagsBits.ManageChannels) ||
       role.permissions.has(PermissionFlagsBits.Administrator) ||
-      /admin|moderator|mod(?:erator)?/i.test(role.name);
+      /admin|moderator|mod(?:erator)?|staff/i.test(role.name);
     if (!isStaff) continue;
     await channel.permissionOverwrites.edit(role, {
       ViewChannel: true,
