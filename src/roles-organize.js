@@ -281,12 +281,14 @@ export async function applyRoleOrganization(guild, plan) {
 
   let created = 0;
   const createdDividerIds = [];
+  let stage = "preparar divisores";
   try {
     // Create only the missing neutral dividers. If the later position preflight
     // fails, remove only the dividers created by this attempt.
     for (const name of plan.dividers) {
       let divider = guild.roles.cache.find((role) => role.name === name);
       if (!divider) {
+        stage = `crear divisor "${name}"`;
         divider = await guild.roles.create({
           name,
           color: 0,
@@ -300,6 +302,7 @@ export async function applyRoleOrganization(guild, plan) {
       }
     }
 
+    stage = "actualizar posiciones de los roles";
     const refreshed = await guild.roles.fetch();
     const orderedRoles = [];
     for (const item of plan.ordered) {
@@ -319,6 +322,7 @@ export async function applyRoleOrganization(guild, plan) {
 
     let renamed = 0;
     for (const { role, name } of plan.renames) {
+      stage = `renombrar "${name}"`;
       const current = (await guild.roles.fetch()).get(role.id);
       if (!current || current.managed || !current.editable) {
         throw new Error(`Role ${role.id} became unavailable for renaming after reordering.`);
@@ -338,6 +342,9 @@ export async function applyRoleOrganization(guild, plan) {
       const divider = guild.roles.cache.get(id);
       if (divider?.editable) await divider.delete("Rollback of incomplete Kittisugar role organization").catch(() => {});
     }
-    throw error;
+    const code = error?.code ?? error?.rawError?.code ?? "desconocido";
+    const status = error?.status ?? error?.httpStatus ?? "desconocido";
+    const detail = error?.message ?? String(error);
+    throw new Error(`Falló al ${stage}: ${detail} (código Discord: ${code}; HTTP: ${status}).`);
   }
 }
