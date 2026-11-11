@@ -303,12 +303,21 @@ export function attachFunCommands(client, { store, fetchImpl = fetch } = {}) {
 
   client.on(Events.MessageCreate, async (message) => {
     if (!message.guild || message.guild.id !== KITTISUGAR_GUILD_ID ||
-        message.author?.bot || message.webhookId || !message.member || !isCommandsThread(message)) return;
+        message.author?.bot || message.webhookId || !message.member) return;
     const match = /^!([a-z-]+)(?:\s+([\s\S]*))?$/i.exec(String(message.content ?? "").trim());
     if (!match) return;
 
     const name = match[1].toLowerCase();
     const args = match[2] ?? "";
+    if (!isCommandsThread(message)) {
+      const parentName = String(message.channel?.parent?.name ?? message.channel?.name ?? "")
+        .normalize("NFKD").toLowerCase().replace(/\\p{M}/gu, "").replace(/[^a-z0-9]/g, "");
+      if (parentName.includes("commands") &&
+          (getFunCommandDefinition(name) || name === "funhelp" || name === "stats" || name === "vip")) {
+        await safeReply(message, { content: "Please use the 💬 commands thread for fun commands ♡" });
+      }
+      return;
+    }
     try {
       if (BLOCKED_COMMANDS.has(name)) {
         await safeReply(message, { content: "That command isn't available. Please keep interactions consensual ♡" });
