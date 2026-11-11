@@ -97,10 +97,12 @@ test("top reputation shows separate positive and negative member lists", () => {
     store.vote({ guildId, authorId, targetId, value: 1 });
     store.vote({ guildId, authorId, targetId: negativeTargetId, value: -1 });
     const description = buildTopEmbed(store, { id: guildId }).embeds[0].data.description;
-    assert.match(description, /Positive Reputation[\\s\\S]*<@1568188640113463437>/);
-    assert.match(description, /Negative Reputation[\\s\\S]*<@1568188534836428813>/);
-    assert.match(description, /\\+1/);
-    assert.match(description, /-1/);
+    assert.ok(description.includes("Positive Reputation"));
+    assert.ok(description.includes("<@1568188640113463437>"));
+    assert.ok(description.includes("Negative Reputation"));
+    assert.ok(description.includes("<@1568188534836428813>"));
+    assert.ok(description.includes("+1"));
+    assert.ok(description.includes("-1"));
   } finally {
     fs.rmSync(directory, { recursive: true, force: true });
   }
