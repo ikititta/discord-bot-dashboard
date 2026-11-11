@@ -374,7 +374,7 @@ export function attachReputationSystem(client, store) {
     const mentioned = message.mentions.users.first();
     try {
       if (args[0]?.toLowerCase() === "top") {
-        const top = store.getTop(message.guild.id, 10);
+        const top = store.getTop(message.guild.id, 1000);
         const embed = new EmbedBuilder().setColor(COLOR).setTitle("୨୧ 𝓣𝓸𝓹 𝓡𝓮𝓹𝓾𝓽𝓪𝓽𝓲𝓸𝓷 ♡")
           .setDescription(top.length ? [
             "**♡ Positive Reputation**",
