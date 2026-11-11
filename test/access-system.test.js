@@ -169,7 +169,13 @@ test("access, rules, and guide panels contain the required confirmations and upd
   assert.ok(guideText.includes(`## ୨୧ ${toRoyalBold("Start")}\n\n• <#100000000000000000>\nRead the welcome message`));
   assert.ok(guideText.includes("`/delete amount:` — delete your own recent messages."));
   assert.ok(guideText.includes("`/vip-delete amount:` — VIP message cleanup."));
-  assert.ok(guideText.includes("`/mod-delete amount: [member:]` — moderator cleanup."));\n  assert.match(guideText, /!pet adopt/);\n  assert.match(guideText, /!pet room/);\n  assert.match(guideText, /!rep anonymous/);\n  assert.match(guideText, /selfies/);\n  assert.match(guideText, /introductions/);\n  assert.match(guideText, /pets/);
+  assert.ok(guideText.includes("`/mod-delete amount: [member:]` — moderator cleanup."));
+  assert.match(guideText, /!pet adopt/);
+  assert.match(guideText, /!pet room/);
+  assert.match(guideText, /!rep anonymous/);
+  assert.match(guideText, /selfies/);
+  assert.match(guideText, /introductions/);
+  assert.match(guideText, /pets/);\n  assert.match(guideText, /!pet adopt/);\n  assert.match(guideText, /!pet room/);\n  assert.match(guideText, /!rep anonymous/);\n  assert.match(guideText, /selfies/);\n  assert.match(guideText, /introductions/);\n  assert.match(guideText, /pets/);
   assert.ok(guideText.includes("`!quote` — reply to a message with !quote to create an image quote."));
   assert.ok(guideText.includes("`/priv-chat create|add|remove|rename|leave|delete|commands` — manage your private chat."));
   assert.match(guideText, /show or hide channels/i);
