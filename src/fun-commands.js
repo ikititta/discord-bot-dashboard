@@ -76,12 +76,12 @@ export function buildFunStatsEmbed({ user, stats, full = false, received = false
 
   if (topCommands.length) embed.addFields({
     name: "Most used",
-    value: topCommands.map(([command, count]) => `\`!\`${command} — **${count}**`).join("\n"),
+    value: topCommands.map(([command, count]) => "!" + command + " — **" + count + "**").join("\n"),
     inline: true,
   });
   if (topReceived.length) embed.addFields({
     name: "Most received",
-    value: topReceived.map(([command, count]) => `\`!\`${command} — **${count}**`).join("\n"),
+    value: topReceived.map(([command, count]) => "!" + command + " — **" + count + "**").join("\n"),
     inline: true,
   });
   if (topPartners.length) embed.addFields({
@@ -92,8 +92,8 @@ export function buildFunStatsEmbed({ user, stats, full = false, received = false
   if (full) {
     const allCommands = Object.entries(stats.commands ?? {}).sort((a, b) => a[0].localeCompare(b[0]));
     const allReceived = Object.entries(stats.received ?? {}).sort((a, b) => a[0].localeCompare(b[0]));
-    if (allCommands.length) embed.addFields({ name: "Complete command history", value: allCommands.map(([command, count]) => `!\`${command}\` · ${count}`).join("\n").slice(0, 1024) });
-    if (allReceived.length) embed.addFields({ name: "Complete received history", value: allReceived.map(([command, count]) => `!\`${command}\` · ${count}`).join("\n").slice(0, 1024) });
+    if (allCommands.length) embed.addFields({ name: "Complete command history", value: allCommands.map(([command, count]) => "!" + command + " · " + count).join("\n").slice(0, 1024) });
+    if (allReceived.length) embed.addFields({ name: "Complete received history", value: allReceived.map(([command, count]) => "!" + command + " · " + count).join("\n").slice(0, 1024) });
     embed.setFooter({ text: "VIP member statistics ♡" });
   } else {
     embed.setFooter({ text: "Use !vip stats for your complete VIP report ♡" });
