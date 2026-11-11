@@ -139,7 +139,17 @@ function status(pet) {
 ♡ Coins: ${pet.coins} · XP: ${pet.xp}
 ♡ Room: ${pet.room} · Outfit: ${pet.outfit}`;
 }
-async function runPetCommand(message, store) {
+async function refreshPetsPanel(guild, store, client) {
+  const channel = guild.channels.cache.find((item) =>
+    item.type === ChannelType.GuildText && item.name === CHANNEL_NAME,
+  );
+  if (!channel) return;
+  const recent = await channel.messages.fetch({ limit: 50 });
+  const panel = recent.find((message) => message.author?.id === client.user.id &&
+    message.embeds.some((embed) => embed.title === "୨୧ 𝓥𝓲𝓻𝓽𝓾𝓪𝓵 𝓟𝓮𝓽𝓼 ♡"));
+  if (panel) await panel.edit(panelPayload(store, guild.id));
+}
+async function runPetCommand(message, store, client) {
   const match = /^!pet(?:\s+([a-z]+)(?:\s+([\s\S]+))?)?$/i.exec(message.content.trim());
   if (!match) return;
   const action = (match[1] || "view").toLowerCase();
@@ -161,11 +171,13 @@ async function runPetCommand(message, store) {
       profile.additionalPets.push(companion);
       profile.activePetIndex = count;
       store.save(guildId, userId, profile);
+      await refreshPetsPanel(message.guild, store, client);
       return reply(`You adopted **${companion.name}** the ${companion.species}! Welcome home ♡\n${status(companion)}`);
     }
     pet = makePet();
     profile = pet;
     store.save(guildId, userId, profile);
+    await refreshPetsPanel(message.guild, store, client);
     return reply(`You adopted **${pet.name}** the ${pet.species}! Welcome home ♡\n${status(pet)}`);
   }
   if (!pet) return reply("You don't have a pet yet. Use `!pet adopt` to meet your new friend ♡");
@@ -228,6 +240,7 @@ async function runPetCommand(message, store) {
 
   while (pet.xp >= pet.level * 25) { pet.xp -= pet.level * 25; pet.level += 1; }
   store.save(guildId, userId, profile);
+  await refreshPetsPanel(message.guild, store, client);
   return reply("Done ♡\n" + status(pet));
 }
 export function attachPetSystem(client, store) {
@@ -305,7 +318,7 @@ export function attachPetSystem(client, store) {
     if (!message.guild || message.author?.bot || message.channel?.type !== ChannelType.GuildText) return;
     const ownerId = /^Sugar personal pet room for (\d{17,20})$/.exec(message.channel.topic ?? "")?.[1];
     if (!ownerId || ownerId !== message.author.id || !/^!pet(?:\s|$)/i.test(message.content.trim())) return;
-    try { await runPetCommand(message, store); }
+    try { await runPetCommand(message, store, client); }
     catch (error) {
       console.error("[pets] command failed: " + error.message);
       await message.reply("Something went wrong with your pet command ♡").catch(() => {});
