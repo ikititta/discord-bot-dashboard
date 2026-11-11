@@ -1,5 +1,7 @@
 import {
   ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
   ChannelType,
   EmbedBuilder,
   PermissionFlagsBits,
@@ -37,6 +39,158 @@ const SELF_PREFIX = "sugar-selfroles:";
 const COLOR = 0xffd9ff;
 const SELF_ROLES_CHANNEL_NAME = "🎀｜୨୧•𝓼𝓮𝓵𝓯-𝓻𝓸𝓵𝓮𝓼";
 export const NSFW_HIDDEN_ROLE_ID = "1569885841180856361";
+const AGE_REVIEW_ROLE_NAME = "age-review";
+const AGE_REVIEW_PREFIX = "sugar-age-review:";
+const SUPPORT_CHANNEL_ID = "1568492748732895313";
+const TICKET_CATEGORY_ID = "1569529041017503784";
+
+
+async function findOrCreateAgeReviewRole(guild) {
+  return findRoleByName(guild, AGE_REVIEW_ROLE_NAME) ??
+    guild.roles.create({ name: AGE_REVIEW_ROLE_NAME, reason: "Restrict members awaiting manual age verification" });
+}
+
+function findSupportChannel(guild) {
+  return guild.channels.cache.get(SUPPORT_CHANNEL_ID) ??
+    guild.channels.cache.find((channel) => channel.type === ChannelType.GuildText && normalizeRoleName(channel.name) === "support") ??
+    null;
+}
+
+async function ensureAgeReviewVisibility(guild, role) {
+  let support = findSupportChannel(guild);
+  if (!support) {
+    support = await guild.channels.create({
+      name: "💗｜୨୧•𝓼𝓾𝓹𝓹𝓸𝓻𝓽",
+      type: ChannelType.GuildText,
+      reason: "Create the required Kittisugar support channel for manual age verification",
+    });
+    await support.permissionOverwrites.edit(guild.roles.everyone, {
+      ViewChannel: true, SendMessages: false, ReadMessageHistory: true,
+    });
+  }
+  for (const channel of guild.channels.cache.values()) {
+    if (channel.isThread?.() || !channel.permissionOverwrites?.edit) continue;
+    await channel.permissionOverwrites.edit(role, {
+      ViewChannel: channel.id === support.id,
+      ...(channel.id === support.id ? { ReadMessageHistory: true, SendMessages: false } : {}),
+    }, "Restrict age-review members to the Support channel");
+  }
+  const newRole = findRoleByName(guild, "new");
+  if (newRole) await support.permissionOverwrites.edit(newRole, {
+    ViewChannel: true, ReadMessageHistory: true, SendMessages: false,
+  }, "Allow New members to reach Support");
+  return support;
+}
+
+async function createAgeReviewTicket(interaction, member) {
+  const guild = interaction.guild;
+  const client = interaction.client;
+  const ageRole = await findOrCreateAgeReviewRole(guild);
+  const support = await ensureAgeReviewVisibility(guild, ageRole);
+  let category = guild.channels.cache.get(TICKET_CATEGORY_ID);
+  if (!category || category.type !== ChannelType.GuildCategory) {
+    category = guild.channels.cache.find((channel) =>
+      channel.type === ChannelType.GuildCategory && normalizeRoleName(channel.name).includes("tickets"),
+    ) ?? await guild.channels.create({
+      name: "support tickets",
+      type: ChannelType.GuildCategory,
+      reason: "Create the shared Kittisugar support ticket category",
+    });
+  }
+
+  const topic = `sugar-ticket:open:${member.id}:${guild.id}`;
+  let ticket = guild.channels.cache.find((channel) =>
+    channel.type === ChannelType.GuildText && channel.topic === topic && channel.name.includes("age-verification"),
+  );
+  if (!ticket) {
+    const safeName = normalizeRoleName(member.user.username).slice(0, 35) || "member";
+    const staffRoles = guild.roles.cache.filter((role) =>
+      role.permissions.has(PermissionFlagsBits.ManageChannels) ||
+      role.permissions.has(PermissionFlagsBits.ManageMessages) ||
+      /staff|moderator/i.test(role.name),
+    );
+    const overwrites = [
+      { id: guild.roles.everyone.id, deny: [PermissionFlagsBits.ViewChannel] },
+      { id: member.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory, PermissionFlagsBits.EmbedLinks] },
+      { id: client.user.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory, PermissionFlagsBits.EmbedLinks, PermissionFlagsBits.ManageChannels, PermissionFlagsBits.ManageMessages] },
+      ...[...staffRoles.values()].map((role) => ({
+        id: role.id,
+        allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory, PermissionFlagsBits.EmbedLinks, PermissionFlagsBits.ManageMessages],
+      })),
+    ];
+    ticket = await guild.channels.create({
+      name: `ticket-age-verification-${safeName}`.slice(0, 90),
+      type: ChannelType.GuildText,
+      parent: category.id,
+      topic,
+      permissionOverwrites: overwrites,
+      reason: `Manual age verification requested by ${member.id}`,
+    });
+    const embed = new EmbedBuilder().setColor(COLOR)
+      .setTitle("୨୧ Manual Age Verification ♡")
+      .setDescription(
+        `<@${member.id}> selected **18-** during onboarding. A staff member must manually verify that this person is 18 or older before granting Member access.\\n\\n` +
+        "**Important:** Do not post identity documents in public channels or send copies for storage. Ask staff to guide you through a private, live check. Staff must not retain copies of identity documents.\\n\\n" +
+        "Only staff may approve access after completing the age check. The Verified role is a separate anti-catfish check and does not confirm age."
+      );
+    const row = new ActionRowBuilder().addComponents(
+      new ButtonBuilder().setCustomId(AGE_REVIEW_PREFIX + "approve:" + member.id)
+        .setLabel("Approve 18+").setStyle(ButtonStyle.Success),
+    );
+    await ticket.send({
+      content: `<@${member.id}> — manual age verification is required. ${[...staffRoles.keys()].map((id) => `<@&${id}>`).join(" ")}`,
+      embeds: [embed],
+      components: [row],
+      allowedMentions: { parse: [], users: [member.id], roles: [...staffRoles.keys()] },
+    });
+  }
+
+  await member.roles.add(ageRole, "Member selected 18- and requires manual age verification");
+  await ensureAgeReviewVisibility(guild, ageRole);
+  await ticket.permissionOverwrites.edit(member.id, {
+    ViewChannel: true, SendMessages: true, ReadMessageHistory: true, EmbedLinks: true,
+  }, "Allow the age-review member to access their private verification ticket");
+
+  const dm = new EmbedBuilder().setColor(COLOR)
+    .setTitle("୨୧ Age Verification Required ♡")
+    .setDescription(
+      `You selected **18-** in Kittisugar. Your access is now restricted to <#${support.id}> and your private age-verification ticket: ${ticket.url}.\\n\\n` +
+      "A staff member must manually confirm that you are 18 or older before Member access can be granted. The Verified role checks identity/catfish concerns only; it does not verify age. Please do not send identity-document copies for storage."
+    );
+  await member.send({ embeds: [dm], allowedMentions: { parse: [] } }).catch(() => {});
+  return { ticket, support };
+}
+
+function isAgeReviewStaff(interaction) {
+  if (interaction.memberPermissions?.has(PermissionFlagsBits.Administrator) ||
+      interaction.memberPermissions?.has(PermissionFlagsBits.ManageRoles) ||
+      interaction.memberPermissions?.has(PermissionFlagsBits.ManageChannels)) return true;
+  return interaction.member?.roles?.cache?.some((role) => /staff|moderator|admin/i.test(role.name)) === true;
+}
+
+async function handleAgeReviewApproval(interaction) {
+  if (!interaction.inGuild()) return interaction.reply({ content: "This only works inside Kittisugar.", ephemeral: true });
+  if (!isAgeReviewStaff(interaction)) return interaction.reply({ content: "Only staff can approve age verification.", ephemeral: true });
+  const userId = interaction.customId.slice((AGE_REVIEW_PREFIX + "approve:").length);
+  const member = await interaction.guild.members.fetch(userId).catch(() => null);
+  const ageRole = findRoleByName(interaction.guild, AGE_REVIEW_ROLE_NAME);
+  const newRole = findRoleByName(interaction.guild, "new");
+  const memberRole = findRoleByName(interaction.guild, "member");
+  if (!member || !ageRole || !newRole || !memberRole || !member.roles.cache.has(ageRole.id)) {
+    return interaction.reply({ content: "This member is no longer awaiting age verification.", ephemeral: true });
+  }
+  await member.roles.add(memberRole, "Staff approved the member's manual 18+ age verification");
+  await member.roles.remove([newRole, ageRole], "Remove New and age-review after staff approval");
+  await interaction.update({
+    content: `18+ age verification approved by <@${interaction.user.id}>. Member access has been granted to <@${member.id}>.`,
+    embeds: [], components: [],
+    allowedMentions: { parse: [], users: [member.id, interaction.user.id] },
+  });
+  const approved = new EmbedBuilder().setColor(0x4ade80)
+    .setTitle("୨୧ Age Verification Approved ♡")
+    .setDescription("A staff member has confirmed your 18+ status. Your Kittisugar Member access is now active.");
+  await member.send({ embeds: [approved] }).catch(() => {});
+}
 
 export function findNsfwHiddenRole(guild) {
   return guild.roles.cache.get(NSFW_HIDDEN_ROLE_ID) ?? null;
@@ -48,10 +202,13 @@ export const GENDER_OPTIONS = [
   ["trans", "Trans"],
   ["non-binary", "Non-binary"],
 ];
-export const AGE_OPTIONS = Array.from({ length: 23 }, (_, index) => {
-  const age = String(index + 18);
-  return [age, age];
-});
+export const AGE_OPTIONS = [
+  ["18-", "18-"],
+  ...Array.from({ length: 23 }, (_, index) => {
+    const age = String(index + 18);
+    return [age, age];
+  }),
+];
 export const SEXUALITY_OPTIONS = [
   ["straight", "Straight"],
   ["gay-lesbian", "Gay/Lesbian"],
@@ -309,6 +466,10 @@ export async function startRoleOnboarding(interaction) {
 
 export function attachRoleOnboarding(client) {
   client.on("interactionCreate", async (interaction) => {
+    if (interaction.isButton() && interaction.customId.startsWith(AGE_REVIEW_PREFIX + "approve:")) {
+      try { return await handleAgeReviewApproval(interaction); }
+      catch (error) { console.error(`[age-review] approval failed: ${error.message}`); return interaction.reply({ content: "Age approval failed. Please contact an administrator.", ephemeral: true }).catch(() => {}); }
+    }
     if (!interaction.isStringSelectMenu()) return;
     const parsed = parseCustomId(interaction.customId);
     if (!parsed) return;
@@ -325,6 +486,10 @@ export function attachRoleOnboarding(client) {
       const category = parsed.category;
       const value = interaction.values[0];
       const member = await interaction.guild.members.fetch(interaction.user.id);
+      if (parsed.mode === "onboard" && category === "age" && value === "18-") {
+        const { ticket, support } = await createAgeReviewTicket(interaction, member);
+        return interaction.update({ content: `You selected 18-. Your access is restricted until staff manually confirms you are 18 or older. Check your DM and your private ticket: <#${ticket.id}>.`, embeds: [], components: [] });
+      }
       await applyChoice(member, category, value);
 
       if (parsed.mode === "self") {
@@ -352,6 +517,23 @@ export function attachRoleOnboarding(client) {
       return interaction.reply({ content: message, ephemeral: true }).catch(() => {});
     }
   });
+
+  client.once("ready", () => {
+    for (const guild of client.guilds.cache.values()) {
+      const role = findRoleByName(guild, AGE_REVIEW_ROLE_NAME);
+      if (role) void ensureAgeReviewVisibility(guild, role).catch((error) => console.error(`[age-review] visibility sync failed: ${error.message}`));
+    }
+  });
+  const syncAgeReviewChannel = (channel) => {
+    if (!channel.guild || !channel.permissionOverwrites?.edit) return;
+    const role = findRoleByName(channel.guild, AGE_REVIEW_ROLE_NAME);
+    if (!role || channel.isThread?.()) return;
+    const support = findSupportChannel(channel.guild);
+    void channel.permissionOverwrites.edit(role, { ViewChannel: channel.id === support?.id }, "Keep age-review members restricted to Support and their private ticket")
+      .catch((error) => console.error(`[age-review] channel restriction failed: ${error.message}`));
+  };
+  client.on("channelCreate", syncAgeReviewChannel);
+  client.on("channelUpdate", (_before, after) => syncAgeReviewChannel(after));
 
   const syncNsfwChannel = (channel) => {
     if (!channel.guild || !channel.permissionOverwrites?.edit) return;
