@@ -60,7 +60,7 @@ function buildPetEmbed() {
       "Welcome to the Kittisugar pet corner! Adopt a little friend, look after them, and watch them grow.\n\n" +
       "**Where to use commands**\n" +
       "♡ First, press **Open Pet Room ♡** in the main pets panel. Sugar will open your personal pet channel.\n" +
-      "♡ Send all `!pet` commands inside that channel — not in the main pets channel.\n" +
+      "♡ Send all `!pet` commands inside your own private pet channel.\n" +
       "♡ Everyone can adopt a pet and use the basic care commands. VIP unlocks extra rooms, outfits, rare pets, more pet slots, and minigames.\n\n" +
       "**Everyone**\n" +
       "`!pet adopt` — adopt your first pet. `!pet` — view its status.\n" +
@@ -75,8 +75,24 @@ function buildPetEmbed() {
       "Open your pet room and start chatting with your little companion ♡"
     ).setFooter({ text: "Your pet's progress is saved ♡" });
 }
-function panelPayload() {
-  return { embeds: [buildPetEmbed()], components: [new ActionRowBuilder().addComponents(
+function buildGlobalPetLeaderboard(store, guildId) {
+  const entries = [];
+  for (const [userId, profile] of Object.entries(store.data.guilds[guildId] ?? {})) {
+    for (const pet of [profile, ...(profile.additionalPets ?? [])]) {
+      if (!pet || typeof pet !== "object") continue;
+      entries.push({ userId, pet, score: (Number(pet.level) || 1) * 1000 + (Number(pet.xp) || 0) });
+    }
+  }
+  entries.sort((a, b) => b.score - a.score);
+  const lines = entries.slice(0, 5).map((entry, index) =>
+    `**${index + 1}.** ${entry.pet.name} the ${entry.pet.species} · Level ${entry.pet.level} · <@${entry.userId}>`,
+  );
+  return new EmbedBuilder().setColor(0x57c785).setTitle("୨୧ 𝓖𝓵𝓸𝓫𝓪𝓵 𝓟𝓮𝓽 𝓣𝓸𝓹 ♡")
+    .setDescription(lines.length ? lines.join("\n") : "No pets have been adopted yet. Be the first to join the top ♡")
+    .setFooter({ text: "Sugar AI · Global pet leaderboard" });
+}
+function panelPayload(store, guildId) {
+  return { embeds: [buildPetEmbed(), buildGlobalPetLeaderboard(store, guildId)], components: [new ActionRowBuilder().addComponents(
     new ButtonBuilder().setCustomId(BUTTON_ID).setLabel("Open Pet Room ♡").setStyle(ButtonStyle.Primary),
   )] };
 }
@@ -96,17 +112,17 @@ async function ensurePetsChannel(guild, client) {
     });
   }
   await channel.permissionOverwrites.edit(guild.roles.everyone, {
-    ViewChannel: true, SendMessages: false, CreatePublicThreads: false, SendMessagesInThreads: false, ReadMessageHistory: true,
+    ViewChannel: true, SendMessages: false, AddReactions: false, CreatePublicThreads: false, SendMessagesInThreads: false, ReadMessageHistory: true,
   }, "Keep the virtual pets panel read-only");
   await channel.permissionOverwrites.edit(client.user.id, {
     ViewChannel: true, SendMessages: true, EmbedLinks: true, ReadMessageHistory: true,
-    ManageMessages: true,
-  }, "Allow Sugar to maintain the pets panel");
+    ManageMessages: true, AddReactions: false,
+  }, "Allow Sugar to maintain the pets panel without reactions");
   const recent = await channel.messages.fetch({ limit: 50 });
   const old = recent.find((message) => message.author?.id === client.user.id &&
     message.embeds.some((embed) => embed.title === "୨୧ 𝓥𝓲𝓻𝓽𝓾𝓪𝓵 𝓟𝓮𝓽𝓼 ♡"));
-  if (old) await old.edit(panelPayload());
-  else await channel.send(panelPayload());
+  if (old) await old.edit(panelPayload(store, guild.id));
+  else await channel.send(panelPayload(store, guild.id));
   return channel;
 }
 function makePet() {
@@ -229,9 +245,7 @@ export function attachPetSystem(client, store) {
     if (!interaction.isButton?.() || interaction.customId !== BUTTON_ID) return;
     try {
       const guild = interaction.guild;
-      if (!guild || interaction.channel?.name !== CHANNEL_NAME) {
-        return interaction.reply({ content: "Please open your pet room from the pets panel ♡", ephemeral: true });
-      }
+      if (!guild) return interaction.reply({ content: "Pet rooms are only available inside a server ♡", ephemeral: true });
       const topic = `Sugar personal pet room for ${interaction.user.id}`;
       let petChannel = guild.channels.cache.find((item) =>
         item.type === ChannelType.GuildText && item.topic === topic,
@@ -246,7 +260,7 @@ export function attachPetSystem(client, store) {
         petChannel = await guild.channels.create({
           name: formatPetChannelName(interaction.user.username),
           type: ChannelType.GuildText,
-          ...(interaction.channel.parentId ? { parent: interaction.channel.parentId } : {}),
+          ...(guild.channels.cache.find((item) => item.name === CHANNEL_NAME)?.parentId ? { parent: guild.channels.cache.find((item) => item.name === CHANNEL_NAME).parentId } : {}),
           topic,
           permissionOverwrites: [
             { id: guild.roles.everyone.id, deny: [PermissionFlagsBits.ViewChannel] },
@@ -255,8 +269,9 @@ export function attachPetSystem(client, store) {
               allow: [
                 PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages,
                 PermissionFlagsBits.ReadMessageHistory, PermissionFlagsBits.AttachFiles,
-                PermissionFlagsBits.EmbedLinks, PermissionFlagsBits.AddReactions,
+                PermissionFlagsBits.EmbedLinks,
               ],
+              deny: [PermissionFlagsBits.AddReactions],
             },
             {
               id: client.user.id,
@@ -265,16 +280,18 @@ export function attachPetSystem(client, store) {
                 PermissionFlagsBits.ReadMessageHistory, PermissionFlagsBits.EmbedLinks,
                 PermissionFlagsBits.ManageMessages,
               ],
+              deny: [PermissionFlagsBits.AddReactions],
             },
           ],
           reason: "Create a private personal pet channel",
         });
         await petChannel.send({
-          content: `Welcome <@${interaction.user.id}>! Your pet commands go here ♡`,
-          embeds: [buildPetEmbed()],
+          content: `Welcome <@${interaction.user.id}>! Use your !pet commands in this private channel ♡`,
           allowedMentions: { users: [interaction.user.id] },
         });
       }
+      await petChannel.permissionOverwrites.edit(interaction.user.id, { AddReactions: false });
+      await petChannel.permissionOverwrites.edit(client.user.id, { AddReactions: false });
       await interaction.reply({ content: `Your pet room is ready: <#${petChannel.id}> ♡`, ephemeral: true });
     } catch (error) {
       console.error("[pets] could not open pet channel: " + error.message);
