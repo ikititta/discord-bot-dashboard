@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 const API_URL = "https://api.openai.com/v1/images/generations";
-const MODEL = "gpt-image-1";
+const MODEL = "gpt-image-2";
 const MAX_IMAGE_BYTES = 12 * 1024 * 1024;
 
 function buildPrompt(pet) {
