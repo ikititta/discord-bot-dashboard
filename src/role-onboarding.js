@@ -82,7 +82,7 @@ async function ensureAgeReviewVisibility(guild, role) {
   return support;
 }
 
-async function createAgeReviewTicket(interaction, member) {
+async function createAgeReviewTicket(interaction, member, settings) {
   const guild = interaction.guild;
   const client = interaction.client;
   const ageRole = await findOrCreateAgeReviewRole(guild);
@@ -104,7 +104,10 @@ async function createAgeReviewTicket(interaction, member) {
   );
   if (!ticket) {
     const safeName = normalizeRoleName(member.user.username).slice(0, 35) || "member";
+    const config = settings?.get?.(guild.id) ?? {};
+    const configuredStaffRoleIds = new Set(Array.isArray(config.moderatorRoleIds) ? config.moderatorRoleIds : []);
     const staffRoles = guild.roles.cache.filter((role) =>
+      configuredStaffRoleIds.has(role.id) ||
       role.permissions.has(PermissionFlagsBits.ManageChannels) ||
       role.permissions.has(PermissionFlagsBits.ManageMessages) ||
       /staff|moderator/i.test(role.name),
@@ -161,16 +164,20 @@ async function createAgeReviewTicket(interaction, member) {
   return { ticket, support };
 }
 
-function isAgeReviewStaff(interaction) {
+function isAgeReviewStaff(interaction, settings) {
   if (interaction.memberPermissions?.has(PermissionFlagsBits.Administrator) ||
       interaction.memberPermissions?.has(PermissionFlagsBits.ManageRoles) ||
       interaction.memberPermissions?.has(PermissionFlagsBits.ManageChannels)) return true;
-  return interaction.member?.roles?.cache?.some((role) => /staff|moderator|admin/i.test(role.name)) === true;
+  const config = settings?.get?.(interaction.guildId) ?? {};
+  const configuredStaffRoleIds = new Set(Array.isArray(config.moderatorRoleIds) ? config.moderatorRoleIds : []);
+  return interaction.member?.roles?.cache?.some((role) =>
+    configuredStaffRoleIds.has(role.id) || /staff|moderator|admin/i.test(role.name),
+  ) === true;
 }
 
-async function handleAgeReviewApproval(interaction) {
+async function handleAgeReviewApproval(interaction, settings) {
   if (!interaction.inGuild()) return interaction.reply({ content: "This only works inside Kittisugar.", ephemeral: true });
-  if (!isAgeReviewStaff(interaction)) return interaction.reply({ content: "Only staff can approve age verification.", ephemeral: true });
+  if (!isAgeReviewStaff(interaction, settings)) return interaction.reply({ content: "Only staff can approve age verification.", ephemeral: true });
   const userId = interaction.customId.slice((AGE_REVIEW_PREFIX + "approve:").length);
   const member = await interaction.guild.members.fetch(userId).catch(() => null);
   const ageRole = findRoleByName(interaction.guild, AGE_REVIEW_ROLE_NAME);
@@ -473,10 +480,10 @@ export async function startRoleOnboarding(interaction) {
   return interaction.editReply(selectStepPayload({ step: "gender", mode: "onboard", userId: interaction.user.id }));
 }
 
-export function attachRoleOnboarding(client) {
+export function attachRoleOnboarding(client, { settings } = {}) {
   client.on("interactionCreate", async (interaction) => {
     if (interaction.isButton() && interaction.customId.startsWith(AGE_REVIEW_PREFIX + "approve:")) {
-      try { return await handleAgeReviewApproval(interaction); }
+      try { return await handleAgeReviewApproval(interaction, settings); }
       catch (error) { console.error(`[age-review] approval failed: ${error.message}`); return interaction.reply({ content: "Age approval failed. Please contact an administrator.", ephemeral: true }).catch(() => {}); }
     }
     if (!interaction.isStringSelectMenu()) return;
@@ -496,7 +503,7 @@ export function attachRoleOnboarding(client) {
       const value = interaction.values[0];
       const member = await interaction.guild.members.fetch(interaction.user.id);
       if (parsed.mode === "onboard" && category === "age" && value === "18-") {
-        const { ticket, support } = await createAgeReviewTicket(interaction, member);
+        const { ticket, support } = await createAgeReviewTicket(interaction, member, settings);
         return interaction.update({ content: `You selected 18-. Your access is restricted until staff manually confirms you are 18 or older. Check your DM and your private ticket: <#${ticket.id}>.`, embeds: [], components: [] });
       }
       await applyChoice(member, category, value);
