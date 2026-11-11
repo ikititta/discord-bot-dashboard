@@ -129,13 +129,15 @@ async function createAgeReviewTicket(interaction, member) {
     const embed = new EmbedBuilder().setColor(COLOR)
       .setTitle("୨୧ Manual Age Verification ♡")
       .setDescription(
-        `<@${member.id}> selected **18-** during onboarding. A staff member must manually verify that this person is 18 or older before granting Member access.\\n\\n` +
-        "**Important:** Do not post identity documents in public channels or send copies for storage. Ask staff to guide you through a private, live check. Staff must not retain copies of identity documents.\\n\\n" +
+        `<@${member.id}> selected **18-** during onboarding. A staff member must manually verify that this person is 18 or older before granting Member access.\n\n` +
+        "**Important:** Do not post identity documents in public channels or send copies for storage. Ask staff to guide you through a private, live check. Staff must not retain copies of identity documents.\n\n" +
         "Only staff may approve access after completing the age check. The Verified role is a separate anti-catfish check and does not confirm age."
       );
     const row = new ActionRowBuilder().addComponents(
       new ButtonBuilder().setCustomId(AGE_REVIEW_PREFIX + "approve:" + member.id)
         .setLabel("Approve 18+").setStyle(ButtonStyle.Success),
+      new ButtonBuilder().setCustomId("sugar-ticket:close")
+        .setLabel("Close Ticket ♡").setStyle(ButtonStyle.Danger),
     );
     await ticket.send({
       content: `<@${member.id}> — manual age verification is required. ${[...staffRoles.keys()].map((id) => `<@&${id}>`).join(" ")}`,
@@ -154,7 +156,7 @@ async function createAgeReviewTicket(interaction, member) {
   const dm = new EmbedBuilder().setColor(COLOR)
     .setTitle("୨୧ Age Verification Required ♡")
     .setDescription(
-      `You selected **18-** in Kittisugar. Your access is now restricted to <#${support.id}> and your private age-verification ticket: ${ticket.url}.\\n\\n` +
+      `You selected **18-** in Kittisugar. Your access is now restricted to <#${support.id}> and your private age-verification ticket: ${ticket.url}.\n\n` +
       "A staff member must manually confirm that you are 18 or older before Member access can be granted. The Verified role checks identity/catfish concerns only; it does not verify age. Please do not send identity-document copies for storage."
     );
   await member.send({ embeds: [dm], allowedMentions: { parse: [] } }).catch(() => {});
