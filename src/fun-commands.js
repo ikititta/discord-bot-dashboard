@@ -451,6 +451,7 @@ export function attachFunCommands(client, { store, fetchImpl = fetch, token, app
         return;
       }
       if (name === "nsfw-on" || name === "nsfw-off") {
+        if (!isVerifiedAdult(message.member)) { await safeReply(message, { content: "NSFW preferences are available to verified Member accounts ♡" }); return; }
         store.setNsfwAutoAccept(message.guild.id, message.author.id, name === "nsfw-on");
         await safeReply(message, { content: name === "nsfw-on" ? "NSFW requests will now be accepted automatically ♡" : "Automatic NSFW acceptance is off. Approve each request individually ♡" });
         return;
