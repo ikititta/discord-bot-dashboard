@@ -36,20 +36,36 @@ export class ReputationStore {
   getForUser(guildId, userId) {
     return (this.data.guilds[guildId] ?? []).filter((item) => item.targetId === userId).map((item) => ({ ...item }));
   }
-  vote({ guildId, authorId, targetId, value }) {
-    if (![guildId, authorId, targetId].every((id) => /^\d{17,20}$/.test(id ?? "")) || authorId === targetId || ![-1, 1].includes(value)) throw new Error("Invalid reputation vote.");
+  vote({ guildId, authorId, targetId, value, comment = "" }) {
+    if (![guildId, authorId, targetId].every((id) => /^\d{17,20}$/.test(id ?? "")) ||
+        authorId === targetId || ![-1, 1].includes(value) ||
+        typeof comment !== "string" || comment.length > MAX_COMMENT_LENGTH) throw new Error("Invalid reputation vote.");
     const file = path.join(path.dirname(this.file), "reputation-votes.json");
     let data = { version: 1, guilds: {} };
     try { data = JSON.parse(fs.readFileSync(file, "utf8")); } catch (error) { if (error?.code !== "ENOENT") throw error; }
     const votes = data.guilds[guildId] ??= [];
     const existing = votes.find((item) => item.authorId === authorId && item.targetId === targetId);
-    if (existing) { existing.value = value; existing.createdAt = new Date().toISOString(); }
-    else votes.push({ authorId, targetId, value, createdAt: new Date().toISOString() });
+    if (existing) {
+      existing.value = value;
+      existing.comment = comment.trim();
+      existing.createdAt = new Date().toISOString();
+    } else votes.push({ authorId, targetId, value, comment: comment.trim(), createdAt: new Date().toISOString() });
     const temp = file + ".tmp";
     fs.writeFileSync(temp, JSON.stringify(data, null, 2), { mode: 0o600 });
     fs.chmodSync(temp, 0o600);
     fs.renameSync(temp, file);
     return this.getScore(guildId, targetId);
+  }
+  getCommentsForUser(guildId, userId) {
+    const comments = this.getForUser(guildId, userId);
+    const file = path.join(path.dirname(this.file), "reputation-votes.json");
+    let votes = [];
+    try { votes = JSON.parse(fs.readFileSync(file, "utf8")).guilds[guildId] ?? []; }
+    catch (error) { if (error?.code !== "ENOENT") throw error; }
+    const voteComments = votes.filter((item) => item.targetId === userId && item.comment?.trim())
+      .map((item) => ({ authorId: item.authorId, targetId: item.targetId, text: item.comment,
+        anonymous: false, createdAt: item.createdAt, vote: item.value }));
+    return [...comments, ...voteComments].sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt));
   }
   getScore(guildId, userId) {
     const comments = this.getForUser(guildId, userId).length;
@@ -112,10 +128,16 @@ export function makePanelPayload() {
   ] };
 }
 function buildTopEmbed(store, guild) {
-  const top = store.getTop(guild.id, 10);
-  const description = top.length
-    ? top.map((item, i) => `**${i + 1}.** <@${item.userId}> — **${item.reputation}** rep`).join("\n")
-    : "No reputation comments yet. Be the first to spread some kindness ♡";
+  const ranking = store.getTop(guild.id, 1000);
+  const positive = ranking.filter((item) => item.reputation > 0).sort((a, b) => b.reputation - a.reputation).slice(0, 10);
+  const negative = ranking.filter((item) => item.reputation < 0).sort((a, b) => a.reputation - b.reputation).slice(0, 10);
+  const positiveText = positive.length
+    ? positive.map((item, i) => `**${i + 1}.** <@${item.userId}> — **+${item.reputation}** rep`).join("\n")
+    : "No positive scores yet ♡";
+  const negativeText = negative.length
+    ? negative.map((item, i) => `**${i + 1}.** <@${item.userId}> — **${item.reputation}** rep`).join("\n")
+    : "No negative scores yet ♡";
+  const description = `**♡ Positive Reputation**\n${positiveText}\n\n**♡ Negative Reputation**\n${negativeText}`;
   return { embeds: [new EmbedBuilder().setColor(COLOR).setTitle("୨୧ 𝓣𝓸𝓹 𝓡𝓮𝓹𝓾𝓽𝓪𝓽𝓲𝓸𝓷 ♡")
     .setDescription(description).setFooter({ text: "Updated whenever a new comment is published ♡" })] };
 }
@@ -185,6 +207,15 @@ function modePayload(targetId, canAnon) {
   if (canAnon) buttons.push(new ButtonBuilder().setCustomId(PREFIX + "mode:anonymous:" + targetId).setLabel("Anonymous ♡").setStyle(ButtonStyle.Secondary));
   return { content: "Choose how your comment will be published:",
     components: [new ActionRowBuilder().addComponents(...buttons)] };
+}
+function voteModal(targetId, value) {
+  const modal = new ModalBuilder()
+    .setCustomId(PREFIX + "vote-submit:" + targetId + ":" + value)
+    .setTitle(value > 0 ? "Give Positive Reputation" : "Give Negative Reputation");
+  modal.addComponents(new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId("comment")
+    .setLabel("Comment (optional)").setPlaceholder("Add a short explanation, or leave blank...")
+    .setStyle(TextInputStyle.Paragraph).setMaxLength(MAX_COMMENT_LENGTH).setRequired(false)));
+  return modal;
 }
 function commentModal(targetId, anonymous) {
   const modal = new ModalBuilder().setCustomId(PREFIX + "submit:" + targetId + ":" + (anonymous ? "anonymous" : "named"))
@@ -273,10 +304,7 @@ export function attachReputationSystem(client, store) {
         const targetId = interaction.values[0];
         const target = await interaction.guild.members.fetch(targetId).catch(() => null);
         if (!target || target.id === interaction.user.id || target.user.bot) return ephemeral(interaction, "Choose another server member.");
-        const score = store.vote({ guildId: interaction.guildId, authorId: interaction.user.id, targetId, value });
-        const channel = interaction.guild.channels.cache.find((c) => c.type === ChannelType.GuildText && c.name === "reputation");
-        if (channel) await upsert(channel, client, "୨୧ 𝓣𝓸𝓹 𝓡𝓮𝓹𝓾𝓽𝓪𝓽𝓲𝓸𝓷 ♡", buildTopEmbed(store, interaction.guild));
-        return interaction.reply({ content: `${value > 0 ? "Positive" : "Negative"} reputation recorded for <@${targetId}>. Their score is now **${score}** ♡`, ephemeral: true, allowedMentions: { users: [targetId] } });
+        return interaction.showModal(voteModal(targetId, value));
       } catch (error) { console.error("[reputation] vote failed: " + error.message); return ephemeral(interaction, "I couldn't record that vote. Please try again."); }
     }
     if (interaction.isUserSelectMenu() && interaction.customId === PREFIX + "target") {
@@ -285,6 +313,34 @@ export function attachReputationSystem(client, store) {
       const target = await interaction.guild.members.fetch(targetId).catch(() => null);
       if (!target || target.id === interaction.user.id || target.user.bot) return ephemeral(interaction, "Choose another server member.");
       return interaction.reply(warningPayload(target.id));
+    }
+    if (interaction.isModalSubmit() && interaction.customId.startsWith(PREFIX + "vote-submit:")) {
+      const [, targetId, rawValue] = interaction.customId.slice(PREFIX.length).split(":");
+      try {
+        if (!interaction.inGuild() || !member(interaction.member)) return ephemeral(interaction, "Complete verification first.");
+        const target = await interaction.guild.members.fetch(targetId).catch(() => null);
+        const value = Number(rawValue);
+        if (!target || target.id === interaction.user.id || target.user.bot || ![-1, 1].includes(value)) {
+          return ephemeral(interaction, "Choose another server member.");
+        }
+        const comment = interaction.fields.getTextInputValue("comment").trim();
+        const score = store.vote({ guildId: interaction.guildId, authorId: interaction.user.id, targetId, value, comment });
+        const channel = interaction.guild.channels.cache.find((c) => c.type === ChannelType.GuildText && c.name === "reputation");
+        if (channel) {
+          if (comment) {
+            const embed = new EmbedBuilder().setColor(COLOR)
+              .setTitle(value > 0 ? "୨୧ 𝓟𝓸𝓼𝓲𝓽𝓲𝓿𝓮 𝓡𝓮𝓹𝓾𝓽𝓪𝓽𝓲𝓸𝓷 ♡" : "୨୧ 𝓝𝓮𝓰𝓪𝓽𝓲𝓿𝓮 𝓡𝓮𝓹𝓾𝓽𝓪𝓽𝓲𝓸𝓷 ♡")
+              .setDescription(`**For:** <@${targetId}>\n**From:** <@${interaction.user.id}>\n\n${comment}`)
+              .setFooter({ text: "Kittisugar Reputation ♡" }).setTimestamp();
+            await channel.send({ embeds: [embed], allowedMentions: { parse: [], users: [targetId, interaction.user.id] } });
+          }
+          await upsert(channel, client, "୨୧ 𝓣𝓸𝓹 𝓡𝓮𝓹𝓾𝓽𝓪𝓽𝓲𝓸𝓷 ♡", buildTopEmbed(store, interaction.guild));
+        }
+        return interaction.reply({ content: `${value > 0 ? "Positive" : "Negative"} reputation recorded for <@${targetId}>. Their score is now **${score}**${comment ? " and your comment was published" : ""} ♡`, ephemeral: true, allowedMentions: { users: [targetId] } });
+      } catch (error) {
+        console.error("[reputation] vote submission failed: " + error.message);
+        return ephemeral(interaction, "I couldn't record that vote. Please try again.");
+      }
     }
     if (interaction.isModalSubmit() && interaction.customId.startsWith(PREFIX + "submit:")) {
       const [, targetId, mode] = interaction.customId.slice(PREFIX.length).split(":");
@@ -320,11 +376,17 @@ export function attachReputationSystem(client, store) {
       if (args[0]?.toLowerCase() === "top") {
         const top = store.getTop(message.guild.id, 10);
         const embed = new EmbedBuilder().setColor(COLOR).setTitle("୨୧ 𝓣𝓸𝓹 𝓡𝓮𝓹𝓾𝓽𝓪𝓽𝓲𝓸𝓷 ♡")
-          .setDescription(top.length ? top.map((x, i) => `**${i + 1}.** <@${x.userId}> — **${x.reputation}** rep`).join("\n") : "No comments yet ♡");
+          .setDescription(top.length ? [
+            "**♡ Positive Reputation**",
+            ...top.filter((x) => x.reputation > 0).slice(0, 10).map((x, i) => `**${i + 1}.** <@${x.userId}> — **+${x.reputation}** rep`),
+            "",
+            "**♡ Negative Reputation**",
+            ...top.filter((x) => x.reputation < 0).sort((a, b) => a.reputation - b.reputation).slice(0, 10).map((x, i) => `**${i + 1}.** <@${x.userId}> — **${x.reputation}** rep`),
+          ].join("\n") : "No reputation votes yet ♡");
         return message.reply({ embeds: [embed], allowedMentions: { parse: [] } });
       }
       if (args[0]?.toLowerCase() === "comments" && mentioned) {
-        const entries = store.getForUser(message.guild.id, mentioned.id).slice(-5).reverse();
+        const entries = store.getCommentsForUser(message.guild.id, mentioned.id).slice(-5).reverse();
         const embed = new EmbedBuilder().setColor(COLOR).setTitle("୨୧ Reputation Comments ♡")
           .setDescription(entries.length ? entries.map((x) => `**${x.anonymous ? "Anonymous VIP" : "<@" + x.authorId + ">"}** · <t:${Math.floor(Date.parse(x.createdAt) / 1000)}:R>\n${x.text}`).join("\n\n").slice(0, 4000) : "No comments for this member yet ♡");
         return message.reply({ embeds: [embed], allowedMentions: { parse: [] } });
