@@ -48,7 +48,7 @@ export function attachMemberProfileSystem(client, { petStore, funStore, reputati
   }
 
   client.on(Events.MessageCreate, async (message) => {
-    if (!message.guild || message.author?.bot || !/^!profile(?:\\s|$)/i.test(message.content.trim())) return;
+    if (!message.guild || message.author?.bot || !/^!profile(?:\s|$)/i.test(message.content.trim())) return;
     const targetUser = message.mentions.users.first() ?? message.author;
     const targetMember = await message.guild.members.fetch(targetUser.id).catch(() => null);
     if (!targetMember) {
