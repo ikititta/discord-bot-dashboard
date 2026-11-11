@@ -10,7 +10,9 @@ function buildPrompt(pet) {
   return [
     "Create one original, polished 2D kawaii virtual-pet character illustration, centered and fully visible.",
     `Species: ${String(pet.species ?? "fantasy animal").slice(0, 40)}.`,
+    `Breed or variety: ${String(identity.breed ?? "not specified").slice(0, 40)}.`,
     `Main palette: ${String(identity.palette ?? "pastel").slice(0, 40)}.`,
+    `Physical appearance: ${String(identity.appearance ?? "cute natural features").slice(0, 60)}.`,
     `Eyes: ${String(identity.eyes ?? "large expressive eyes").slice(0, 60)}.`,
     `Distinctive markings: ${String(identity.markings ?? "subtle cute markings").slice(0, 80)}.`,
     `Accessory: ${String(identity.accessory ?? "none").slice(0, 60)}.`,
