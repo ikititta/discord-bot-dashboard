@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 
-import { ReputationStore, makePanelPayload } from "../src/reputation-system.js";
+import { ReputationStore, buildTopEmbed, makePanelPayload } from "../src/reputation-system.js";
 
 function temporaryDirectory() {
   return fs.mkdtempSync(path.join(os.tmpdir(), "sugar-reputation-"));
@@ -88,6 +88,23 @@ test("reputation votes can be positive or negative and one member can update the
   }
 });
 
+
+test("top reputation shows separate positive and negative member lists", () => {
+  const directory = temporaryDirectory();
+  const negativeTargetId = "1568188534836428813";
+  try {
+    const store = new ReputationStore(directory);
+    store.vote({ guildId, authorId, targetId, value: 1 });
+    store.vote({ guildId, authorId, targetId: negativeTargetId, value: -1 });
+    const description = buildTopEmbed(store, { id: guildId }).embeds[0].data.description;
+    assert.match(description, /Positive Reputation[\\s\\S]*<@1568188640113463437>/);
+    assert.match(description, /Negative Reputation[\\s\\S]*<@1568188534836428813>/);
+    assert.match(description, /\\+1/);
+    assert.match(description, /-1/);
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true });
+  }
+});
 
 test("reputation panel exposes only English positive and negative vote buttons", () => {
   const payload = makePanelPayload();
