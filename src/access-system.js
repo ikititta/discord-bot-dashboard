@@ -337,8 +337,8 @@ async function setupBoosterRole(guild) {
     console.info("[boosters] role ready for guild " + guild.id + "; synchronized " + synced + " member role change(s)");
   } catch (error) { console.error("[boosters] setup failed for guild " + guild.id + ": " + error.message); }
 }
-export function attachAccessSystem(client) {
-  attachRoleOnboarding(client);
+export function attachAccessSystem(client, { settings } = {}) {
+  attachRoleOnboarding(client, { settings });
   client.once(Events.ClientReady, async () => {
     for (const guild of client.guilds.cache.values()) {
       await setupBoosterRole(guild);
