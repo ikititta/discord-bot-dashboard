@@ -27,6 +27,7 @@ export function attachGeneralQuoteStickyTip(client, { store, logger = "general-s
 
   function attach(channel) {
     if (!channel || channel.type !== ChannelType.GuildText || channel.id !== CHANNEL_ID) return;
+    if (channel.parentId === "1569548036055507055") return;
     if (channels.has(channel.id)) return;
 
     const key = `${KEY_PREFIX}${channel.id}`;
