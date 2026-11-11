@@ -182,15 +182,15 @@ test("community post reply picker offers anonymous and named thread replies", ()
   assert.ok(buttons.every((item) => item.custom_id.includes(":123456789012345678")));
 });
 
-test("ticket panel begins with the first five support categories as buttons", () => {
+test("support panel places Get Verified beside the first four ticket categories", () => {
   const payload = buildTicketPanelPayload();
   const buttons = payload.components[0].toJSON().components;
   assert.deepEqual(buttons.map((item) => item.custom_id), [
     "sugar-ticket:category:general",
-    "sugar-ticket:category:report",
-    "sugar-ticket:category:appeal",
+    "sugar-ticket:category:buy-vip",
     "sugar-ticket:category:partnership",
     "sugar-ticket:category:apply",
+    "sugar-ticket:get-verified",
   ]);
   assert.ok(buttons.every((item) => item.type === 2));
 });
