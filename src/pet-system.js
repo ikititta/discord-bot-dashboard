@@ -55,7 +55,7 @@ function buildPetEmbed() {
       "**Commands**\n" +
       "`!pet` — check your pet. `!pet adopt` — adopt one.\n" +
       "`!pet feed`, `!pet play`, `!pet cuddle` — take care of your pet.\n" +
-      "`!pet shop`, `!pet inventory`, `!pet rename <name>` — shop, inventory, and name.\n" +
+      "`!pet shop`, `!pet inventory`, `!pet rename <name>`, `!pet select <number>` — shop, inventory, rename, and switch pets.\n" +
       "**VIP:** `!pet room`, `!pet outfit <name>`, `!pet rare`, `!pet slots`, `!pet minigame`."
     ).setFooter({ text: "Your pet's progress is saved ♡" });
 }
