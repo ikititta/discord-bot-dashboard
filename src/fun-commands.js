@@ -13,6 +13,7 @@ export const FUN_MEMBER_ROLE_ID = "1568188534836428812";
 
 const GIFUKAI_API_BASE = "https://api.gifukai.com/v1";
 const NEKOS_BEST_API_BASE = "https://nekos.best/api/v2";
+const PURRBOT_API_BASE = "https://api.purrbot.site/v2";
 const GIFUKAI_PAIRING_CATEGORIES = new Set(["hug", "kiss", "pat", "cry", "sleep", "pout"]);
 const REQUEST_TIMEOUT_MS = 8_000;
 const COLOR = 0xffd9ff;
@@ -22,7 +23,7 @@ const TWO_PERSON_COMMANDS = Object.freeze({
   slap: { gif: "slap", text: "has slapped" },
   bonk: { gif: "bonk", text: "has bonked" },
   spank: { gif: "slap", text: "has given a playful spank to" },
-  fuck: { gif: "kiss", text: "has fucked" },
+  fuck: { gif: "fuck", text: "has fucked" },
   hug: { gif: "hug", text: "has hugged" },
   kiss: { gif: "kiss", text: "has kissed" },
   cuddle: { gif: "cuddle", text: "has cuddled" },
@@ -133,6 +134,21 @@ function validatedGifUrl(rawUrl, expectedHost) {
     throw new Error("Anime GIF service returned an invalid GIF URL.");
   }
   return url;
+}
+
+export async function fetchNsfwGif({ fetchImpl = fetch } = {}) {
+  const response = await fetchImpl(`${PURRBOT_API_BASE}/img/nsfw/fuck/gif`, {
+    headers: { "User-Agent": "SugarDiscordBot/1.0 (https://github.com/ikititta/discord-bot-dashboard)" },
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+  });
+  if (!response.ok) throw new Error(`NSFW GIF service returned HTTP ${response.status}.`);
+  const payload = await response.json();
+  if (payload?.error !== false) throw new Error("NSFW GIF service did not return a valid result.");
+  const gifUrl = validatedGifUrl(payload?.link, "cdn.purrbot.site");
+  if (!gifUrl.pathname.startsWith("/nsfw/fuck/gif/")) {
+    throw new Error("NSFW GIF service returned content outside the explicit fuck category.");
+  }
+  return { url: gifUrl.toString(), anime: "", pairing: null, source: "PurrBot NSFW" };
 }
 
 export async function fetchAnimeGif(category, {
@@ -289,7 +305,7 @@ async function handleFunAction(message, store, name, args, fetchImpl) {
   const actionText = buildFunActionText(message.author.id, targetUser?.id ?? null, definition);
 
   let gif = null;
-  try { gif = await fetchAnimeGif(definition.gif, { fetchImpl, actorRole: normalizeFunRole(message.member), targetRole }); }
+  try { gif = name === "fuck"\n    ? await fetchNsfwGif({ fetchImpl })\n    : await fetchAnimeGif(definition.gif, { fetchImpl, actorRole: normalizeFunRole(message.member), targetRole }); }
   catch (error) { console.warn(`[fun] GIF lookup failed for !${name}: ${error.message}`); }
 
   const embed = new EmbedBuilder().setColor(COLOR);
