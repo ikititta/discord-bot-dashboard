@@ -231,21 +231,6 @@ export function attachReputationSystem(client, store) {
     }
   });
   client.on(Events.GuildCreate, (guild) => { void setup(guild, client, store).catch((e) => console.error("[reputation] setup failed: " + e.message)); });
-  const stickyQueues = new Map();
-  client.on(Events.MessageCreate, (message) => {
-    if (!message.guild || message.channel?.isThread?.() || message.channel?.id !== REPUTATION_CHANNEL_ID) return;
-    const state = stickyQueues.get(message.guild.id) ?? { running: Promise.resolve() };
-    state.running = state.running.then(async () => {
-      const channel = await client.channels.fetch(message.channelId).catch(() => null);
-      if (!channel || channel.type !== ChannelType.GuildText) return;
-      const isPanel = message.author?.id === client.user.id &&
-        message.embeds.some((embed) => [TOP_TITLE, PANEL_TITLE].includes(embed.title));
-      if (isPanel) return;
-      const guild = await client.guilds.fetch(message.guild.id);
-      await ensureStickyReputationPanels(channel, client, store, guild);
-    }).catch((error) => console.error("[reputation] sticky panels failed: " + error.message));
-    stickyQueues.set(message.guild.id, state);
-  });
   client.on(Events.GuildMemberAdd, async (newMember) => {
     try {
       const channel = newMember.guild.channels.cache.find((c) => c.type === ChannelType.GuildText && c.name === "welcomes");
@@ -367,6 +352,14 @@ export function attachReputationSystem(client, store) {
     const args = message.content.trim().split(/\s+/).slice(1);
     const mentioned = message.mentions.users.first();
     try {
+      if (args[0]?.toLowerCase() === "comments") {
+        if (args.length > 1 && !mentioned) return message.reply("Select a member mention. Usage: !rep comments @member ♡");
+        const target = mentioned ?? message.author;
+        const entries = store.getCommentsForUser(message.guild.id, target.id).slice(-10).reverse();
+        const body = entries.length ? entries.map((item) => `**${item.anonymous ? "Anonymous VIP" : "<@" + item.authorId + ">"}** · <t:${Math.floor(Date.parse(item.createdAt) / 1000)}:R>\\n${item.text}`).join("\\n\\n").slice(0, 3800) : "No comments yet ♡";
+        const embed = new EmbedBuilder().setColor(COLOR).setTitle("୨୧ Reputation Comments ♡").setDescription(`**Member:** <@${target.id}>\\n\\n${body}`);
+        return message.reply({ embeds: [embed], allowedMentions: { parse: [] } });
+      }
       if (args[0]?.toLowerCase() === "top") {
         const top = store.getTop(message.guild.id, 1000);
         const embed = new EmbedBuilder().setColor(COLOR).setTitle("୨୧ 𝓣𝓸𝓹 𝓡𝓮𝓹𝓾𝓽𝓪𝓽𝓲𝓸𝓷 ♡")
