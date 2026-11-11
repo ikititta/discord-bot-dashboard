@@ -13,6 +13,7 @@ import {
   isVerifiedAdult,
   normalizeFunRole,
   resolveGifPairing,
+  resolveNsfwGifCategory,
 } from "../src/fun-commands.js";
 
 function memberWithRoles(ids) {
@@ -148,10 +149,16 @@ test("fun stats embed contains personal usage and received counts", () => {
   assert.match(embed.data.description, /Received:\*\* 2/);
 });
 
-test("!fuck uses only the dedicated explicit NSFW GIF endpoint", async () => {
+test("!fuck selects NSFW GIF categories from both members' gender roles", async () => {
+  assert.equal(resolveNsfwGifCategory("female", "female"), "yuri");
+  assert.equal(resolveNsfwGifCategory("male", "male"), "yaoi");
+  assert.equal(resolveNsfwGifCategory("female", "male"), "fuck");
+  assert.equal(resolveNsfwGifCategory("trans", "female"), "fuck");
   const gif = await fetchNsfwGif({
+    actorRole: "female",
+    targetRole: "female",
     fetchImpl: async (url) => {
-      assert.equal(url, "https://api.purrbot.site/v2/img/nsfw/fuck/gif");
+      assert.equal(url, "https://api.purrbot.site/v2/img/nsfw/yuri/gif");
       return {
         ok: true,
         json: async () => ({ link: "https://cdn.purrbot.site/nsfw/fuck/gif/fuck_001.gif", error: false }),
@@ -161,17 +168,19 @@ test("!fuck uses only the dedicated explicit NSFW GIF endpoint", async () => {
   assert.deepEqual(gif, {
     url: "https://cdn.purrbot.site/nsfw/fuck/gif/fuck_001.gif",
     anime: "",
-    pairing: null,
+    pairing: "yuri",
     source: "PurrBot NSFW",
   });
 });
 
-test("!fuck rejects SFW or non-GIF results instead of falling back", async () => {
+test("!fuck rejects SFW or wrong-gender GIF results instead of falling back", async () => {
   await assert.rejects(fetchNsfwGif({
-    fetchImpl: async () => ({
-      ok: true,
-      json: async () => ({ link: "https://cdn.gifukai.com/kiss/test.gif", error: false }),
-    }),
+    actorRole: "female",
+    targetRole: "female",
+    fetchImpl: async () => ({ ok: true, json: async () => ({ link: "https://cdn.purrbot.site/nsfw/fuck/gif/fuck_001.gif", error: false }) }),
+  }), /outside the selected yuri category/);
+  await assert.rejects(fetchNsfwGif({
+    fetchImpl: async () => ({ ok: true, json: async () => ({ link: "https://cdn.gifukai.com/kiss/test.gif", error: false }) }),
   }), /invalid GIF URL/);
   await assert.rejects(fetchNsfwGif({
     fetchImpl: async () => ({
