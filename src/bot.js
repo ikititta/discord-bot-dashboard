@@ -160,7 +160,7 @@ export function createBot({
   attachCommunitySystem(client, { store: communityStore, suggestionStore, stickyPanels, settings });
   attachQuoteSystem(client, { token, applicationId });
   attachGeneralQuoteStickyTip(client, { store: stickyPanels });
-  attachAccessSystem(client);
+  attachAccessSystem(client, { settings });
   attachForumVisibilitySystem(client);
   attachCommandsChannel(client);
   attachFunCommands(client, { store: funCommands });
