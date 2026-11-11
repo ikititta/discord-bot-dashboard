@@ -38,26 +38,42 @@ async function ensureCommandsBoard(guild, client) {
   let panel = [...recent.values()].find((message) =>
     message.author?.id === client.user.id && message.embeds.some((embed) => embed.title === PANEL_TITLE),
   );
-  if (!panel) panel = await channel.send(buildCommandsPanelPayload());
-  else await panel.edit(buildCommandsPanelPayload());
-
   let thread = null;
   const active = await channel.threads.fetchActive();
   thread = active.threads.find((item) => item.name === COMMANDS_THREAD_NAME && item.parentId === channel.id) ?? null;
   if (!thread) {
     const archived = await channel.threads.fetchArchived({ type: "public", limit: 100 });
     thread = archived.threads.find((item) => item.name === COMMANDS_THREAD_NAME && item.parentId === channel.id) ?? null;
-    if (thread) await thread.setArchived(false, "Reopen the Kittisugar commands thread");
   }
-  if (!thread) {
-    if (panel.hasThread) {
-      thread = await channel.threads.fetch(panel.id).catch(() => null);
+
+  const newestMessage = [...recent.values()].sort((a, b) => b.createdTimestamp - a.createdTimestamp)[0];
+  const boardIsLast = panel && newestMessage?.id === panel.id;
+  if (!panel || !boardIsLast) {
+    if (thread && !thread.archived) {
+      await thread.setArchived(true, "Archive the previous commands thread before moving its board");
     }
-    if (!thread) thread = await panel.startThread({
+    const previousPanel = panel;
+    panel = await channel.send(buildCommandsPanelPayload());
+    thread = await panel.startThread({
       name: COMMANDS_THREAD_NAME,
       autoArchiveDuration: 10080,
-      reason: "Create the Kittisugar commands thread from its board embed",
+      reason: "Create the Kittisugar commands thread from its bottom-positioned board embed",
     });
+    if (previousPanel) await previousPanel.delete().catch((error) => {
+      console.error("[commands] previous board message could not be removed: " + error.message);
+    });
+  } else {
+    await panel.edit(buildCommandsPanelPayload());
+    if (!thread) thread = await channel.threads.fetch(panel.id).catch(() => null);
+    if (!thread) {
+      thread = await panel.startThread({
+        name: COMMANDS_THREAD_NAME,
+        autoArchiveDuration: 10080,
+        reason: "Create the Kittisugar commands thread from its board embed",
+      });
+    } else if (thread.archived) {
+      await thread.setArchived(false, "Reopen the Kittisugar commands thread");
+    }
   }
   await channel.permissionOverwrites.edit(guild.roles.everyone, {
     ViewChannel: true, SendMessages: false, SendMessagesInThreads: true,
