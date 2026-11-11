@@ -8,6 +8,7 @@ import {
   buildFunHelpEmbed,
   buildFunStatsEmbed,
   fetchAnimeGif,
+  fetchNsfwGif,
   getFunCommandDefinition,
   isVerifiedAdult,
   normalizeFunRole,
@@ -145,4 +146,43 @@ test("fun stats embed contains personal usage and received counts", () => {
   assert.match(embed.data.title, /Kitti's Fun Commands Stats/);
   assert.match(embed.data.description, /Used:\*\* 5/);
   assert.match(embed.data.description, /Received:\*\* 2/);
+});
+
+test("!fuck uses only the dedicated explicit NSFW GIF endpoint", async () => {
+  const gif = await fetchNsfwGif({
+    fetchImpl: async (url) => {
+      assert.equal(url, "https://api.purrbot.site/v2/img/nsfw/fuck/gif");
+      return {
+        ok: true,
+        json: async () => ({ link: "https://cdn.purrbot.site/nsfw/fuck/gif/fuck_001.gif", error: false }),
+      };
+    },
+  });
+  assert.deepEqual(gif, {
+    url: "https://cdn.purrbot.site/nsfw/fuck/gif/fuck_001.gif",
+    anime: "",
+    pairing: null,
+    source: "PurrBot NSFW",
+  });
+});
+
+test("!fuck rejects SFW or non-GIF results instead of falling back", async () => {
+  await assert.rejects(fetchNsfwGif({
+    fetchImpl: async () => ({
+      ok: true,
+      json: async () => ({ link: "https://cdn.gifukai.com/kiss/test.gif", error: false }),
+    }),
+  }), /invalid GIF URL/);
+  await assert.rejects(fetchNsfwGif({
+    fetchImpl: async () => ({
+      ok: true,
+      json: async () => ({ link: "https://cdn.purrbot.site/nsfw/fuck/gif/image.png", error: false }),
+    }),
+  }), /invalid GIF URL/);
+  await assert.rejects(fetchNsfwGif({
+    fetchImpl: async () => ({
+      ok: true,
+      json: async () => ({ link: "https://cdn.purrbot.site/sfw/kiss/gif/kiss_001.gif", error: false }),
+    }),
+  }), /outside the explicit fuck category/);
 });
