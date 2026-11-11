@@ -136,8 +136,15 @@ function validatedGifUrl(rawUrl, expectedHost) {
   return url;
 }
 
-export async function fetchNsfwGif({ fetchImpl = fetch } = {}) {
-  const response = await fetchImpl(`${PURRBOT_API_BASE}/img/nsfw/fuck/gif`, {
+export function resolveNsfwGifCategory(actorRole, targetRole) {
+  if (actorRole === "female" && targetRole === "female") return "yuri";
+  if (actorRole === "male" && targetRole === "male") return "yaoi";
+  return "fuck";
+}
+
+export async function fetchNsfwGif({ fetchImpl = fetch, actorRole = "neutral", targetRole = null } = {}) {
+  const category = resolveNsfwGifCategory(actorRole, targetRole);
+  const response = await fetchImpl(PURRBOT_API_BASE + "/img/nsfw/" + category + "/gif", {
     headers: { "User-Agent": "SugarDiscordBot/1.0 (https://github.com/ikititta/discord-bot-dashboard)" },
     signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   });
@@ -145,10 +152,10 @@ export async function fetchNsfwGif({ fetchImpl = fetch } = {}) {
   const payload = await response.json();
   if (payload?.error !== false) throw new Error("NSFW GIF service did not return a valid result.");
   const gifUrl = validatedGifUrl(payload?.link, "cdn.purrbot.site");
-  if (!gifUrl.pathname.startsWith("/nsfw/fuck/gif/")) {
-    throw new Error("NSFW GIF service returned content outside the explicit fuck category.");
+  if (!gifUrl.pathname.startsWith("/nsfw/" + category + "/gif/")) {
+    throw new Error("NSFW GIF service returned content outside the selected " + category + " category.");
   }
-  return { url: gifUrl.toString(), anime: "", pairing: null, source: "PurrBot NSFW" };
+  return { url: gifUrl.toString(), anime: "", pairing: category, source: "PurrBot NSFW" };
 }
 
 export async function fetchAnimeGif(category, {
@@ -307,7 +314,7 @@ async function handleFunAction(message, store, name, args, fetchImpl) {
   let gif = null;
   try {
     gif = name === "fuck"
-      ? await fetchNsfwGif({ fetchImpl })
+      ? await fetchNsfwGif({ fetchImpl, actorRole: normalizeFunRole(message.member), targetRole })
       : await fetchAnimeGif(definition.gif, { fetchImpl, actorRole: normalizeFunRole(message.member), targetRole });
   }
   catch (error) { console.warn(`[fun] GIF lookup failed for !${name}: ${error.message}`); }
