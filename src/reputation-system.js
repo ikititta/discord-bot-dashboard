@@ -146,7 +146,10 @@ async function ensureStickyReputationPanels(channel, client, store, guild) {
   if (previous.length === 2 && !hasActivityAfterPanel) {
     for (const [title, payload] of payloads) {
       const existing = byTitle.get(title);
-      if (existing) await existing.edit(payload);
+      if (existing) {
+        await existing.edit(payload);
+        if (existing.pinned) await existing.unpin().catch((error) => console.error("[reputation] could not unpin sticky panel: " + error.message));
+      }
     }
     return;
   }
