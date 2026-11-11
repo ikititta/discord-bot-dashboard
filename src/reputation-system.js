@@ -121,7 +121,7 @@ function warningPayload(targetId) {
 function modePayload(targetId, canAnon) {
   const buttons = [new ButtonBuilder().setCustomId(PREFIX + "mode:named:" + targetId).setLabel("With My Name ♡").setStyle(ButtonStyle.Primary)];
   if (canAnon) buttons.push(new ButtonBuilder().setCustomId(PREFIX + "mode:anonymous:" + targetId).setLabel("Anonymous ♡").setStyle(ButtonStyle.Secondary));
-  return { content: "Choose how your comment will be published:", ephemeral: true,
+  return { content: "Choose how your comment will be published:",
     components: [new ActionRowBuilder().addComponents(...buttons)] };
 }
 function commentModal(targetId, anonymous) {
@@ -213,7 +213,7 @@ export function attachReputationSystem(client, store) {
     }
   });
   client.on(Events.MessageCreate, async (message) => {
-    if (!message.guild || message.author.bot || !message.content.toLowerCase().startsWith("!rep")) return;
+    if (!message.guild || message.author.bot || !/^!rep(?:\\s|$)/i.test(message.content.trim())) return;
     const args = message.content.trim().split(/\s+/).slice(1);
     const mentioned = message.mentions.users.first();
     try {
