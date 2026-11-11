@@ -194,11 +194,13 @@ export function attachPetSystem(client, store) {
   client.on(Events.InteractionCreate, async (interaction) => {
     if (!interaction.isButton?.() || interaction.customId !== BUTTON_ID) return;
     try {
-      const thread = await interaction.message.startThread({
+      const thread = await interaction.channel.threads.create({
         name: `${interaction.user.username}'s pet room`.slice(0, 100),
         autoArchiveDuration: 1440,
+        type: ChannelType.PublicThread,
         reason: "Open a member's Kittisugar pet command thread",
       });
+      await thread.members.add(interaction.user.id);
       await thread.send({ content: `Welcome <@${interaction.user.id}>! Your pet commands go here ♡`, embeds: [buildPetEmbed()] });
       await interaction.reply({ content: `Your pet room is ready: <#${thread.id}> ♡`, ephemeral: true });
     } catch (error) {
