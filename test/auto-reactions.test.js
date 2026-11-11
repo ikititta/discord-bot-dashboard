@@ -33,6 +33,10 @@ test("ordinary member messages in server text channels receive reactions", () =>
   })), true);
 });
 
+test("automatic reactions are disabled in channel 1569930648804925522", () => {
+  assert.equal(shouldAutoReactToMessage(message({ channelId: "1569930648804925522" })), false);
+});
+
 test("automatic reactions are disabled in the Comments thread", () => {
   const commentsThread = {
     name: "Comments", parentId: "community-channel", topic: null,
