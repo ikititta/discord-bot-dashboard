@@ -211,9 +211,10 @@ export async function ensureTicketPanel(client, panelChannelId = TICKET_PANEL_CH
     if (existing.pinned) await existing.unpin().catch((error) => {
       console.error(`[tickets] panel could not be unpinned: ${error.message}`);
     });
-    return existing;
+  } else {
+    await channel.send(buildTicketPanelPayload());
   }
-  return channel.send(buildTicketPanelPayload());
+  return channel;
 }
 
 async function handleTicketButton(interaction, { client, settings, panelChannelId }) {
