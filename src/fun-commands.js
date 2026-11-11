@@ -141,7 +141,7 @@ export async function fetchAnimeGif(category, {
       if (gifUrl.protocol !== "https:" || gifUrl.hostname !== "cdn.gifukai.com" || !gifUrl.pathname.endsWith(".gif")) {
         throw new Error("Gifukai returned an invalid GIF URL.");
       }
-      return { url: gifUrl.toString(), anime: String(payload.anime ?? "").slice(0, 80), pairing };
+      return { url: gifUrl.toString(), anime: String(payload.anime ?? "").slice(0, 80), pairing, source: "Gifukai" };
     } catch (error) {
       console.warn(`[fun] paired GIF lookup failed for ${category}; trying the generic anime GIF source: ${error.message}`);
     }
@@ -158,7 +158,7 @@ export async function fetchAnimeGif(category, {
   if (gifUrl.protocol !== "https:" || gifUrl.hostname !== "nekos.best" || !gifUrl.pathname.endsWith(".gif")) {
     throw new Error("Anime GIF service returned an invalid GIF URL.");
   }
-  return { url: gifUrl.toString(), anime: String(result.anime_name ?? "").slice(0, 80), pairing: null };
+  return { url: gifUrl.toString(), anime: String(result.anime_name ?? "").slice(0, 80), pairing: null, source: "Nekos.best" };
 }
 
 function isVerifiedAdult(member) {
@@ -259,7 +259,7 @@ async function handleFunAction(message, store, name, args, fetchImpl) {
   const embed = new EmbedBuilder().setColor(COLOR).setDescription(actionText);
   if (gif) {
     embed.setImage(gif.url);
-    if (gif.anime) embed.setFooter({ text: `Anime: ${gif.anime} · Nekos.best` });
+    if (gif.anime) embed.setFooter({ text: `Anime: ${gif.anime} · ${gif.source}` });
   } else {
     embed.setFooter({ text: "Anime GIF unavailable right now ♡" });
   }
