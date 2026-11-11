@@ -30,6 +30,9 @@ test("paired and solo commands enforce the correct mention mode", () => {
   assert.equal(getFunCommandDefinition("spank").needsTarget, true);
   assert.equal(getFunCommandDefinition("cry").needsTarget, false);
   assert.equal(getFunCommandDefinition("laugh").needsTarget, false);
+  assert.equal(getFunCommandDefinition("kill").needsTarget, true);
+  assert.equal(getFunCommandDefinition("rape"), null);
+  assert.equal(getFunCommandDefinition("fuck"), null);
   assert.equal(getFunCommandDefinition("unknown"), null);
 });
 
