@@ -23,7 +23,7 @@ test("support panel uses the requested title, English guidance, and suggestions 
 test("support panel offers seven categorized buttons with appropriate Discord styles", () => {
   const payload = buildTicketPanelPayload();
   assert.equal(payload.components.length, 2);
-  assert.deepEqual(payload.components.map((row) => row.toJSON().components.length), [5, 3]);
+  assert.deepEqual(payload.components.map((row) => row.toJSON().components.length), [5, 4]);
 
   const buttons = payload.components.flatMap((row) => row.toJSON().components);
   assert.deepEqual(buttons.map((item) => item.custom_id), [
@@ -35,6 +35,7 @@ test("support panel offers seven categorized buttons with appropriate Discord st
     "sugar-ticket:category:error",
     "sugar-ticket:category:other",
     "sugar-ticket:category:buy-vip",
+    "sugar-ticket:get-verified",
   ]);
   assert.deepEqual(buttons.map((item) => item.label), [
     "General ♡",
@@ -45,8 +46,9 @@ test("support panel offers seven categorized buttons with appropriate Discord st
     "Error ♡",
     "Others ♡",
     "Buy VIP ♡",
+    "Get Verified ♡",
   ]);
-  assert.deepEqual(buttons.map((item) => item.style), [1, 4, 4, 3, 3, 4, 2, 1]);
+  assert.deepEqual(buttons.map((item) => item.style), [1, 4, 4, 3, 3, 4, 2, 1, 3]);
   assert.ok(payload.components.every((row) => row.toJSON().components.length <= 5));
 });
 
