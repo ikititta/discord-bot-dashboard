@@ -1,4 +1,5 @@
 import { EmbedBuilder, Events } from "discord.js";
+import { isCommandsThread } from "./commands-channel.js";
 
 const KITTISUGAR_GUILD_ID = "1567093019377930363";
 
@@ -295,7 +296,7 @@ export function attachFunCommands(client, { store, fetchImpl = fetch } = {}) {
 
   client.on(Events.MessageCreate, async (message) => {
     if (!message.guild || message.guild.id !== KITTISUGAR_GUILD_ID ||
-        message.author?.bot || message.webhookId || !message.member) return;
+        message.author?.bot || message.webhookId || !message.member || !isCommandsThread(message)) return;
     const match = /^!([a-z-]+)(?:\s+([\s\S]*))?$/i.exec(String(message.content ?? "").trim());
     if (!match) return;
 
