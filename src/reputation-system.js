@@ -37,7 +37,7 @@ export class ReputationStore {
     return (this.data.guilds[guildId] ?? []).filter((item) => item.targetId === userId).map((item) => ({ ...item }));
   }
   vote({ guildId, authorId, targetId, value }) {
-    if (![guildId, authorId, targetId].every((id) => /^\\d{17,20}$/.test(id ?? "")) || authorId === targetId || ![-1, 1].includes(value)) throw new Error("Invalid reputation vote.");
+    if (![guildId, authorId, targetId].every((id) => /^\d{17,20}$/.test(id ?? "")) || authorId === targetId || ![-1, 1].includes(value)) throw new Error("Invalid reputation vote.");
     const file = path.join(path.dirname(this.file), "reputation-votes.json");
     let data = { version: 1, guilds: {} };
     try { data = JSON.parse(fs.readFileSync(file, "utf8")); } catch (error) { if (error?.code !== "ENOENT") throw error; }
@@ -101,7 +101,8 @@ function makePanelPayload() {
       "♡ Press **Leave a Comment** and choose a member.\n" +
       "♡ Read and accept the warning before writing.\n" +
       "♡ Members publish with their name. VIP may choose named or anonymous.\n" +
-      "♡ Each approved comment gives the recipient **+1 reputation**. One comment per author/member pair every 24 hours.\n" +
+      "♡ Positive and negative votes change the score; each person has one current vote per member and may update it.\n" +
+      "♡ Written comments add +1 reputation and are limited to one per author/member pair every 24 hours.\n" +
       "♡ Be respectful. Harassment, fake reviews, threats, private information, and spam are not allowed. Staff may review anonymous submissions.\n\n" +
       "**Commands**\n" +
       "`!rep` — your reputation.\n`!rep @member` — view a member.\n`!rep top` — show the ranking.\n`!rep comments @member` — read their comments.")
