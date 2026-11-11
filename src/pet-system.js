@@ -96,7 +96,7 @@ function panelPayload(store, guildId) {
     new ButtonBuilder().setCustomId(BUTTON_ID).setLabel("Open Pet Room ♡").setStyle(ButtonStyle.Primary),
   )] };
 }
-async function ensurePetsChannel(guild, client) {
+async function ensurePetsChannel(guild, client, store) {
   let channel = guild.channels.cache.find((item) =>
     item.type === ChannelType.GuildText && item.name === CHANNEL_NAME,
   );
@@ -247,12 +247,12 @@ export function attachPetSystem(client, store) {
   if (!store) throw new Error("The virtual-pet store is required.");
   client.once(Events.ClientReady, async () => {
     for (const guild of client.guilds.cache.values()) {
-      try { await ensurePetsChannel(guild, client); }
+      try { await ensurePetsChannel(guild, client, store); }
       catch (error) { console.error("[pets] channel setup failed: " + error.message); }
     }
   });
   client.on(Events.GuildCreate, (guild) => {
-    void ensurePetsChannel(guild, client).catch((error) => console.error("[pets] channel setup failed: " + error.message));
+    void ensurePetsChannel(guild, client, store).catch((error) => console.error("[pets] channel setup failed: " + error.message));
   });
   client.on(Events.InteractionCreate, async (interaction) => {
     if (!interaction.isButton?.() || interaction.customId !== BUTTON_ID) return;
