@@ -129,12 +129,12 @@ async function runPetCommand(message, store) {
       profile.additionalPets.push(companion);
       profile.activePetIndex = count;
       store.save(guildId, userId, profile);
-      return reply(`You adopted **${companion.name}** the ${companion.species}! Welcome home ♡\\n${status(companion)}`);
+      return reply(`You adopted **${companion.name}** the ${companion.species}! Welcome home ♡\n${status(companion)}`);
     }
     pet = makePet();
     profile = pet;
     store.save(guildId, userId, profile);
-    return reply(`You adopted **${pet.name}** the ${pet.species}! Welcome home ♡\\n${status(pet)}`);
+    return reply(`You adopted **${pet.name}** the ${pet.species}! Welcome home ♡\n${status(pet)}`);
   }
   if (!pet) return reply("You don't have a pet yet. Use `!pet adopt` to meet your new friend ♡");
 
@@ -145,7 +145,7 @@ async function runPetCommand(message, store) {
     profile.activePetIndex = index - 1;
     store.save(guildId, userId, profile);
     pet = index === 1 ? profile : profile.additionalPets[index - 2];
-    return reply("Now caring for " + pet.name + " ♡\\n" + status(pet));
+    return reply("Now caring for " + pet.name + " ♡\n" + status(pet));
   }
   if (action === "view" || action === "status") return reply(status(pet));
 
@@ -158,7 +158,7 @@ async function runPetCommand(message, store) {
   } else if (action === "cuddle") {
     pet.happiness = Math.min(100, pet.happiness + 12); pet.xp += 3;
   } else if (action === "shop") {
-    return reply("**Pet shop ♡**\\n`!pet buy treat` — 10 coins\\n`!pet buy toy` — 25 coins");
+    return reply("**Pet shop ♡**\n`!pet buy treat` — 10 coins\n`!pet buy toy` — 25 coins");
   } else if (action === "buy") {
     const price = SHOP[argument.toLowerCase()];
     if (!price) return reply("Choose `treat` or `toy` ♡");
@@ -196,7 +196,7 @@ async function runPetCommand(message, store) {
 
   while (pet.xp >= pet.level * 25) { pet.xp -= pet.level * 25; pet.level += 1; }
   store.save(guildId, userId, profile);
-  return reply("Done ♡\\n" + status(pet));
+  return reply("Done ♡\n" + status(pet));
 }
 export function attachPetSystem(client, store) {
   if (!store) throw new Error("The virtual-pet store is required.");
