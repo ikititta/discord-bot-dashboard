@@ -48,15 +48,21 @@ function buildPetEmbed() {
   return new EmbedBuilder().setColor(COLOR).setTitle("୨୧ 𝓥𝓲𝓻𝓽𝓾𝓪𝓵 𝓟𝓮𝓽𝓼 ♡")
     .setDescription(
       "Welcome to the Kittisugar pet corner! Adopt a little friend, look after them, and watch them grow.\n\n" +
-      "**How to play**\n" +
-      "♡ Press **Open Pet Room ♡** to create your own command thread.\n" +
-      "♡ Everyone can adopt a pet and use the basic care commands.\n" +
-      "♡ VIP unlocks extra rooms, outfits, rare pets, additional pet slots, and minigames.\n\n" +
-      "**Commands**\n" +
-      "`!pet` — check your pet. `!pet adopt` — adopt one.\n" +
-      "`!pet feed`, `!pet play`, `!pet cuddle` — take care of your pet.\n" +
-      "`!pet shop`, `!pet inventory`, `!pet rename <name>`, `!pet select <number>` — shop, inventory, rename, and switch pets.\n" +
-      "**VIP:** `!pet room`, `!pet outfit <name>`, `!pet rare`, `!pet slots`, `!pet minigame`."
+      "**Where to use commands**\n" +
+      "♡ First, press **Open Pet Room ♡** below. Sugar will open your personal pet thread.\n" +
+      "♡ Send all `!pet` commands inside that thread — not in the main pets channel.\n" +
+      "♡ Everyone can adopt a pet and use the basic care commands. VIP unlocks extra rooms, outfits, rare pets, more pet slots, and minigames.\n\n" +
+      "**Everyone**\n" +
+      "`!pet adopt` — adopt your first pet. `!pet` — view its status.\n" +
+      "`!pet feed` — feed it. `!pet play` — play together. `!pet cuddle` — give it affection.\n" +
+      "`!pet shop` — view the shop. `!pet buy treat/toy` — buy an item.\n" +
+      "`!pet inventory` — view your items. `!pet rename <name>` — rename your pet.\n" +
+      "`!pet select <number>` — switch between your pets.\n\n" +
+      "**VIP extras**\n" +
+      "`!pet room` — unlock your VIP room. `!pet outfit <name>` — choose an outfit.\n" +
+      "`!pet rare` — unlock a rare look. `!pet slots` — add a pet slot.\n" +
+      "`!pet minigame` — play the daily minigame.\n\n" +
+      "Open your pet room and start chatting with your little companion ♡"
     ).setFooter({ text: "Your pet's progress is saved ♡" });
 }
 function panelPayload() {
