@@ -203,7 +203,7 @@ export function buildGuidePayload(guild) {
       "`!rep top` — view the reputation ranking. `!rep comments @member` — read recent comments.\n" +
       "`/vip-delete amount:` — VIP members can bulk-delete their own recent messages.\n" +
       "`!pet` — view your pet. `!pet adopt` — adopt one. `!pet feed|play|cuddle` — care for it.\n" +
-      "`!pet shop|inventory|rename` — use the pet shop, check items, or rename your pet.\n" +
+      "`!pet shop|inventory|rename|select <number>` — use the shop, check items, rename, or switch pets.\n" +
       "`!pet room|outfit|rare|slots|minigame` — VIP pet features and extras.\n" +
       "Everyone can adopt and care for a pet; selected customisation and bonus features are VIP-only.\n" +
       `## ୨୧ ${guideSectionTitle("Sugar AI")}\n\n` +
