@@ -20,10 +20,6 @@ export function buildCommandsPanelPayload() {
         "Use the **💬 𝗰𝗼𝗺𝗺𝗮𝗻𝗱𝘀** thread below for all bot commands. Please keep command messages inside that thread instead of sending them in the channel.\n\n" +
         "**Quick guide**\n" +
         "`!funhelp` — see the fun commands.\n" +
-        "`!rep` — check your reputation.\n" +
-        "`!rep @member` — check another member's reputation.\n" +
-        "`!rep top` — view the reputation ranking.\n" +
-        "`!rep comments @member` — read a member's latest comments.\n" +
         "`!stats` — view your basic fun-command stats.\n" +
         "`!vip stats @member` — VIP stats for another member."
       )
