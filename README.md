@@ -49,9 +49,11 @@ Two-person commands: `!slap`, `!bonk`, `!spank`, `!hug`, `!kiss`, `!cuddle`, `!p
 
 Solo commands: `!cry`, `!laugh`, `!dance`, `!sleep`, `!happy`, `!blush`, `!smug`, `!wave`, `!facepalm`, `!wink`, `!shrug`, `!smile`, and `!pout`.
 
-- `!stats` shows a member's own basic statistics.
-- `!vip stats` shows the caller's full statistics for VIP members.
-- `!vip stats @member` lets VIP members view another member's full statistics. Non-VIP callers receive: `Get VIP to see everyone's stats.`
+- Every action message explicitly mentions the member who used the command and, for two-person actions, the mentioned target. Only those member IDs can be notified. Messages use clear wording such as `<@actor> has hugged <@target>!`; solo actions mention only the person who used the command.
+- `!funhelp` explains two-person commands, solo commands, statistics, and VIP access.
+- `!stats` shows a member own basic statistics.
+- `!vip stats` shows the caller full statistics for VIP members.
+- `!vip stats @member` lets VIP members view another member full statistics. VIP unlocks full reports and member lookups; non-VIP members can still use `!stats` for their own summary.
 - `!rape` and `!fuck` are intentionally unavailable; Sugar responds with a consent reminder.
 - The GIF adapter uses Gifukai for `hug`, `kiss`, `pat`, `cry`, `sleep`, and `pout`, with female/male pair filters (`ff`, `mm`, `fm`, `mf`) and solo filters (`f`, `m`); other actions fall back to Nekos.best. Both sources are SFW-only. Neither provider supports Transgender or Non-binary pair categories, so those roles receive an unfiltered anime GIF rather than being misclassified. `!spank` currently uses a non-explicit slap reaction as a playful substitute. NSFW GIFs and commands are not included in this draft.
 

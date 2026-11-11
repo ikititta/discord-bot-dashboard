@@ -16,36 +16,36 @@ const NEKOS_BEST_API_BASE = "https://nekos.best/api/v2";
 const GIFUKAI_PAIRING_CATEGORIES = new Set(["hug", "kiss", "pat", "cry", "sleep", "pout"]);
 const REQUEST_TIMEOUT_MS = 8_000;
 const COLOR = 0xffd9ff;
-const VIP_STATS_MESSAGE = "Get VIP to see everyone's stats.";
+const VIP_STATS_MESSAGE = "VIP unlocks full stats and lets you view another member with !vip stats @member. Everyone can view their own basic stats with !stats; VIP members can use !vip stats for their complete report. ♡";
 
 const TWO_PERSON_COMMANDS = Object.freeze({
-  slap: { gif: "slap", text: "slaps" },
-  bonk: { gif: "bonk", text: "bonks" },
-  spank: { gif: "slap", text: "gives a playful spank to" },
-  hug: { gif: "hug", text: "hugs" },
-  kiss: { gif: "kiss", text: "kisses" },
-  cuddle: { gif: "cuddle", text: "cuddles" },
-  pat: { gif: "pat", text: "gives a headpat to" },
-  poke: { gif: "poke", text: "pokes" },
-  bite: { gif: "bite", text: "bites" },
-  kick: { gif: "kick", text: "kicks" },
-  kill: { gif: "kick", text: "defeats" },
-  highfive: { gif: "highfive", text: "high-fives" },
-  handhold: { gif: "handhold", text: "holds hands with" },
+  slap: { gif: "slap", text: "has slapped" },
+  bonk: { gif: "bonk", text: "has bonked" },
+  spank: { gif: "slap", text: "has given a playful spank to" },
+  hug: { gif: "hug", text: "has hugged" },
+  kiss: { gif: "kiss", text: "has kissed" },
+  cuddle: { gif: "cuddle", text: "has cuddled" },
+  pat: { gif: "pat", text: "has given a headpat to" },
+  poke: { gif: "poke", text: "has poked" },
+  bite: { gif: "bite", text: "has bitten" },
+  kick: { gif: "kick", text: "has kicked" },
+  kill: { gif: "kick", text: "has defeated" },
+  highfive: { gif: "highfive", text: "has high-fived" },
+  handhold: { gif: "handhold", text: "is holding hands with" },
 });
 
 const SOLO_COMMANDS = Object.freeze({
-  cry: { gif: "cry", text: "is crying" },
-  laugh: { gif: "laugh", text: "is laughing" },
-  dance: { gif: "dance", text: "is dancing" },
-  sleep: { gif: "sleep", text: "is sleeping" },
+  cry: { gif: "cry", text: "has cried" },
+  laugh: { gif: "laugh", text: "has laughed" },
+  dance: { gif: "dance", text: "has danced" },
+  sleep: { gif: "sleep", text: "has fallen asleep" },
   happy: { gif: "happy", text: "is happy" },
   blush: { gif: "blush", text: "is blushing" },
   smug: { gif: "smug", text: "looks smug" },
-  wave: { gif: "wave", text: "waves hello" },
+  wave: { gif: "wave", text: "has waved hello" },
   facepalm: { gif: "facepalm", text: "is facepalming" },
-  wink: { gif: "wink", text: "winks" },
-  shrug: { gif: "shrug", text: "shrugs" },
+  wink: { gif: "wink", text: "has winked" },
+  shrug: { gif: "shrug", text: "has shrugged" },
   smile: { gif: "smile", text: "is smiling" },
   pout: { gif: "pout", text: "is pouting" },
 });
@@ -76,7 +76,8 @@ export function buildFunStatsEmbed({ user, stats, full = false, received = false
   const embed = new EmbedBuilder()
     .setColor(COLOR)
     .setTitle(`୨୧ ${name}'s Fun Commands ${full ? "VIP " : ""}Stats ♡`)
-    .setDescription(`**Used:** ${stats.total ?? 0} commands\n**Received:** ${stats.receivedTotal ?? 0} interactions`);
+    .setDescription(`**Used:** ${stats.total ?? 0} commands\n**Received:** ${stats.receivedTotal ?? 0} interactions`)
+    .addFields({ name: "How stats work", value: full ? "This is the complete report: commands you use, interactions you receive, and the members you interact with. Use !vip stats @member to view another members report." : "This is your personal summary. Use !vip stats for your complete report if you have VIP. VIP members can view another member with !vip stats @member." });
 
   if (topCommands.length) embed.addFields({
     name: "Most used",
@@ -98,9 +99,9 @@ export function buildFunStatsEmbed({ user, stats, full = false, received = false
     const allReceived = Object.entries(stats.received ?? {}).sort((a, b) => a[0].localeCompare(b[0]));
     if (allCommands.length) embed.addFields({ name: "Complete command history", value: allCommands.map(([command, count]) => "!" + command + " · " + count).join("\n").slice(0, 1024) });
     if (allReceived.length) embed.addFields({ name: "Complete received history", value: allReceived.map(([command, count]) => "!" + command + " · " + count).join("\n").slice(0, 1024) });
-    embed.setFooter({ text: "VIP member statistics ♡" });
+    embed.setFooter({ text: "VIP stats · Type !funhelp for the command guide ♡" });
   } else {
-    embed.setFooter({ text: "Use !vip stats for your complete VIP report ♡" });
+    embed.setFooter({ text: "Use !vip stats for your complete VIP report · !funhelp for help ♡" });
   }
   return embed;
 }
@@ -177,11 +178,31 @@ function displayName(member, user) {
   return member?.displayName ?? user?.globalName ?? user?.username ?? "Someone";
 }
 
-async function safeReply(message, payload) {
+async function safeReply(message, payload, mentionUserIds = []) {
   return message.reply({
     ...payload,
-    allowedMentions: { parse: [], repliedUser: false },
+    allowedMentions: { parse: [], users: mentionUserIds, repliedUser: false },
   });
+}
+
+export function buildFunActionText(actorId, targetId, definition) {
+  return targetId
+    ? "<@" + actorId + "> " + definition.text + " <@" + targetId + ">!"
+    : "<@" + actorId + "> " + definition.text + "!";
+}
+
+export function buildFunHelpEmbed() {
+  return new EmbedBuilder()
+    .setColor(COLOR)
+    .setTitle("Sugar Fun Commands Guide ♡")
+    .setDescription("Use these commands in Kittisugar. Every fun command requires the Member role (18+ verification). Two-person commands need a member mention; solo commands do not.")
+    .addFields(
+      { name: "Two-person commands", value: "!hug @member · !slap @member · !bonk @member · !spank @member · !kiss @member · !cuddle @member · !pat @member · !poke @member · !bite @member · !kick @member · !kill @member · !highfive @member · !handhold @member" },
+      { name: "Solo commands", value: "!cry · !laugh · !dance · !sleep · !happy · !blush · !smug · !wave · !facepalm · !wink · !shrug · !smile · !pout" },
+      { name: "Statistics", value: "!stats — see your own basic stats.\n!vip stats — VIP members see their complete stats.\n!vip stats @member — VIP members see another members complete stats.\nStats count commands used, interactions received, and interaction partners." },
+      { name: "VIP", value: "VIP is a server role. It unlocks complete statistics and the ability to look up other members stats. Without VIP, you can still use !stats to see your own summary." },
+    )
+    .setFooter({ text: "Be kind and keep every interaction consensual ♡" });
 }
 
 async function showStats(message, store, { targetMember, targetUser, full, received = false }) {
@@ -252,22 +273,20 @@ async function handleFunAction(message, store, name, args, fetchImpl) {
     command: name,
   });
 
-  const actionText = definition.needsTarget
-    ? `**${displayName(message.member, message.author)}** ${definition.text} **${displayName(targetMember, targetUser)}**!`
-    : `**${displayName(message.member, message.author)}** ${definition.text}!`;
+  const actionText = buildFunActionText(message.author.id, targetUser?.id ?? null, definition);
 
   let gif = null;
   try { gif = await fetchAnimeGif(definition.gif, { fetchImpl, actorRole: normalizeFunRole(message.member), targetRole }); }
   catch (error) { console.warn(`[fun] GIF lookup failed for !${name}: ${error.message}`); }
 
-  const embed = new EmbedBuilder().setColor(COLOR).setDescription(actionText);
+  const embed = new EmbedBuilder().setColor(COLOR);
   if (gif) {
     embed.setImage(gif.url);
     if (gif.anime) embed.setFooter({ text: `Anime: ${gif.anime} · ${gif.source}` });
   } else {
     embed.setFooter({ text: "Anime GIF unavailable right now ♡" });
   }
-  await safeReply(message, { embeds: [embed] });
+  await safeReply(message, { content: actionText, embeds: [embed] }, [message.author.id, ...(targetUser ? [targetUser.id] : [])]);
   return true;
 }
 
@@ -285,6 +304,10 @@ export function attachFunCommands(client, { store, fetchImpl = fetch } = {}) {
     try {
       if (BLOCKED_COMMANDS.has(name)) {
         await safeReply(message, { content: "That command isn't available. Please keep interactions consensual ♡" });
+        return;
+      }
+      if (name === "funhelp") {
+        await safeReply(message, { embeds: [buildFunHelpEmbed()] });
         return;
       }
       if (name === "stats" || name === "vip") {
