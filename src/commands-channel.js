@@ -13,11 +13,11 @@ export function buildCommandsThreadGuidePayload() {
       .setColor(COLOR)
       .setTitle(COMMANDS_GUIDE_TITLE)
       .setDescription(
-        "**All reputation commands**\\n\\n" +
-        "`!rep` — check your own reputation score.\\n" +
-        "`!rep @member` — check another member's reputation score.\\n" +
-        "`!rep top` — see the top positive and negative reputation rankings.\\n" +
-        "`!rep comments @member` — read the latest reputation comments for a member.\\n\\n" +
+        "**All reputation commands**\n\n" +
+        "`!rep` — check your own reputation score.\n" +
+        "`!rep @member` — check another member's reputation score.\n" +
+        "`!rep top` — see the top positive and negative reputation rankings.\n" +
+        "`!rep comments @member` — read the latest reputation comments for a member.\n\n" +
         "♡ Type these commands directly in this thread. They do not work in other channels."
       )
       .setFooter({ text: "Kittisugar · Reputation help ♡" })],
