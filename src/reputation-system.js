@@ -225,7 +225,7 @@ export function attachReputationSystem(client, store) {
     }
   });
   client.on(Events.MessageCreate, async (message) => {
-    if (!message.guild || message.author.bot || !/^!rep(?:\\s|$)/i.test(message.content.trim())) return;
+    if (!message.guild || message.author.bot || !/^!rep(?:\s|$)/i.test(message.content.trim())) return;
     const args = message.content.trim().split(/\s+/).slice(1);
     const mentioned = message.mentions.users.first();
     try {
