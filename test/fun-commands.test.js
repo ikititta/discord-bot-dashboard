@@ -9,6 +9,7 @@ import {
   buildFunStatsEmbed,
   fetchAnimeGif,
   getFunCommandDefinition,
+  isVerifiedAdult,
   normalizeFunRole,
   resolveGifPairing,
 } from "../src/fun-commands.js";
@@ -38,6 +39,15 @@ test("fun commands use the existing Kittisugar gender role IDs only", () => {
   assert.equal(resolveGifPairing("male", "female"), "mf");
   assert.equal(resolveGifPairing("trans", "male"), null);
   assert.equal(resolveGifPairing("non-binary", "female"), null);
+});
+
+test("fun commands recognize the live Member role even if its role ID changes", () => {
+  const member = { roles: { cache: {
+    has: () => false,
+    some: (predicate) => [{ id: "999999999999999999", name: "Member" }].some(predicate),
+  } } };
+  assert.equal(isVerifiedAdult(member), true);
+  assert.equal(isVerifiedAdult(memberWithRoles([])), false);
 });
 
 test("fun action messages mention the actor and target with clear past-tense wording", () => {
