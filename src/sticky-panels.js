@@ -33,6 +33,7 @@ export function attachStickyPanel(client, {
     if (!channel || channel.type !== ChannelType.GuildText) {
       throw new Error(`Channel ${channelId} is not an accessible text channel.`);
     }
+    if (channel.parentId === "1569548036055507055") return null;
     return channel;
   }
 
@@ -64,6 +65,7 @@ export function attachStickyPanel(client, {
 
   async function ensure() {
     const channel = await getChannel();
+    if (!channel) return null;
     let saved = await fetchSaved(channel);
     if (saved && !isPanel(saved)) saved = null;
     const recentMessages = await channel.messages.fetch({ limit: 100 });
@@ -104,6 +106,7 @@ export function attachStickyPanel(client, {
 
   async function moveAfter() {
     const channel = await getChannel();
+    if (!channel) return;
     let previous = currentMessage;
     if (!previous) previous = await fetchSaved(channel);
     if (!previous) previous = await findExisting(channel);
