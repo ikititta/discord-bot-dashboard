@@ -136,8 +136,6 @@ async function createAgeReviewTicket(interaction, member) {
     const row = new ActionRowBuilder().addComponents(
       new ButtonBuilder().setCustomId(AGE_REVIEW_PREFIX + "approve:" + member.id)
         .setLabel("Approve 18+").setStyle(ButtonStyle.Success),
-      new ButtonBuilder().setCustomId("sugar-ticket:close")
-        .setLabel("Close Ticket ♡").setStyle(ButtonStyle.Danger),
     );
     await ticket.send({
       content: `<@${member.id}> — manual age verification is required. ${[...staffRoles.keys()].map((id) => `<@&${id}>`).join(" ")}`,
@@ -183,9 +181,12 @@ async function handleAgeReviewApproval(interaction) {
   }
   await member.roles.add(memberRole, "Staff approved the member's manual 18+ age verification");
   await member.roles.remove([newRole, ageRole], "Remove New and age-review after staff approval");
+  const closeRow = new ActionRowBuilder().addComponents(
+    new ButtonBuilder().setCustomId("sugar-ticket:close").setLabel("Close Ticket ♡").setStyle(ButtonStyle.Danger),
+  );
   await interaction.update({
     content: `18+ age verification approved by <@${interaction.user.id}>. Member access has been granted to <@${member.id}>.`,
-    embeds: [], components: [],
+    embeds: [], components: [closeRow],
     allowedMentions: { parse: [], users: [member.id, interaction.user.id] },
   });
   const approved = new EmbedBuilder().setColor(0x4ade80)
