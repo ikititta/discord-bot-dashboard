@@ -153,6 +153,28 @@ function makePet() {
     lastMinigame: null,
   };
 }
+function queuePetArtwork(message, store, profile, pet) {
+  if (!process.env.OPENAI_API_KEY || !pet.visualIdentity ||
+      pet.visualIdentity.artStatus === "generating" || pet.visualIdentity.artStatus === "ready") return;
+  pet.visualIdentity.artStatus = "generating";
+  store.save(message.guild.id, message.author.id, profile);
+  void generatePetArtwork({ pet, dataDir: path.dirname(store.file) }).then((file) => {
+    pet.visualIdentity.artStatus = "ready";
+    pet.visualIdentity.artPath = file;
+    pet.visualIdentity.artCreatedAt = new Date().toISOString();
+    store.save(message.guild.id, message.author.id, profile);
+    return message.channel.send({
+      content: `Your one-of-a-kind ${pet.name} artwork is ready ♡`,
+      files: [file],
+      allowedMentions: { parse: [] },
+    });
+  }).catch((error) => {
+    pet.visualIdentity.artStatus = "failed";
+    store.save(message.guild.id, message.author.id, profile);
+    console.error("[pets] AI artwork generation failed: " + error.message);
+  });
+}
+
 function status(pet) {
   return `**${pet.name}** the ${pet.species} · Level ${pet.level}
 ♡ Hunger: ${pet.hunger}/100 · Happiness: ${pet.happiness}/100
@@ -191,12 +213,14 @@ async function runPetCommand(message, store, client) {
       profile.additionalPets.push(companion);
       profile.activePetIndex = count;
       store.save(guildId, userId, profile);
+      queuePetArtwork(message, store, profile, companion);
       await refreshPetsPanel(message.guild, store, client);
       return reply(`You adopted **${companion.name}** the ${companion.species}! Welcome home ♡\n${status(companion)}`);
     }
     pet = makePet();
     profile = pet;
     store.save(guildId, userId, profile);
+    queuePetArtwork(message, store, profile, pet);
     await refreshPetsPanel(message.guild, store, client);
     return reply(`You adopted **${pet.name}** the ${pet.species}! Welcome home ♡\n${status(pet)}`);
   }
