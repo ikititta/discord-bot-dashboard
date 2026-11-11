@@ -16,6 +16,7 @@ import { SuggestionStore } from "./src/suggestion-store.js";
 import { StickyPanelStore } from "./src/sticky-panel-store.js";
 import { FunCommandStore } from "./src/fun-command-store.js";
 import { ReputationStore } from "./src/reputation-system.js";
+import { PetStore } from "./src/pet-system.js";
 import { createWeb } from "./src/web.js";
 
 const STARTED_AT = new Date().toISOString();
@@ -60,6 +61,7 @@ let suggestionStore;
 let stickyPanels;
 let funCommands;
 let reputationStore;
+let petStore;
 try {
   dataDir = resolveDataDir();
   settings = new SettingsStore(dataDir, { allowMissing: process.env.NODE_ENV === "development" });
@@ -72,6 +74,7 @@ try {
   stickyPanels = new StickyPanelStore(dataDir);
   funCommands = new FunCommandStore(dataDir);
   reputationStore = new ReputationStore(dataDir);
+  petStore = new PetStore(dataDir);
 } catch (error) {
   fatal(error instanceof Error ? error.message : "Storage initialization failed.", "storage");
 }
@@ -96,6 +99,7 @@ const client = createBot({
   stickyPanels,
   funCommands,
   reputationStore,
+  petStore,
 });
 
 const { app, redirectUri } = createWeb({

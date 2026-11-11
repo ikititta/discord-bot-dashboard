@@ -47,7 +47,8 @@ export function buildCommandsPanelPayload() {
         "**Reputation commands**\n\n" +
         "`!rep` — your reputation, positive and negative votes, and comments.\n" +
         "`!rep @member` — another member's reputation, positive and negative votes, and comments.\n" +
-        "`!rep top` — positive and negative rankings."
+        "`!rep top` — positive and negative rankings.\n\n" +
+        "**Fun commands**\n`!funhelp` — view the available fun interaction commands."
       )
       .setFooter({ text: "Kittisugar commands ♡" })],
   };

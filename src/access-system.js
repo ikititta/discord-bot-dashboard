@@ -141,9 +141,9 @@ No harassment, hate, threats, bullying, spam, or sharing private information.`,
       `## ${toRoyalBold("02 · Content")}
 Keep NSFW content in NSFW channels. VIP members may post it elsewhere. No illegal or non-consensual intimate content. Fun interaction commands run automatically for verified Member accounts; follow Kittisugar's server rules.`,
       `## ${toRoyalBold("03 · Promotions & Selling")}
-Only VIP members may promote or sell in ${promotionChannel}. VIP is **$5 USD once, for life** and includes **VIP, Seller, and a custom role**. No unsolicited ads in chats, profiles, or DMs.`,
+VIP members may promote or sell in ${promotionChannel}. VIP is **$5 USD once, for life** and includes VIP access and a custom role. The Seller role is **optional** and is not required to use VIP benefits. VIP unlocks exclusive commands and features, including virtual-pet extras, anonymous reputation posts, and bulk deletion of your own messages. No unsolicited ads in chats, profiles, or DMs.`,
       `## ${toRoyalBold("04 · Warnings")}
-Repeated rule-breaking may result in warnings, timeouts, or removal from Kittisugar.`,
+Repeated rule-breaking may result in warnings, timeouts, or a ban from Kittisugar.`,
       `## ${toRoyalBold("05 · Support Kittisugar")}
 Donations help cover Sugar’s monthly hosting costs. Server boosts also unlock a special role and benefits. Thank you for supporting Kittisugar ♡`,
     ].join("\n"))
@@ -178,8 +178,11 @@ export function buildGuidePayload(guild) {
       `• ${channelMention(guild, ["confessions"])}\nShare an anonymous confession or create a poll with the channel buttons.\n` +
       `• ${channelMention(guild, ["loveletters", "love-letters"])}\nLeave a sweet message or appreciation for someone in the community.\n` +
       `• ${channelMention(guild, ["suggestions"])}\nShare ideas and suggestions to help make Kittisugar better.\n` +
-      `• ${channelMention(guild, ["reputation"])}\nLeave kind comments, check member reputation, read feedback, and see the top members with !rep commands. VIP can publish anonymously.\n` +
+      `• ${channelMention(guild, ["reputation"])}\nLeave kind comments, check member reputation, read feedback, and see the top members with !rep commands. VIP members can choose anonymous publishing when leaving a reputation comment.\n` +
       `• ${channelMention(guild, ["quotes"])}\nPost memorable, funny, or meaningful quotes from the community.\n` +
+      `• ${channelMention(guild, ["selfies", "selfie"])}\nShare your selfies with the community.\n` +
+      `• ${channelMention(guild, ["introductions", "introduction", "introduce-yourself", "introduceyourself"])}\nIntroduce yourself and let everyone get to know you.\n` +
+      `• ${channelMention(guild, ["pets"])}\nOpen a pet thread from the channel embed to adopt, care for, and play with your virtual pet.\n` +
       `## ୨୧ ${guideSectionTitle("Help")}\n\n` +
       `• ${channelMention(guild, ["support"])}\nOpen a private ticket for General, Buy VIP, Partnership, Apply, Report, Appeal, Error, or Other requests. Use Get Verified to complete server verification.\n` +
       `• ${channelMention(guild, ["privatechat", "privatechats", "private-chat"])}\nCreate and manage private chat rooms. Use /priv-chat commands to see the available options.\n` +
@@ -198,6 +201,11 @@ export function buildGuidePayload(guild) {
       "`!vip stats @member` — VIP members can view another member's statistics.\n" +
       "`!rep` — see your reputation. `!rep @member` — view someone else.\n" +
       "`!rep top` — view the reputation ranking. `!rep comments @member` — read recent comments.\n" +
+      "`/vip-delete amount:` — VIP members can bulk-delete their own recent messages.\n" +
+      "`!pet` — view your pet. `!pet adopt` — adopt one. `!pet feed|play|cuddle` — care for it.\n" +
+      "`!pet shop|inventory|rename|select <number>` — use the shop, check items, rename, or switch pets.\n" +
+      "`!pet room|outfit|rare|slots|minigame` — VIP pet features and extras.\n" +
+      "Everyone can adopt and care for a pet; selected customisation and bonus features are VIP-only.\n" +
       `## ୨୧ ${guideSectionTitle("Sugar AI")}\n\n` +
       "Mention Sugar or address the bot directly to start a conversation ♡" + buildServerMap(guild)
     )
