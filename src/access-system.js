@@ -176,6 +176,7 @@ export function buildGuidePayload(guild) {
       `• ${channelMention(guild, ["confessions"])}\nShare an anonymous confession or create a poll with the channel buttons.\n` +
       `• ${channelMention(guild, ["loveletters", "love-letters"])}\nLeave a sweet message or appreciation for someone in the community.\n` +
       `• ${channelMention(guild, ["suggestions"])}\nShare ideas and suggestions to help make Kittisugar better.\n` +
+      `• ${channelMention(guild, ["reputation"])}\nLeave kind comments, check member reputation, read feedback, and see the top members with !rep commands. VIP can publish anonymously.\n` +
       `• ${channelMention(guild, ["quotes"])}\nPost memorable, funny, or meaningful quotes from the community.\n` +
       `## ୨୧ ${guideSectionTitle("Help")}\n\n` +
       `• ${channelMention(guild, ["support"])}\nOpen a private ticket for General, Buy VIP, Partnership, Apply, Report, Appeal, Error, or Other requests. Use Get Verified to complete server verification.\n` +
