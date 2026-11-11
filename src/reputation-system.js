@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import {
   ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, EmbedBuilder,
-  Events, ModalBuilder, PermissionFlagsBits, TextInputBuilder, TextInputStyle,
+  Events, ModalBuilder, TextInputBuilder, TextInputStyle, UserSelectMenuBuilder,
 } from "discord.js";
 
 const COLOR = 0xffd9ff;
@@ -178,6 +178,13 @@ export function attachReputationSystem(client, store) {
           return interaction.showModal(commentModal(target.id, anonymous));
         }
       } catch (error) { console.error("[reputation] button failed: " + error.message); return ephemeral(interaction, "Something went wrong. Please try again."); }
+    }
+    if (interaction.isUserSelectMenu() && interaction.customId === PREFIX + "target") {
+      if (!interaction.inGuild() || !member(interaction.member)) return ephemeral(interaction, "Complete verification first.");
+      const targetId = interaction.values[0];
+      const target = await interaction.guild.members.fetch(targetId).catch(() => null);
+      if (!target || target.id === interaction.user.id || target.user.bot) return ephemeral(interaction, "Choose another server member.");
+      return interaction.reply(warningPayload(target.id));
     }
     if (interaction.isModalSubmit() && interaction.customId.startsWith(PREFIX + "submit:")) {
       const [, targetId, mode] = interaction.customId.slice(PREFIX.length).split(":");
