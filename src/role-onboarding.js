@@ -36,7 +36,11 @@ const PREFIX = "sugar-onboard:";
 const SELF_PREFIX = "sugar-selfroles:";
 const COLOR = 0xffd9ff;
 const SELF_ROLES_CHANNEL_NAME = "🎀｜୨୧•𝓼𝓮𝓵𝓯-𝓻𝓸𝓵𝓮𝓼";
-const NSFW_HIDDEN_ROLE = "nsfw-hidden";
+export const NSFW_HIDDEN_ROLE_ID = "1569885841180856361";
+
+export function findNsfwHiddenRole(guild) {
+  return guild.roles.cache.get(NSFW_HIDDEN_ROLE_ID) ?? null;
+}
 
 export const GENDER_OPTIONS = [
   ["female", "Female"],
@@ -160,7 +164,8 @@ async function replaceCategoryRole(member, category, selectedRole) {
 
 async function applyChoice(member, category, value) {
   if (category === "nsfw") {
-    const hiddenRole = await getOrCreateRole(member.guild, NSFW_HIDDEN_ROLE);
+    const hiddenRole = findNsfwHiddenRole(member.guild);
+    if (!hiddenRole) throw new Error(`The NSFW visibility role ${NSFW_HIDDEN_ROLE_ID} was not found.`);
     if (value === "hide") {
       await member.roles.add(hiddenRole, "Member chose to hide NSFW channels");
     } else if (value === "show") {
@@ -249,8 +254,12 @@ export async function ensureSelfRolesChannel(guild, client) {
     else await channel.send(payload);
   }
 
-  const hiddenRole = await getOrCreateRole(guild, NSFW_HIDDEN_ROLE);
-  await ensureNsfwHiddenVisibility(guild, hiddenRole);
+  const hiddenRole = findNsfwHiddenRole(guild);
+  if (hiddenRole) {
+    await ensureNsfwHiddenVisibility(guild, hiddenRole);
+  } else {
+    console.warn(`[self-roles] NSFW visibility role ${NSFW_HIDDEN_ROLE_ID} was not found in guild ${guild.id}; channel overwrites were not changed.`);
+  }
   console.info(`[self-roles] panel ready in #${channel.name} for guild ${guild.id}`);
   return channel;
 }
