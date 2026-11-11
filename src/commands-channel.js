@@ -115,12 +115,16 @@ async function ensureCommandsChannel(guild, client) {
 }
 
 export function isCommandsThread(message) {
-  return Boolean(
-    message?.guild &&
-    message.channel?.isThread?.() &&
-    message.channel.name === COMMANDS_THREAD_NAME &&
-    normalize(message.channel.parent?.name).includes("commands"),
-  );
+  const channel = message?.channel;
+  if (!message?.guild || !channel?.isThread?.()) return false;
+
+  const threadName = normalize(channel.name);
+  const parentName = normalize(channel.parent?.name);
+  // Discord can deliver a thread before its parent is present in cache.
+  // The dedicated thread name is enough in that case; when the parent is
+  // available, require it to be the Kittisugar commands channel as well.
+  return threadName.includes("commands") &&
+    (!parentName || parentName.includes("commands"));
 }
 
 export function attachCommandsChannel(client) {
