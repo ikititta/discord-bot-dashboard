@@ -1,11 +1,6 @@
-import {
-  ChannelType,
-  EmbedBuilder,
-  Events,
-  PermissionFlagsBits,
-} from "discord.js";
+import { ChannelType, EmbedBuilder, Events } from "discord.js";
 
-export const COMMANDS_CHANNEL_NAME = "💬｜୨୧•𝓬𝓸𝓶𝓶𝓪𝓷𝓭𝓼";
+export const COMMANDS_CHANNEL_NAME = "reputation";
 export const COMMANDS_THREAD_NAME = "💬 𝗰𝗼𝗺𝗺𝗮𝗻𝗱𝘀";
 const PANEL_TITLE = "୨୧ 𝓒𝓸𝓶𝓶𝓪𝓷𝓭𝓼 ♡";
 const COLOR = 0xffd9ff;
@@ -20,9 +15,10 @@ export function buildCommandsPanelPayload() {
         "**Quick guide**\n" +
         "`!funhelp` — see the fun commands.\n" +
         "`!stats` — view your basic fun-command stats.\n" +
-        "`!vip stats @member` — VIP stats for another member."
+        "`!vip stats @member` — VIP stats for another member.\n" +
+        "`!rep` — view reputation (inside this thread only)."
       )
-      .setFooter({ text: "Kittisugar fun commands ♡" })],
+      .setFooter({ text: "Kittisugar commands ♡" })],
   };
 }
 
@@ -30,131 +26,64 @@ function normalize(value) {
   return String(value ?? "").normalize("NFKD").toLowerCase().replace(/\p{M}/gu, "").replace(/[^a-z0-9]/g, "");
 }
 
-async function ensureCommandsChannel(guild, client) {
+async function ensureCommandsBoard(guild, client) {
   let channel = guild.channels.cache.find((item) =>
-    item.type === ChannelType.GuildText && normalize(item.name).includes("commands"),
+    item.type === ChannelType.GuildText && normalize(item.name) === "reputation",
   );
-  if (!channel) {
-    channel = await guild.channels.create({
-      name: COMMANDS_CHANNEL_NAME,
-      type: ChannelType.GuildText,
-      reason: "Create the Kittisugar command board",
-    });
-  } else if (channel.name !== COMMANDS_CHANNEL_NAME) {
-    await channel.setName(COMMANDS_CHANNEL_NAME, "Apply Kittisugar command-channel naming style");
-  }
+  if (!channel) channel = await guild.channels.create({
+    name: "reputation", type: ChannelType.GuildText, reason: "Host the Kittisugar commands board with reputation",
+  });
 
-  await channel.permissionOverwrites.edit(guild.roles.everyone, {
-    ViewChannel: true,
-    SendMessages: false,
-    AddReactions: false,
-    CreatePublicThreads: false,
-    SendMessagesInThreads: true,
-    ReadMessageHistory: true,
-  });
-  await channel.permissionOverwrites.edit(client.user.id, {
-    ViewChannel: true,
-    SendMessages: true,
-    EmbedLinks: true,
-    ReadMessageHistory: true,
-    ManageMessages: true,
-    ManageThreads: true,
-    CreatePublicThreads: true,
-    SendMessagesInThreads: true,
-  });
-  for (const role of guild.roles.cache.values()) {
-    if (role.id === guild.id) continue;
-    const isStaff = role.permissions.has(PermissionFlagsBits.ManageMessages) ||
-      role.permissions.has(PermissionFlagsBits.ManageChannels) ||
-      role.permissions.has(PermissionFlagsBits.Administrator) ||
-      /admin|moderator|mod(?:erator)?|staff/i.test(role.name);
-    if (!isStaff) continue;
-    await channel.permissionOverwrites.edit(role, {
-      ViewChannel: true,
-      SendMessages: true,
-      ReadMessageHistory: true,
-      SendMessagesInThreads: true,
-      CreatePublicThreads: false,
-    });
-  }
+  const recent = await channel.messages.fetch({ limit: 100 });
+  let panel = [...recent.values()].find((message) =>
+    message.author?.id === client.user.id && message.embeds.some((embed) => embed.title === PANEL_TITLE),
+  );
+  if (!panel) panel = await channel.send(buildCommandsPanelPayload());
+  else await panel.edit(buildCommandsPanelPayload());
 
   let thread = null;
   const active = await channel.threads.fetchActive();
-  thread = active.threads.find((item) => item.name === COMMANDS_THREAD_NAME) ?? null;
+  thread = active.threads.find((item) => item.name === COMMANDS_THREAD_NAME && item.parentId === channel.id) ?? null;
   if (!thread) {
     const archived = await channel.threads.fetchArchived({ type: "public", limit: 100 });
-    thread = archived.threads.find((item) => item.name === COMMANDS_THREAD_NAME) ?? null;
+    thread = archived.threads.find((item) => item.name === COMMANDS_THREAD_NAME && item.parentId === channel.id) ?? null;
     if (thread) await thread.setArchived(false, "Reopen the Kittisugar commands thread");
   }
   if (!thread) {
-    thread = await channel.threads.create({
+    if (panel.hasThread) {
+      thread = await channel.threads.fetch(panel.id).catch(() => null);
+    }
+    if (!thread) thread = await panel.startThread({
       name: COMMANDS_THREAD_NAME,
       autoArchiveDuration: 10080,
-      type: ChannelType.PublicThread,
-      reason: "Create the permanent Kittisugar commands thread",
+      reason: "Create the Kittisugar commands thread from its board embed",
     });
   }
-
-  const recent = await channel.messages.fetch({ limit: 100 });
-  const isPanel = (message) => message.author?.id === client.user.id &&
-    message.embeds.some((embed) => embed.title === PANEL_TITLE);
-  const panels = [...recent.values()].filter(isPanel).sort((a, b) => b.createdTimestamp - a.createdTimestamp);
-  const previous = panels[0] ?? null;
-  const activity = [...recent.values()].filter((message) => !isPanel(message))
-    .sort((a, b) => b.createdTimestamp - a.createdTimestamp)[0] ?? null;
-  let panel;
-  if (previous && (!activity || activity.createdTimestamp <= previous.createdTimestamp)) {
-    panel = await previous.edit(buildCommandsPanelPayload());
-    if (panel.pinned) await panel.unpin().catch((error) => console.error("[commands] could not unpin command board: " + error.message));
-  } else {
-    panel = await channel.send(buildCommandsPanelPayload());
-    if (previous) await previous.delete().catch(() => {});
-  }
-  console.info(`[commands] channel ready in #${channel.name}; thread #${thread.name}`);
-  return { channel, thread, panel };
+  await channel.permissionOverwrites.edit(guild.roles.everyone, {
+    ViewChannel: true, SendMessages: false, SendMessagesInThreads: true,
+    CreatePublicThreads: false, ReadMessageHistory: true,
+  }, "Keep the reputation and commands board read-only while allowing thread commands");
+  await channel.permissionOverwrites.edit(client.user.id, {
+    ViewChannel: true, SendMessages: true, EmbedLinks: true, ReadMessageHistory: true,
+    ManageMessages: true, ManageThreads: true, CreatePublicThreads: true, SendMessagesInThreads: true,
+  }, "Allow Sugar to maintain the commands board and its thread");
+  console.info(`[commands] board and thread ready in #${channel.name}`);
+  return { channel, panel, thread };
 }
 
 export function isCommandsThread(message) {
   const channel = message?.channel;
   if (!message?.guild || !channel?.isThread?.()) return false;
-
-  const threadName = normalize(channel.name);
-  const parentName = normalize(channel.parent?.name);
-  // Discord can deliver a thread before its parent is present in cache.
-  // The dedicated thread name is enough in that case; when the parent is
-  // available, require it to be the Kittisugar commands channel as well.
-  return threadName.includes("commands") &&
-    (!parentName || parentName.includes("commands"));
+  return normalize(channel.name).includes("commands") &&
+    normalize(channel.parent?.name) === "reputation";
 }
 
 export function attachCommandsChannel(client) {
-  const queues = new Map();
+  const setup = (guild) => ensureCommandsBoard(guild, client).catch((error) =>
+    console.error(`[commands] setup failed in ${guild.id}: ${error.message}`),
+  );
   client.once(Events.ClientReady, () => {
-    for (const guild of client.guilds.cache.values()) {
-      void ensureCommandsChannel(guild, client).catch((error) =>
-        console.error(`[commands] setup failed in ${guild.id}: ${error.message}`),
-      );
-    }
+    for (const guild of client.guilds.cache.values()) void setup(guild);
   });
-  client.on(Events.GuildCreate, (guild) => {
-    void ensureCommandsChannel(guild, client).catch((error) =>
-      console.error(`[commands] setup failed in ${guild.id}: ${error.message}`),
-    );
-  });
-  client.on(Events.MessageCreate, (message) => {
-    if (!message.guild || message.author?.id === client.user?.id || message.channel?.isThread?.()) return;
-    const state = queues.get(message.guild.id) ?? { running: Promise.resolve() };
-    state.running = state.running.then(async () => {
-      const channel = await client.channels.fetch(message.channelId).catch(() => null);
-      if (!channel || channel.type !== ChannelType.GuildText ||
-          normalize(channel.name).includes("commands") === false) return;
-      const recent = await channel.messages.fetch({ limit: 20 });
-      const previous = [...recent.values()].find((item) =>
-        item.author?.id === client.user.id && item.embeds.some((embed) => embed.title === PANEL_TITLE),
-      );
-      const next = await channel.send(buildCommandsPanelPayload());
-      if (previous) await previous.delete().catch(() => {});
-    }).catch((error) => console.error(`[commands] sticky panel failed: ${error.message}`));
-    queues.set(message.guild.id, state);
-  });
+  client.on(Events.GuildCreate, (guild) => void setup(guild));
 }
