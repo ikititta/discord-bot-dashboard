@@ -5,6 +5,40 @@ export const COMMANDS_THREAD_NAME = "💬 𝗰𝗼𝗺𝗺𝗮𝗻𝗱𝘀";
 const PANEL_TITLE = "୨୧ 𝓒𝓸𝓶𝓶𝓪𝓷𝓭𝓼 ♡";
 const COLOR = 0xffd9ff;
 
+export const COMMANDS_GUIDE_TITLE = "୨୧ 𝓡𝓮𝓹𝓾𝓽𝓪𝓽𝓲𝓸𝓷 Commands ♡";
+
+export function buildCommandsThreadGuidePayload() {
+  return {
+    embeds: [new EmbedBuilder()
+      .setColor(COLOR)
+      .setTitle(COMMANDS_GUIDE_TITLE)
+      .setDescription(
+        "**All reputation commands**\\n\\n" +
+        "`!rep` — check your own reputation score.\\n" +
+        "`!rep @member` — check another member's reputation score.\\n" +
+        "`!rep top` — see the top positive and negative reputation rankings.\\n" +
+        "`!rep comments @member` — read the latest reputation comments for a member.\\n\\n" +
+        "♡ Type these commands directly in this thread. They do not work in other channels."
+      )
+      .setFooter({ text: "Kittisugar · Reputation help ♡" })],
+  };
+}
+
+export async function refreshCommandsThreadSticky(thread, client) {
+  const recent = await thread.messages.fetch({ limit: 100 });
+  const oldGuides = [...recent.values()].filter((message) =>
+    message.author?.id === client.user.id &&
+    message.embeds.some((embed) => embed.title === COMMANDS_GUIDE_TITLE),
+  );
+  const freshGuide = await thread.send(buildCommandsThreadGuidePayload());
+  for (const old of oldGuides) {
+    await old.delete().catch((error) => {
+      if (error?.code !== 10008) console.error("[commands] old sticky guide could not be removed: " + error.message);
+    });
+  }
+  return freshGuide;
+}
+
 export function buildCommandsPanelPayload() {
   return {
     embeds: [new EmbedBuilder()
@@ -78,27 +112,7 @@ export async function ensureCommandsBoard(guild, client) {
       await thread.setArchived(false, "Reopen the Kittisugar commands thread");
     }
   }
-  const threadMessages = await thread.messages.fetch({ limit: 50 });
-  const guideTitle = "୨୧ 𝓡𝓮𝓹𝓾𝓽𝓪𝓽𝓲𝓸𝓷 Commands ♡";
-  const guidePayload = {
-    embeds: [new EmbedBuilder()
-      .setColor(COLOR)
-      .setTitle(guideTitle)
-      .setDescription(
-        "**All reputation commands**\n\n" +
-        "`!rep` — check your own reputation score.\n" +
-        "`!rep @member` — check another member's reputation score.\n" +
-        "`!rep top` — see the top positive and negative reputation rankings.\n" +
-        "`!rep comments @member` — read the latest reputation comments for a member.\n\n" +
-        "♡ Type these commands directly in this thread. They do not work in other channels."
-      )
-      .setFooter({ text: "Kittisugar · Reputation help ♡" })],
-  };
-  const guide = [...threadMessages.values()].find((message) =>
-    message.author?.id === client.user.id && message.embeds.some((embed) => embed.title === guideTitle),
-  );
-  if (guide) await guide.edit(guidePayload);
-  else await thread.send(guidePayload);
+  await refreshCommandsThreadSticky(thread, client);
 
   await channel.permissionOverwrites.edit(guild.roles.everyone, {
     ViewChannel: true, SendMessages: false, SendMessagesInThreads: true,
