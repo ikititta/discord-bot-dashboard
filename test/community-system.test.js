@@ -181,9 +181,9 @@ test("confession and love letter replies use public text channel names with thei
   );
   assert.throws(() => buildCommunityRepliesChannelName("poll", "001"), /Invalid/);
   const source = fs.readFileSync(new URL("../src/community-system.js", import.meta.url), "utf8");
-  assert.match(source, /guild\.channels\\.create\\(/);
-  assert.doesNotMatch(source, /channel\.threads\\.fetch\\(parent\\.id/);
-  assert.doesNotMatch(source, /parent\.startThread\\(/);
+  assert.ok(source.includes("guild.channels.create("));
+  assert.ok(!source.includes("channel.threads.fetch(parent.id"));
+  assert.ok(!source.includes("parent.startThread("));
 });
 
 test("community post reply picker offers anonymous and named thread replies", () => {
