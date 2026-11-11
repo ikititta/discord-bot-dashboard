@@ -56,31 +56,11 @@ function isVip(member) {
 }
 function buildPetEmbed() {
   return new EmbedBuilder().setColor(COLOR).setTitle("୨୧ 𝓥𝓲𝓻𝓽𝓾𝓪𝓵 𝓟𝓮𝓽𝓼 ♡")
-    .setDescription(
-      "Welcome to the Kittisugar pet corner! Adopt a little friend, look after them, and watch them grow.\n\n" +
-      "**Where to use commands**\n" +
-      "♡ First, press **Open Pet Room ♡** in the main pets panel. Sugar will open your personal pet channel.\n" +
-      "♡ Send all `!pet` commands inside your own private pet channel.\n" +
-      "♡ Everyone can adopt a pet and use the basic care commands. VIP unlocks extra rooms, outfits, rare pets, more pet slots, and minigames.\n\n" +
-      "**Everyone**\n" +
-      "`!pet adopt` — adopt your first pet. `!pet` — view its status.\n" +
-      "`!pet feed` — feed it. `!pet play` — play together. `!pet cuddle` — give it affection.\n" +
-      "`!pet shop` — view the shop. `!pet buy treat/toy` — buy an item.\n" +
-      "`!pet inventory` — view your items. `!pet rename <name>` — rename your pet.\n" +
-      "`!pet select <number>` — switch between your pets.\n\n" +
-      "**VIP extras**\n" +
-      "`!pet room` — unlock your VIP room. `!pet outfit <name>` — choose an outfit.\n" +
-      "`!pet rare` — unlock a rare look. `!pet slots` — add a pet slot.\n" +
-      "`!pet minigame` — play the daily minigame.\n\n" +
-      "Open your pet room and start chatting with your little companion ♡"
-    ).setFooter({ text: "Your pet's progress is saved ♡" });
+    .setDescription("Adopt a little companion, take care of them, and watch them grow ♡\n\n" +
+      "Create your private pet room to see the commands and care for your pet. " +
+      "Everyone can adopt a pet; VIP members get extra perks and exclusive features.")
+    .setFooter({ text: "Your pet progress is saved ♡" });
 }
-function buildPetCommandsEmbed() {
-  return new EmbedBuilder().setColor(COLOR).setTitle("୨୧ 𝓟𝓮𝓽 𝓡𝓸𝓸𝓶 · 𝓒𝓸𝓶𝓶𝓪𝓷𝓭𝓼 ♡")
-    .setDescription("**Everyone**\n`!pet adopt` · `!pet` · `!pet feed` · `!pet play` · `!pet cuddle`\n`!pet shop` · `!pet buy treat/toy` · `!pet inventory`\n`!pet rename <name>` · `!pet select <number>`\n\n**VIP extras**\n`!pet room` · `!pet outfit <name>` · `!pet rare` · `!pet slots` · `!pet minigame")
-    .setFooter({ text: "Use these commands in your private pet room ♡" });
-}
-
 function buildGlobalPetLeaderboard(store, guildId) {
   const entries = [];
   for (const [userId, profile] of Object.entries(store.data.guilds[guildId] ?? {})) {
