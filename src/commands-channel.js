@@ -17,13 +17,12 @@ export function buildCommandsPanelPayload() {
       .setTitle(PANEL_TITLE)
       .setDescription(
         "This is the Kittisugar command board ♡\n\n" +
-        "Use the **💬 𝗰𝗼𝗺𝗺𝗮𝗻𝗱𝘀** thread below for all bot commands. Please keep command messages inside that thread instead of sending them in the channel.\n\n" +
         "**Quick guide**\n" +
         "`!funhelp` — see the fun commands.\n" +
         "`!stats` — view your basic fun-command stats.\n" +
         "`!vip stats @member` — VIP stats for another member."
       )
-      .setFooter({ text: "Commands belong in the thread below ♡" })],
+      .setFooter({ text: "Kittisugar fun commands ♡" })],
   };
 }
 
