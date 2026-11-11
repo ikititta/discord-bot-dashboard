@@ -31,7 +31,7 @@ export function buildCommandsPanelPayload() {
 }
 
 function normalize(value) {
-  return String(value ?? "").normalize("NFKD").toLowerCase().replace(/\\p{M}/gu, "").replace(/[^a-z0-9]/g, "");
+  return String(value ?? "").normalize("NFKD").toLowerCase().replace(/\p{M}/gu, "").replace(/[^a-z0-9]/g, "");
 }
 
 async function ensureCommandsChannel(guild, client) {
