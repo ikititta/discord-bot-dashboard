@@ -164,7 +164,8 @@ export function createBot({
   attachAccessSystem(client, { settings });
   attachForumVisibilitySystem(client);
   attachFunCommands(client, { store: funCommands, token, applicationId });
-  if (reputationStore) attachReputationSystem(client, reputationStore);\n  if (petStore) attachPetSystem(client, petStore);
+  if (reputationStore) attachReputationSystem(client, reputationStore);
+  if (petStore) attachPetSystem(client, petStore);
   attachRetiredRoleCommandCleanup(client, { token, applicationId });
   if (autoModeration) attachModerationSystem(client, { settings, store: autoModeration });
 
