@@ -96,24 +96,18 @@ function vip(member) { return member?.roles?.cache?.has(VIP_ROLE_ID) === true; }
 function member(memberObj) { return memberObj?.roles?.cache?.has(MEMBER_ROLE_ID) === true; }
 function makePanelPayload() {
   const embed = new EmbedBuilder().setColor(COLOR).setTitle("୨୧ 𝓡𝓮𝓹𝓾𝓽𝓪𝓽𝓲𝓸𝓷 ♡")
-    .setDescription("Leave a kind, genuine comment about another member and help celebrate the people who make Kittisugar special.\n\n" +
+    .setDescription("Give another member a positive or negative reputation vote.\n\n" +
       "**How it works**\n" +
-      "♡ Press **Leave a Comment** and choose a member.\n" +
-      "♡ Read and accept the warning before writing.\n" +
-      "♡ Members publish with their name. VIP may choose named or anonymous.\n" +
-      "♡ Positive and negative votes change the score; each person has one current vote per member and may update it.\n" +
-      "♡ Written comments add +1 reputation and are limited to one per author/member pair every 24 hours.\n" +
-      "♡ Be respectful. Harassment, fake reviews, threats, private information, and spam are not allowed. Staff may review anonymous submissions.\n\n" +
+      "♡ Choose **Give Positive** or **Give Negative**, then select a member.\n" +
+      "♡ Each member has one active vote per person and may change it later.\n" +
+      "♡ Vote honestly and respectfully. Harassment, threats, private information, and vote manipulation are not allowed.\n\n" +
       "**Commands**\n" +
       "`!rep` — your reputation.\n`!rep @member` — view a member.\n`!rep top` — show the ranking.\n`!rep comments @member` — read their comments.")
     .setFooter({ text: "Kindness looks good on everyone ♡" });
   return { embeds: [embed], components: [
     new ActionRowBuilder().addComponents(
-      new ButtonBuilder().setCustomId(PREFIX + "vote-positive").setLabel("Dar positiva").setStyle(ButtonStyle.Success),
-      new ButtonBuilder().setCustomId(PREFIX + "vote-negative").setLabel("Dar negativa").setStyle(ButtonStyle.Danger),
-    ),
-    new ActionRowBuilder().addComponents(
-      new ButtonBuilder().setCustomId(PREFIX + "start").setLabel("Leave a Comment ♡").setStyle(ButtonStyle.Primary),
+      new ButtonBuilder().setCustomId(PREFIX + "vote-positive").setLabel("Give Positive").setStyle(ButtonStyle.Success),
+      new ButtonBuilder().setCustomId(PREFIX + "vote-negative").setLabel("Give Negative").setStyle(ButtonStyle.Danger),
     ),
   ] };
 }
@@ -128,15 +122,41 @@ function buildTopEmbed(store, guild) {
 async function upsert(channel, client, title, payload) {
   const recent = await channel.messages.fetch({ limit: 50 });
   const old = recent.find((m) => m.author.id === client.user.id && m.embeds.some((e) => e.title === title));
-  const message = old ? await old.edit(payload) : await channel.send(payload);
-  await message.pin().catch((error) => console.error("[reputation] could not pin sticky panel: " + error.message));
-  return message;
+  return old ? old.edit(payload) : channel.send(payload);
 }
 async function ensureTextChannel(guild, name) {
   let channel = guild.channels.cache.find((c) => c.type === ChannelType.GuildText && c.name === name);
   if (channel) return channel;
   return guild.channels.create({ name, type: ChannelType.GuildText, reason: "Create Kittisugar community channel" });
 }
+const TOP_TITLE = "୨୧ 𝓣𝓸𝓹 𝓡𝓮𝓹𝓾𝓽𝓪𝓽𝓲𝓸𝓷 ♡";
+const PANEL_TITLE = "୨୧ 𝓡𝓮𝓹𝓾𝓽𝓪𝓽𝓲𝓸𝓷 ♡";
+
+async function ensureStickyReputationPanels(channel, client, store, guild) {
+  const recent = await channel.messages.fetch({ limit: 100 });
+  const isPanel = (message) => message.author?.id === client.user.id &&
+    message.embeds.some((embed) => [TOP_TITLE, PANEL_TITLE].includes(embed.title));
+  const previous = [...recent.values()].filter(isPanel);
+  const byTitle = new Map(previous.map((message) => [message.embeds[0]?.title, message]));
+  const earliestPanel = previous.length ? Math.min(...previous.map((message) => message.createdTimestamp)) : 0;
+  const hasActivityAfterPanel = [...recent.values()].some((message) =>
+    !isPanel(message) && message.createdTimestamp > earliestPanel,
+  );
+  const payloads = [[TOP_TITLE, buildTopEmbed(store, guild)], [PANEL_TITLE, makePanelPayload()]];
+  if (previous.length === 2 && !hasActivityAfterPanel) {
+    for (const [title, payload] of payloads) {
+      const existing = byTitle.get(title);
+      if (existing) await existing.edit(payload);
+    }
+    return;
+  }
+  const replacements = [];
+  for (const [, payload] of payloads) replacements.push(await channel.send(payload));
+  for (const old of previous) await old.delete().catch((error) => {
+    if (error?.code !== 10008) console.error("[reputation] old sticky panel could not be deleted: " + error.message);
+  });
+}
+
 async function setup(guild, client, store) {
   const welcomes = await ensureTextChannel(guild, "welcomes");
   const reputation = await ensureTextChannel(guild, "reputation");
@@ -147,8 +167,7 @@ async function setup(guild, client, store) {
       ViewChannel: true, SendMessages: true, EmbedLinks: true, ReadMessageHistory: true, ManageMessages: true,
     }, "Allow Sugar to maintain welcome and reputation panels");
   }
-  await upsert(reputation, client, "୨୧ 𝓣𝓸𝓹 𝓡𝓮𝓹𝓾𝓽𝓪𝓽𝓲𝓸𝓷 ♡", buildTopEmbed(store, guild));
-  await upsert(reputation, client, "୨୧ 𝓡𝓮𝓹𝓾𝓽𝓪𝓽𝓲𝓸𝓷 ♡", makePanelPayload());
+  await ensureStickyReputationPanels(reputation, client, store, guild);
   return { welcomes, reputation };
 }
 function warningPayload(targetId) {
@@ -184,6 +203,21 @@ export function attachReputationSystem(client, store) {
     }
   });
   client.on(Events.GuildCreate, (guild) => { void setup(guild, client, store).catch((e) => console.error("[reputation] setup failed: " + e.message)); });
+  const stickyQueues = new Map();
+  client.on(Events.MessageCreate, (message) => {
+    if (!message.guild || message.channel?.isThread?.() || message.channel?.name !== "reputation") return;
+    const state = stickyQueues.get(message.guild.id) ?? { running: Promise.resolve() };
+    state.running = state.running.then(async () => {
+      const channel = await client.channels.fetch(message.channelId).catch(() => null);
+      if (!channel || channel.type !== ChannelType.GuildText) return;
+      const isPanel = message.author?.id === client.user.id &&
+        message.embeds.some((embed) => [TOP_TITLE, PANEL_TITLE].includes(embed.title));
+      if (isPanel) return;
+      const guild = await client.guilds.fetch(message.guild.id);
+      await ensureStickyReputationPanels(channel, client, store, guild);
+    }).catch((error) => console.error("[reputation] sticky panels failed: " + error.message));
+    stickyQueues.set(message.guild.id, state);
+  });
   client.on(Events.GuildMemberAdd, async (newMember) => {
     try {
       const channel = newMember.guild.channels.cache.find((c) => c.type === ChannelType.GuildText && c.name === "welcomes")
