@@ -177,7 +177,6 @@ async function handleFunAction(message, store, name, args, fetchImpl) {
 
   let targetMember = null;
   let targetUser = null;
-  let targetRole = null;
   if (definition.needsTarget) {
     targetUser = message.mentions.users.first();
     if (!targetUser) {
@@ -193,20 +192,16 @@ async function handleFunAction(message, store, name, args, fetchImpl) {
       await safeReply(message, { content: "That member must complete Kittisugar's 18+ verification first." });
       return true;
     }
-    targetRole = normalizeFunRole(targetMember);
   } else if (message.mentions.users.size) {
     await safeReply(message, { content: `!${name} is a solo command and doesn't need a mention.` });
     return true;
   }
 
-  const actorRole = normalizeFunRole(message.member);
   store.record({
     guildId: message.guild.id,
     actorId: message.author.id,
     targetId: targetUser?.id ?? null,
     command: name,
-    actorRole,
-    targetRole,
   });
 
   const actionText = definition.needsTarget
