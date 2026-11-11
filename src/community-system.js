@@ -50,7 +50,7 @@ function communityThreadReplyButton(kind, messageId) {
 }
 
 export function buildCommunityThreadReplyComponents(kind, messageId) {
-  if (!validReplyKind(kind) || !/^\d{17,20}$/.test(messageId ?? "")) {
+  if (!validReplyKind(kind) || !/^(?:0|\d{17,20})$/.test(messageId ?? "")) {
     throw new Error("Invalid thread reply target.");
   }
   return [new ActionRowBuilder().addComponents(
