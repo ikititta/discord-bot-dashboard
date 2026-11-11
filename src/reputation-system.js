@@ -94,7 +94,7 @@ export class ReputationStore {
 
 function vip(member) { return member?.roles?.cache?.has(VIP_ROLE_ID) === true; }
 function member(memberObj) { return memberObj?.roles?.cache?.has(MEMBER_ROLE_ID) === true; }
-function makePanelPayload() {
+export function makePanelPayload() {
   const embed = new EmbedBuilder().setColor(COLOR).setTitle("୨୧ 𝓡𝓮𝓹𝓾𝓽𝓪𝓽𝓲𝓸𝓷 ♡")
     .setDescription("Give another member a positive or negative reputation vote.\n\n" +
       "**How it works**\n" +
