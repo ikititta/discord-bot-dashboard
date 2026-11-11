@@ -91,11 +91,13 @@ function buildGlobalPetLeaderboard(store, guildId) {
     .setDescription(lines.length ? lines.join("\n") : "No pets have been adopted yet. Be the first to join the top ♡")
     .setFooter({ text: "Sugar AI · Global pet leaderboard" });
 }
-function panelPayload(store, guildId) {
-  return { embeds: [buildPetEmbed(), buildGlobalPetLeaderboard(store, guildId)], components: [new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId(BUTTON_ID).setLabel("Open Pet Room ♡").setStyle(ButtonStyle.Primary),
+function panelPayload() {
+  return { embeds: [buildPetEmbed()], components: [new ActionRowBuilder().addComponents(
+    new ButtonBuilder().setCustomId(BUTTON_ID).setLabel("Create your pet room ♡").setStyle(ButtonStyle.Primary),
+    new ButtonBuilder().setCustomId("sugar-pets:global-top").setLabel("Global top ♡").setStyle(ButtonStyle.Success),
   )] };
 }
+
 async function ensurePetsChannel(guild, client, store) {
   let channel = guild.channels.cache.find((item) =>
     item.type === ChannelType.GuildText && item.name === CHANNEL_NAME,
@@ -121,8 +123,8 @@ async function ensurePetsChannel(guild, client, store) {
   const recent = await channel.messages.fetch({ limit: 50 });
   const old = recent.find((message) => message.author?.id === client.user.id &&
     message.embeds.some((embed) => embed.title === "୨୧ 𝓥𝓲𝓻𝓽𝓾𝓪𝓵 𝓟𝓮𝓽𝓼 ♡"));
-  if (old) await old.edit(panelPayload(store, guild.id));
-  else await channel.send(panelPayload(store, guild.id));
+  if (old) await old.edit(panelPayload());
+  else await channel.send(panelPayload());
   return channel;
 }
 function makePet() {
@@ -147,7 +149,7 @@ async function refreshPetsPanel(guild, store, client) {
   const recent = await channel.messages.fetch({ limit: 50 });
   const panel = recent.find((message) => message.author?.id === client.user.id &&
     message.embeds.some((embed) => embed.title === "୨୧ 𝓥𝓲𝓻𝓽𝓾𝓪𝓵 𝓟𝓮𝓽𝓼 ♡"));
-  if (panel) await panel.edit(panelPayload(store, guild.id));
+  if (panel) await panel.edit(panelPayload());
 }
 async function runPetCommand(message, store, client) {
   const match = /^!pet(?:\s+([a-z]+)(?:\s+([\s\S]+))?)?$/i.exec(message.content.trim());
