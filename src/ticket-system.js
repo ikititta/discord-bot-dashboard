@@ -14,6 +14,7 @@ import {
 } from "discord.js";
 
 import { formatEmbedTitle } from "./embed-format.js";
+import { startRoleOnboarding } from "./role-onboarding.js";
 
 export const TICKET_PANEL_CHANNEL_ID = "1568492748732895313";
 export const SUGGESTIONS_CHANNEL_ID = "1569164719309328455";
@@ -73,6 +74,12 @@ export function buildTicketPanelPayload() {
       .setCustomId(`${PREFIX}category:${value}`)
       .setLabel(`${label} ♡`)
       .setStyle(TICKET_BUTTON_STYLES.get(value)),
+  );
+  buttons.push(
+    new ButtonBuilder()
+      .setCustomId(`${PREFIX}get-verified`)
+      .setLabel("Get Verified ♡")
+      .setStyle(ButtonStyle.Success),
   );
   const rows = [
     new ActionRowBuilder().addComponents(...buttons.slice(0, 5)),
@@ -184,6 +191,12 @@ export async function ensureTicketPanel(client, panelChannelId = TICKET_PANEL_CH
 
 async function handleTicketButton(interaction, { client, settings, panelChannelId }) {
   const action = interaction.customId.slice(PREFIX.length);
+  if (action === "get-verified") {
+    if (!interaction.inGuild() || interaction.channelId !== panelChannelId) {
+      return replyEphemeral(interaction, `Use Get Verified in <#${panelChannelId}>.`);
+    }
+    return startRoleOnboarding(interaction);
+  }
   if (action.startsWith("category:")) {
     return handleTicketCategory(interaction, panelChannelId, action.slice("category:".length));
   }

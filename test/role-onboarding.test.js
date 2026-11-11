@@ -8,6 +8,8 @@ import {
   SEXUALITY_OPTIONS,
   buildSelfRolesPanelPayload,
   roleNameForSelection,
+  findNsfwHiddenRole,
+  NSFW_HIDDEN_ROLE_ID,
 } from "../src/role-onboarding.js";
 
 test("self-role categories use the agreed gender and sexuality options", () => {
@@ -61,4 +63,12 @@ test("self-roles panel separates every category into its own message and selecto
   assert.ok(payloads.every((payload) => payload.embeds.length === 1 && payload.components.length === 1));
   assert.match(payloads[3].embeds[0].data.description, /basic colors/);
   assert.equal(payloads[3].components[0].components[0].options.length, COLOR_OPTIONS.length);
+});
+
+test("NSFW visibility uses the explicitly configured Hide NSFW Channels role ID", () => {
+  const role = { id: NSFW_HIDDEN_ROLE_ID, name: "Hide NSFW Channels" };
+  const guild = { roles: { cache: new Map([[role.id, role]]) } };
+  assert.equal(NSFW_HIDDEN_ROLE_ID, "1569885841180856361");
+  assert.equal(findNsfwHiddenRole(guild), role);
+  assert.equal(findNsfwHiddenRole({ roles: { cache: new Map() } }), null);
 });
