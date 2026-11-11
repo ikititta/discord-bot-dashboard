@@ -192,12 +192,32 @@ export function buildGuidePayload(guild) {
       "`!vip stats` — VIP members can view full statistics.\n" +
       "`!vip stats @member` — VIP members can view another member's statistics.\n" +
       `## ୨୧ ${guideSectionTitle("Sugar AI")}\n\n` +
-      "Mention Sugar or address the bot directly to start a conversation ♡"
+      "Mention Sugar or address the bot directly to start a conversation ♡" + buildServerMap(guild)
     )
     .setFooter({ text: "This guide is also pinned in dashboard and will always be available there ♡" });
   return { embeds: [embed] };
 }
 
+function buildServerMap(guild) {
+  if (!guild?.channels?.cache) return "";
+  const categories = [...guild.channels.cache.values()].filter((channel) => channel.type === ChannelType.GuildCategory).sort((a, b) => a.rawPosition - b.rawPosition);
+  const sections = categories.map((category) => {
+    const children = [...guild.channels.cache.values()].filter((channel) => channel.parentId === category.id && !channel.isThread?.()).sort((a, b) => a.rawPosition - b.rawPosition);
+    if (!children.length) return null;
+    return `**${category.name}**\n${children.slice(0, 14).map((channel) => `<#${channel.id}>`).join(" · ")}`;
+  }).filter(Boolean);
+  const uncategorized = [...guild.channels.cache.values()].filter((channel) => !channel.parentId && channel.type !== ChannelType.GuildCategory && !channel.isThread?.()).sort((a, b) => a.rawPosition - b.rawPosition);
+  if (uncategorized.length) sections.push(`**Other channels**\n${uncategorized.slice(0, 12).map((channel) => `<#${channel.id}>`).join(" · ")}`);
+  const map = sections.join("\n");
+  return map ? `\n\n## ୨୧ ${guideSectionTitle("Channels & Categories")}\n\n${map}`.slice(0, 1350) : "";
+}
+
+async function refreshDashboardGuide(client, guild) {
+  const dashboard = guild.channels.cache.find((channel) => channel.type === ChannelType.GuildText && normalizeName(channel.name) === "dashboard");
+  if (!dashboard) return;
+  const guide = await upsertPanel(dashboard, client, "୨୧ Kittisugar Guide ♡", buildGuidePayload(guild));
+  await guide.pin().catch(() => {});
+}
 async function upsertPanel(channel, client, title, payload) {
   const recent = await channel.messages.fetch({ limit: 50 });
   const existing = recent.find((message) =>
@@ -352,6 +372,14 @@ export function attachAccessSystem(client) {
     void applyNewRoleVisibility(channel.guild, newRole).catch((error) => {
       console.error(`[access] could not enforce New-role channel visibility in guild ${channel.guild.id}: ${error.message}`);
     });
+  });  client.on(Events.ChannelCreate, (channel) => {
+    if (channel.guild) void refreshDashboardGuide(client, channel.guild).catch((error) => console.error(`[access] guide refresh failed: ${error.message}`));
+  });
+  client.on(Events.ChannelUpdate, (_before, channel) => {
+    if (channel.guild) void refreshDashboardGuide(client, channel.guild).catch((error) => console.error(`[access] guide refresh failed: ${error.message}`));
+  });
+  client.on(Events.ChannelDelete, (channel) => {
+    if (channel.guild) void refreshDashboardGuide(client, channel.guild).catch((error) => console.error(`[access] guide refresh failed: ${error.message}`));
   });
 
   client.on(Events.InteractionCreate, (interaction) => {
