@@ -48,7 +48,7 @@ test("fun action messages mention the actor and target with clear past-tense wor
 test("fun help explains command types, stats, and VIP access", () => {
   const embed = buildFunHelpEmbed();
   assert.match(embed.data.title, /Fun Commands Guide/);
-  const fields = embed.data.fields.map((field) => field.value).join("\\n");
+  const fields = embed.data.fields.map((field) => field.name + " " + field.value).join("\\n");
   assert.match(fields, /!stats/);
   assert.match(fields, /!vip stats @member/);
   assert.match(fields, /Two-person commands/);
