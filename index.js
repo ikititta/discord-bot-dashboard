@@ -15,6 +15,7 @@ import { CommunityStore } from "./src/community-store.js";
 import { SuggestionStore } from "./src/suggestion-store.js";
 import { StickyPanelStore } from "./src/sticky-panel-store.js";
 import { FunCommandStore } from "./src/fun-command-store.js";
+import { ReputationStore } from "./src/reputation-system.js";
 import { createWeb } from "./src/web.js";
 
 const STARTED_AT = new Date().toISOString();
@@ -58,6 +59,7 @@ let communityStore;
 let suggestionStore;
 let stickyPanels;
 let funCommands;
+let reputationStore;
 try {
   dataDir = resolveDataDir();
   settings = new SettingsStore(dataDir, { allowMissing: process.env.NODE_ENV === "development" });
@@ -69,6 +71,7 @@ try {
   suggestionStore = new SuggestionStore(dataDir);
   stickyPanels = new StickyPanelStore(dataDir);
   funCommands = new FunCommandStore(dataDir);
+  reputationStore = new ReputationStore(dataDir);
 } catch (error) {
   fatal(error instanceof Error ? error.message : "Storage initialization failed.", "storage");
 }
