@@ -70,3 +70,18 @@ test("reputation rejects self-reviews and invalid comment text", () => {
     fs.rmSync(directory, { recursive: true, force: true });
   }
 });
+
+test("reputation votes can be positive or negative and one member can update their vote", () => {
+  const directory = temporaryDirectory();
+  try {
+    const store = new ReputationStore(directory);
+    assert.equal(store.vote({ guildId, authorId, targetId, value: 1 }), 1);
+    assert.equal(store.getScore(guildId, targetId), 1);
+    assert.equal(store.vote({ guildId, authorId, targetId, value: -1 }), -1);
+    assert.equal(store.getScore(guildId, targetId), -1);
+    assert.deepEqual(store.getTop(guildId), [{ userId: targetId, reputation: -1 }]);
+    assert.throws(() => store.vote({ guildId, authorId, targetId: authorId, value: 1 }), /Invalid reputation vote/);
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true });
+  }
+});
