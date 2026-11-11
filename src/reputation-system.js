@@ -96,8 +96,9 @@ function buildTopEmbed(store, guild) {
 async function upsert(channel, client, title, payload) {
   const recent = await channel.messages.fetch({ limit: 50 });
   const old = recent.find((m) => m.author.id === client.user.id && m.embeds.some((e) => e.title === title));
-  if (old) return old.edit(payload);
-  return channel.send(payload);
+  const message = old ? await old.edit(payload) : await channel.send(payload);
+  await message.pin().catch((error) => console.error("[reputation] could not pin sticky panel: " + error.message));
+  return message;
 }
 async function ensureTextChannel(guild, name) {
   let channel = guild.channels.cache.find((c) => c.type === ChannelType.GuildText && c.name === name);
@@ -148,8 +149,9 @@ export function attachReputationSystem(client, store) {
     try {
       const channel = newMember.guild.channels.cache.find((c) => c.type === ChannelType.GuildText && c.name === "welcomes")
         ?? await ensureTextChannel(newMember.guild, "welcomes");
+      const guideChannel = newMember.guild.channels.cache.find((c) => c.type === ChannelType.GuildText && /guide/i.test(c.name));
       const embed = new EmbedBuilder().setColor(COLOR).setTitle("୨୧ 𝓦𝓮𝓵𝓬𝓸𝓶𝓮 𝓽𝓸 𝓚𝓲𝓽𝓽𝓲𝓼𝓾𝓰𝓪𝓻 ♡")
-        .setDescription(`Welcome, <@${newMember.id}>! We're so happy you're here.\n\nTake a little moment to read the <#1569548036055507055> and visit **Guide** to find your way around. We hope Kittisugar feels like a sweet place to call home. ♡\n\nYou're member **#${newMember.guild.memberCount}**.`)
+        .setDescription(`Welcome, <@${newMember.id}>! We're so happy you're here.\n\nTake a little moment to read the rules and visit ${guideChannel ? `<#${guideChannel.id}>` : "**Guide**"} to find your way around. We hope Kittisugar feels like a sweet place to call home. ♡\n\nYou're member **#${newMember.guild.memberCount}**.`)
         .setThumbnail(newMember.user.displayAvatarURL({ size: 256 })).setFooter({ text: "Make yourself at home ♡" }).setTimestamp();
       await channel.send({ embeds: [embed], allowedMentions: { users: [newMember.id] } });
     } catch (error) { console.error("[welcome] could not send welcome card: " + error.message); }
@@ -162,7 +164,10 @@ export function attachReputationSystem(client, store) {
         if (!interaction.inGuild()) return ephemeral(interaction, "This only works inside Kittisugar.");
         if (action === "start") {
           if (!member(interaction.member)) return ephemeral(interaction, "Complete Kittisugar verification first to use reputation.");
-          return interaction.reply({ content: "Who would you like to leave a comment for? Mention them with `!rep @member` first, then press the panel again.", ephemeral: true });
+          const picker = new UserSelectMenuBuilder().setCustomId(PREFIX + "target").setPlaceholder("Choose a member...")
+            .setMinValues(1).setMaxValues(1);
+          return interaction.reply({ content: "Who would you like to leave a comment for?", ephemeral: true,
+            components: [new ActionRowBuilder().addComponents(picker)] });
         }
         if (action === "cancel") return interaction.update({ content: "No comment was published.", components: [] });
         if (action === "accept") {
