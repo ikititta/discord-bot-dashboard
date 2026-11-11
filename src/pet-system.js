@@ -235,7 +235,7 @@ async function runPetCommand(message, store, client) {
     if (artPath && fs.existsSync(artPath)) {
       return message.reply({ content: status(pet), files: [artPath], allowedMentions: { repliedUser: false } });
     }
-    return reply(status(pet) + (pet.visualIdentity?.artStatus === "generating" ? "\\n♡ Your unique artwork is being created..." : ""));
+    return reply(status(pet) + (pet.visualIdentity?.artStatus === "generating" ? "\n♡ Your unique artwork is being created..." : ""));
   }
 
   if (action === "feed") {
