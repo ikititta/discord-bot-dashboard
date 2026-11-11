@@ -91,19 +91,14 @@ function panelPayload() {
 }
 
 async function ensurePetsChannel(guild, client, store) {
-  let channel = guild.channels.cache.find((item) =>
+  // This is an existing server-managed channel. Never recreate it if it is
+  // moved or renamed; only maintain the panel when the configured channel exists.
+  const channel = guild.channels.cache.find((item) =>
     item.type === ChannelType.GuildText && item.name === CHANNEL_NAME,
   );
   if (!channel) {
-    const general = guild.channels.cache.find((item) =>
-      item.type === ChannelType.GuildText && /general/i.test(item.name),
-    );
-    channel = await guild.channels.create({
-      name: CHANNEL_NAME,
-      type: ChannelType.GuildText,
-      ...(general?.parentId ? { parent: general.parentId } : {}),
-      reason: "Create the Kittisugar virtual pets channel",
-    });
+    console.warn(`[pets] existing pets channel was not found in guild ${guild.id}; no channel was created.`);
+    return null;
   }
   await channel.permissionOverwrites.edit(guild.roles.everyone, {
     ViewChannel: true, SendMessages: false, AddReactions: false, CreatePublicThreads: false, SendMessagesInThreads: false, ReadMessageHistory: true,
