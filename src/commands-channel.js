@@ -26,17 +26,11 @@ export function buildCommandsThreadGuidePayload() {
 
 export async function refreshCommandsThreadSticky(thread, client) {
   const recent = await thread.messages.fetch({ limit: 100 });
-  const oldGuides = [...recent.values()].filter((message) =>
-    message.author?.id === client.user.id &&
-    message.embeds.some((embed) => embed.title === COMMANDS_GUIDE_TITLE),
-  );
-  const freshGuide = await thread.send(buildCommandsThreadGuidePayload());
-  for (const old of oldGuides) {
-    await old.delete().catch((error) => {
-      if (error?.code !== 10008) console.error("[commands] old sticky guide could not be removed: " + error.message);
-    });
-  }
-  return freshGuide;
+  const matches = [...recent.values()].filter((message) => message.author?.id === client.user.id && message.embeds.some((embed) => embed.title === COMMANDS_GUIDE_TITLE)).sort((a, b) => a.createdTimestamp - b.createdTimestamp);
+  const existing = matches.shift();
+  const result = existing ? await existing.edit(buildCommandsThreadGuidePayload()) : await thread.send(buildCommandsThreadGuidePayload());
+  for (const duplicate of matches) await duplicate.delete().catch((error) => { if (error?.code !== 10008) console.error("[commands] duplicate guide could not be removed: " + error.message); });
+  return result;
 }
 
 export function buildCommandsPanelPayload() {
