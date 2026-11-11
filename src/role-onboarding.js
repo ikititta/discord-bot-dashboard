@@ -379,17 +379,12 @@ export async function ensureSelfRolesChannel(guild, client) {
     return null;
   }
 
-  let channel = guild.channels.cache.find((item) =>
+  const channel = guild.channels.cache.find((item) =>
     item.type === ChannelType.GuildText && normalizeRoleName(item.name) === "selfroles",
   );
   if (!channel) {
-    channel = await guild.channels.create({
-      name: SELF_ROLES_CHANNEL_NAME,
-      type: ChannelType.GuildText,
-      reason: "Create the Kittisugar self-roles panel",
-    });
-  } else if (channel.name !== SELF_ROLES_CHANNEL_NAME) {
-    await channel.setName(SELF_ROLES_CHANNEL_NAME, "Apply Kittisugar self-roles channel naming style");
+    console.warn(`[self-roles] existing self-roles channel was not found in guild ${guild.id}; no channel was created.`);
+    return null;
   }
 
   await channel.permissionOverwrites.edit(guild.roles.everyone, {
