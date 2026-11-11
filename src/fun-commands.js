@@ -279,7 +279,7 @@ async function handleFunAction(message, store, name, args, fetchImpl) {
   try { gif = await fetchAnimeGif(definition.gif, { fetchImpl, actorRole: normalizeFunRole(message.member), targetRole }); }
   catch (error) { console.warn(`[fun] GIF lookup failed for !${name}: ${error.message}`); }
 
-  const embed = new EmbedBuilder().setColor(COLOR).setDescription(actionText);
+  const embed = new EmbedBuilder().setColor(COLOR);
   if (gif) {
     embed.setImage(gif.url);
     if (gif.anime) embed.setFooter({ text: `Anime: ${gif.anime} · ${gif.source}` });
