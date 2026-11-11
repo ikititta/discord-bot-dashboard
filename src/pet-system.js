@@ -97,12 +97,12 @@ function makePet() {
   return {
     name: "Mochi", species: PETS[Math.floor(Math.random() * PETS.length)],
     level: 1, xp: 0, hunger: 70, happiness: 70, coins: 100,
-    inventory: [], room: "cozy room", outfit: "default", slots: 1,
+    inventory: [], room: "cozy room", outfit: "default", slots: 1, additionalPets: [], activePetIndex: 0,
     lastMinigame: null,
   };
 }
 function status(pet) {
-  return `**${pet.name}** the ${pet.species} · Level ${pet.level}\n♡ Hunger: ${pet.hunger}/100 · Happiness: ${pet.happiness}/100\n♡ Coins: ${pet.coins} · XP: ${pet.xp}`;
+  return `**${pet.name}** the ${pet.species} · Level ${pet.level}\n♡ Hunger: ${pet.hunger}/100 · Happiness: ${pet.happiness}/100\n♡ Coins: ${pet.coins} · XP: ${pet.xp}\\n♡ Room: ${pet.room} · Outfit: ${pet.outfit}`;
 }
 async function runPetCommand(message, store) {
   const match = /^!pet(?:\s+([a-z]+)(?:\s+([\s\S]+))?)?$/i.exec(message.content.trim());
@@ -121,6 +121,15 @@ async function runPetCommand(message, store) {
     return reply(`You adopted **${pet.name}** the ${pet.species}! Welcome home ♡\n${status(pet)}`);
   }
   if (!pet) return reply("You don't have a pet yet. Use `!pet adopt` to meet your new friend ♡");
+  if (action === "select") {
+    const index = Number(argument);
+    const count = 1 + (profile.additionalPets?.length ?? 0);
+    if (!Number.isInteger(index) || index < 1 || index > count) return reply(`Choose a pet number from 1 to ${count} ♡`);
+    profile.activePetIndex = index - 1;
+    store.save(guildId, userId, profile);
+    pet = index === 1 ? profile : profile.additionalPets[index - 2];
+    return reply("Now caring for " + pet.name + " ♡\\n" + status(pet));
+  }
   if (action === "view" || action === "status") return reply(status(pet));
 
   if (action === "feed") {
