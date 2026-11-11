@@ -14,6 +14,7 @@ import { AutoModerationStore } from "./src/moderation-system.js";
 import { CommunityStore } from "./src/community-store.js";
 import { SuggestionStore } from "./src/suggestion-store.js";
 import { StickyPanelStore } from "./src/sticky-panel-store.js";
+import { FunCommandStore } from "./src/fun-command-store.js";
 import { createWeb } from "./src/web.js";
 
 const STARTED_AT = new Date().toISOString();
@@ -56,6 +57,7 @@ let autoModeration;
 let communityStore;
 let suggestionStore;
 let stickyPanels;
+let funCommands;
 try {
   dataDir = resolveDataDir();
   settings = new SettingsStore(dataDir, { allowMissing: process.env.NODE_ENV === "development" });
@@ -66,6 +68,7 @@ try {
   communityStore = new CommunityStore(dataDir);
   suggestionStore = new SuggestionStore(dataDir);
   stickyPanels = new StickyPanelStore(dataDir);
+  funCommands = new FunCommandStore(dataDir);
 } catch (error) {
   fatal(error instanceof Error ? error.message : "Storage initialization failed.", "storage");
 }
@@ -88,6 +91,7 @@ const client = createBot({
   communityStore,
   suggestionStore,
   stickyPanels,
+  funCommands,
 });
 
 const { app, redirectUri } = createWeb({
