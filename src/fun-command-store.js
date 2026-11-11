@@ -74,6 +74,26 @@ export class FunCommandStore {
     return this.data.guilds[guildId]?.nsfwAutoAccept?.[userId] === true;
   }
 
+  setInteractionConsent(guildId, actorId, targetId, command) {
+    if (!/^\\d{17,20}$/.test(guildId ?? "") || !/^\\d{17,20}$/.test(actorId ?? "") ||
+        !/^\\d{17,20}$/.test(targetId ?? "") || actorId === targetId ||
+        !["kiss", "fuck"].includes(command)) throw new Error("Invalid interaction consent.");
+    const guild = this.#guild(guildId);
+    guild.interactionConsents ??= {};
+    const key = actorId + ":" + targetId + ":" + command;
+    guild.interactionConsents[key] = new Date().toISOString();
+    const entries = Object.entries(guild.interactionConsents).sort((a, b) => a[1].localeCompare(b[1]));
+    for (const [oldKey] of entries.slice(0, Math.max(0, entries.length - 5000))) delete guild.interactionConsents[oldKey];
+    this.#write();
+    return true;
+  }
+
+  hasInteractionConsent(guildId, actorId, targetId, command) {
+    if (!["kiss", "fuck"].includes(command)) return false;
+    const key = actorId + ":" + targetId + ":" + command;
+    return typeof this.data.guilds[guildId]?.interactionConsents?.[key] === "string";
+  }
+
   createRelationshipProposal({ guildId, proposerId, targetId, type }) {
     if (!/^\d{17,20}$/.test(guildId ?? "") || !/^\d{17,20}$/.test(proposerId ?? "") ||
         !/^\d{17,20}$/.test(targetId ?? "") || proposerId === targetId ||
@@ -136,7 +156,7 @@ export class FunCommandStore {
 
   #guild(guildId) {
     if (!/^\d{17,20}$/.test(guildId ?? "")) throw new Error("Invalid guild ID.");
-    return this.data.guilds[guildId] ??= { users: {}, nsfwAutoAccept: {}, relationships: {}, proposals: [] };
+    return this.data.guilds[guildId] ??= { users: {}, nsfwAutoAccept: {}, interactionConsents: {}, relationships: {}, proposals: [] };
   }
 
   #expireProposals(guild) {
