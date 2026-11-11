@@ -313,6 +313,7 @@ function relationshipRow(id) {
 }
 const NSFW_PREFIX = "sugar-nsfw:";
 const NSFW_COMMANDS = new Set(["fuck", "spank"]);
+const CONSENT_COMMANDS = new Set(["kiss", "fuck"]);
 
 function nsfwRequestRow(guildId, channelId, actorId, targetId, command) {
   const id = [guildId, channelId, actorId, targetId, command].join(".");
@@ -359,7 +360,7 @@ async function handleNsfwButton(interaction, { store, fetchImpl }) {
   if (!interaction.customId.startsWith(NSFW_PREFIX)) return false;
   const [guildId, channelId, actorId, targetId, command, decision] =
     interaction.customId.slice(NSFW_PREFIX.length).split(".");
-  if (interaction.user.id !== targetId || !["fuck", "spank"].includes(command) ||
+  if (interaction.user.id !== targetId || !["kiss", "fuck", "spank"].includes(command) ||
       !["yes", "no"].includes(decision)) {
     await interaction.reply({ content: "Only the person who received this request can answer ♡", ephemeral: true });
     return true;
@@ -375,6 +376,7 @@ async function handleNsfwButton(interaction, { store, fetchImpl }) {
     return true;
   }
   await interaction.update({ content: "You accepted the request ♡", components: [] });
+  if (CONSENT_COMMANDS.has(command)) store.setInteractionConsent(guildId, actorId, targetId, command);
   await sendNsfwResult({ guild, channel, actorId, targetId, command, fetchImpl, store });
   return true;
 }
@@ -465,7 +467,7 @@ export function attachFunCommands(client, { store, fetchImpl = fetch, token, app
         await safeReply(message, { content: "Fun commands are available after completing Kittisugar's 18+ verification ♡" });
         return;
       }
-      if (NSFW_COMMANDS.has(name)) {
+      if (NSFW_COMMANDS.has(name) || CONSENT_COMMANDS.has(name)) {
         const targetUser = message.mentions.users.first();
         if (!targetUser || targetUser.bot || targetUser.id === message.author.id) {
           await safeReply(message, { content: "Usage: !" + name + " @member" });
@@ -476,7 +478,11 @@ export function attachFunCommands(client, { store, fetchImpl = fetch, token, app
           await safeReply(message, { content: "That member must have the Member role ♡" });
           return;
         }
-        if (!store.getNsfwAutoAccept(message.guild.id, targetUser.id)) {
+        const rememberedConsent = CONSENT_COMMANDS.has(name) &&
+          store.hasInteractionConsent(message.guild.id, message.author.id, targetUser.id, name);
+        const automaticAcceptance = NSFW_COMMANDS.has(name) &&
+          store.getNsfwAutoAccept(message.guild.id, targetUser.id);
+        if (!rememberedConsent && !automaticAcceptance) {
           try {
             await targetUser.send({
               embeds: [new EmbedBuilder().setColor(COLOR).setTitle("NSFW interaction request ♡")
