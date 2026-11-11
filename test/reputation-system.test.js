@@ -75,10 +75,12 @@ test("reputation votes can be positive or negative and one member can update the
   const directory = temporaryDirectory();
   try {
     const store = new ReputationStore(directory);
-    assert.equal(store.vote({ guildId, authorId, targetId, value: 1 }), 1);
+    assert.equal(store.vote({ guildId, authorId, targetId, value: 1, comment: "Helpful and kind" }), 1);
     assert.equal(store.getScore(guildId, targetId), 1);
+    assert.deepEqual(store.getCommentsForUser(guildId, targetId).map((item) => item.text), ["Helpful and kind"]);
     assert.equal(store.vote({ guildId, authorId, targetId, value: -1 }), -1);
     assert.equal(store.getScore(guildId, targetId), -1);
+    assert.deepEqual(store.getCommentsForUser(guildId, targetId), []);
     assert.deepEqual(store.getTop(guildId), [{ userId: targetId, reputation: -1 }]);
     assert.throws(() => store.vote({ guildId, authorId, targetId: authorId, value: 1 }), /Invalid reputation vote/);
   } finally {
