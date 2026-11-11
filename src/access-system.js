@@ -178,15 +178,19 @@ export function buildGuidePayload(guild) {
       `• ${channelMention(guild, ["suggestions"])}\nShare ideas and suggestions to help make Kittisugar better.\n` +
       `• ${channelMention(guild, ["quotes"])}\nPost memorable, funny, or meaningful quotes from the community.\n` +
       `## ୨୧ ${guideSectionTitle("Help")}\n\n` +
-      `• ${channelMention(guild, ["support"])}\nOpen a private support ticket when you need help from the team.\n` +
+      `• ${channelMention(guild, ["support"])}\nOpen a private ticket for General, Buy VIP, Partnership, Apply, Report, Appeal, Error, or Other requests. Use Get Verified to complete server verification.\n` +
       `• ${channelMention(guild, ["privatechat", "privatechats", "private-chat"])}\nCreate and manage private chat rooms. Use /priv-chat commands to see the available options.\n` +
       `• ${channelMention(guild, ["selfroles", "self-roles"])}\nChoose or update your age, gender, sexuality, and chat color. You can also show or hide channels marked NSFW.\n` +
       `## ୨୧ ${guideSectionTitle("Commands")}\n\n` +
       "`/delete amount:` — delete your own recent messages.\n" +
       "`/vip-delete amount:` — VIP message cleanup.\n" +
       "`/mod-delete amount: [member:]` — moderator cleanup.\n" +
-      "`!quote` — quote a message with an image.\n" +
-      "`/priv-chat commands` — see private chat commands.\n" +
+      "`!quote` — reply to a message with !quote to create an image quote.\n" +
+      "`/priv-chat create|add|remove|rename|leave|delete|commands` — manage your private chat.\n" +
+      "`!funhelp` — view the fun-command guide.\n" +
+      "`!stats` — view your basic fun-command statistics.\n" +
+      "`!vip stats` — VIP members can view full statistics.\n" +
+      "`!vip stats @member` — VIP members can view another member's statistics.\n" +
       `## ୨୧ ${guideSectionTitle("Sugar AI")}\n\n` +
       "Mention Sugar or address the bot directly to start a conversation ♡"
     )
