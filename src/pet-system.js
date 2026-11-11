@@ -59,7 +59,7 @@ function buildPetEmbed() {
     .setDescription(
       "Welcome to the Kittisugar pet corner! Adopt a little friend, look after them, and watch them grow.\n\n" +
       "**Where to use commands**\n" +
-      "♡ First, press **Open Pet Room ♡** below. Sugar will open your personal pet channel.\n" +
+      "♡ First, press **Open Pet Room ♡** in the main pets panel. Sugar will open your personal pet channel.\n" +
       "♡ Send all `!pet` commands inside that channel — not in the main pets channel.\n" +
       "♡ Everyone can adopt a pet and use the basic care commands. VIP unlocks extra rooms, outfits, rare pets, more pet slots, and minigames.\n\n" +
       "**Everyone**\n" +
@@ -96,7 +96,7 @@ async function ensurePetsChannel(guild, client) {
     });
   }
   await channel.permissionOverwrites.edit(guild.roles.everyone, {
-    ViewChannel: true, SendMessages: false, SendMessagesInThreads: false, ReadMessageHistory: true,
+    ViewChannel: true, SendMessages: false, CreatePublicThreads: false, SendMessagesInThreads: false, ReadMessageHistory: true,
   }, "Keep the virtual pets panel read-only");
   await channel.permissionOverwrites.edit(client.user.id, {
     ViewChannel: true, SendMessages: true, EmbedLinks: true, ReadMessageHistory: true,
