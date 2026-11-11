@@ -1,4 +1,4 @@
-import { EmbedBuilder, Events } from "discord.js";
+import { EmbedBuilder, Events, REST, Routes, SlashCommandBuilder } from "discord.js";
 
 const KITTISUGAR_GUILD_ID = "1567093019377930363";
 
@@ -67,7 +67,7 @@ export function getFunCommandDefinition(name) {
   return null;
 }
 
-export function buildFunStatsEmbed({ user, stats, full = false, received = false }) {
+export function buildFunStatsEmbed({ user, stats, full = false, received = false, relationship = null, history = [] }) {
   const name = user?.displayName ?? user?.globalName ?? user?.username ?? "Member";
   const topCommands = Object.entries(stats.commands ?? {}).sort((a, b) => b[1] - a[1]).slice(0, full ? 15 : 3);
   const topReceived = Object.entries(stats.received ?? {}).sort((a, b) => b[1] - a[1]).slice(0, full ? 15 : 3);
@@ -80,6 +80,10 @@ export function buildFunStatsEmbed({ user, stats, full = false, received = false
     .setDescription(`**Used:** ${stats.total ?? 0} commands\n**Received:** ${stats.receivedTotal ?? 0} interactions`)
     .addFields({ name: "How stats work", value: full ? "This is the complete report: commands you use, interactions you receive, and the members you interact with. Use !vip stats @member to view another members report." : "This is your personal summary. Use !vip stats for your complete report if you have VIP. VIP members can view another member with !vip stats @member." });
 
+  const relationshipLabel = relationship ? (relationship.type === "marriage" ? "Married" : "In a relationship") + " with <@" + relationship.partnerId + "> ♡" : "Single";
+  const sent = history.filter((proposal) => proposal.proposerId === user.id).length;
+  const receivedProposals = history.filter((proposal) => proposal.targetId === user.id).length;
+  embed.addFields({ name: "♡ Relationship", value: "**Status:** " + relationshipLabel + "\n**Proposals sent:** " + sent + " · **received:** " + receivedProposals + "\n**Accepted:** " + history.filter((p) => p.status === "accepted").length + " · **Declined:** " + history.filter((p) => p.status === "declined").length });
   if (topCommands.length) embed.addFields({
     name: "Most used",
     value: topCommands.map(([command, count]) => "!" + command + " — **" + count + "**").join("\n"),
@@ -205,6 +209,8 @@ export function buildFunHelpEmbed() {
     .setTitle("Sugar Fun Commands Guide ♡")
     .setDescription("Use these commands in Kittisugar. Every fun command requires the Member role (18+ verification). Two-person commands need a member mention; solo commands do not.")
     .addFields(
+      { name: "Relationships", value: "!couple @member · !propose @member · !marry @member · !breakup · !divorce. The other member must accept proposals." },
+      { name: "NSFW preferences", value: "!nsfw-on — automatically accept NSFW requests. !nsfw-off — require individual approval again." },
       { name: "Two-person commands", value: "!hug @member · !slap @member · !bonk @member · !spank @member · !kiss @member · !cuddle @member · !pat @member · !poke @member · !bite @member · !kick @member · !kill @member · !highfive @member · !handhold @member" },
       { name: "Solo commands", value: "!cry · !laugh · !dance · !sleep · !happy · !blush · !smug · !wave · !facepalm · !wink · !shrug · !smile · !pout" },
       { name: "Statistics", value: "!stats — see your own basic stats.\n!vip stats — VIP members see their complete stats.\n!vip stats @member — VIP members see another members complete stats.\nStats count commands used, interactions received, and interaction partners." },
@@ -215,7 +221,7 @@ export function buildFunHelpEmbed() {
 
 async function showStats(message, store, { targetMember, targetUser, full, received = false }) {
   const stats = store.getStats(message.guild.id, targetUser.id);
-  const embed = buildFunStatsEmbed({ user: { ...targetUser, displayName: displayName(targetMember, targetUser) }, stats, full, received });
+  const embed = buildFunStatsEmbed({ user: { ...targetUser, id: targetUser.id, displayName: displayName(targetMember, targetUser) }, stats, full, received, relationship: store.getRelationship(message.guild.id, targetUser.id), history: store.getRelationshipHistory(message.guild.id, targetUser.id) });
   return safeReply(message, { embeds: [embed] });
 }
 
@@ -298,8 +304,24 @@ async function handleFunAction(message, store, name, args, fetchImpl) {
   return true;
 }
 
-export function attachFunCommands(client, { store, fetchImpl = fetch } = {}) {
+const FUN_HELP_COMMAND = new SlashCommandBuilder().setName("fun").setDescription("Fun commands").addSubcommand((sub) => sub.setName("help").setDescription("Show the fun command guide")).toJSON();
+async function registerFunHelpCommand(token, applicationId) {
+  const rest = new REST({ version: "10" }).setToken(token);
+  const route = Routes.applicationGuildCommands(applicationId, KITTISUGAR_GUILD_ID);
+  const current = await rest.get(route);
+  await rest.put(route, { body: [...current.filter((command) => command.name !== "fun"), FUN_HELP_COMMAND] });
+}
+export function attachFunCommands(client, { store, fetchImpl = fetch, token, applicationId } = {}) {
   if (!store) throw new Error("The fun-command statistics store is required.");
+
+  client.on(Events.InteractionCreate, async (interaction) => {
+    if (interaction.isChatInputCommand?.() && interaction.commandName === "fun" && interaction.options.getSubcommand() === "help") {
+      await interaction.reply({ embeds: [buildFunHelpEmbed()], ephemeral: true }).catch(() => {});
+    }
+  });
+  client.once(Events.ClientReady, () => {
+    if (token && applicationId) void registerFunHelpCommand(token, applicationId).catch((error) => console.error("[fun] /fun help registration failed: " + error.message));
+  });
 
   client.on(Events.MessageCreate, async (message) => {
     if (!message.guild || message.guild.id !== KITTISUGAR_GUILD_ID ||
@@ -314,8 +336,9 @@ export function attachFunCommands(client, { store, fetchImpl = fetch } = {}) {
         await safeReply(message, { content: "That command isn't available." });
         return;
       }
-      if (name === "funhelp") {
-        await safeReply(message, { embeds: [buildFunHelpEmbed()] });
+      if (name === "nsfw-on" || name === "nsfw-off") {
+        store.setNsfwAutoAccept(message.guild.id, message.author.id, name === "nsfw-on");
+        await safeReply(message, { content: name === "nsfw-on" ? "NSFW requests will now be accepted automatically ♡" : "Automatic NSFW acceptance is off. Approve each request individually ♡" });
         return;
       }
       if (name === "stats" || name === "vip") {
