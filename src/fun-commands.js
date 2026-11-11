@@ -22,6 +22,7 @@ const TWO_PERSON_COMMANDS = Object.freeze({
   slap: { gif: "slap", text: "has slapped" },
   bonk: { gif: "bonk", text: "has bonked" },
   spank: { gif: "slap", text: "has given a playful spank to" },
+  fuck: { gif: "kiss", text: "has fucked" },
   hug: { gif: "hug", text: "has hugged" },
   kiss: { gif: "kiss", text: "has kissed" },
   cuddle: { gif: "cuddle", text: "has cuddled" },
@@ -50,7 +51,7 @@ const SOLO_COMMANDS = Object.freeze({
   pout: { gif: "pout", text: "is pouting" },
 });
 
-const BLOCKED_COMMANDS = new Set(["rape", "fuck"]);
+const BLOCKED_COMMANDS = new Set(["rape"]);
 const GIF_CATEGORIES = new Set([...Object.values(TWO_PERSON_COMMANDS), ...Object.values(SOLO_COMMANDS)].map(({ gif }) => gif));
 
 export function normalizeFunRole(member) {
@@ -209,7 +210,7 @@ export function buildFunHelpEmbed() {
       { name: "Statistics", value: "!stats — see your own basic stats.\n!vip stats — VIP members see their complete stats.\n!vip stats @member — VIP members see another members complete stats.\nStats count commands used, interactions received, and interaction partners." },
       { name: "VIP", value: "VIP is a server role. It unlocks complete statistics and the ability to look up other members stats. Without VIP, you can still use !stats to see your own summary." },
     )
-    .setFooter({ text: "Be kind and keep every interaction consensual ♡" });
+    .setFooter({ text: "Have fun in Kittisugar ♡" });
 }
 
 async function showStats(message, store, { targetMember, targetUser, full, received = false }) {
@@ -310,7 +311,7 @@ export function attachFunCommands(client, { store, fetchImpl = fetch } = {}) {
     const args = match[2] ?? "";
     try {
       if (BLOCKED_COMMANDS.has(name)) {
-        await safeReply(message, { content: "That command isn't available. Please keep interactions consensual ♡" });
+        await safeReply(message, { content: "That command isn't available." });
         return;
       }
       if (name === "funhelp") {
