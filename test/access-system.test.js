@@ -135,7 +135,7 @@ test("access, rules, and guide panels contain the required confirmations and upd
   const guild = { emojis: { cache: [] } };
   const access = buildAccessPanelPayload(guild);
   const rules = buildRulesPayload();
-  const channelNames = ["get-access", "rules", "guide", "confessions", "loveletters", "suggestions", "quotes", "support", "private-chat", "self-roles"];
+  const channelNames = ["get-access", "rules", "guide", "confessions", "loveletters", "suggestions", "quotes", "selfies", "introductions", "pets", "support", "private-chat", "self-roles"];
   const channels = channelNames.map((name, index) => ({ name, id: String(100000000000000000n + BigInt(index)), type: 0 }));
   const guide = buildGuidePayload({ channels: { cache: { find: (predicate) => channels.find(predicate), values: () => channels.values() } } });
 
@@ -148,7 +148,7 @@ test("access, rules, and guide panels contain the required confirmations and upd
   assert.equal(access.components[0].components[0].data.style, 1);
   const ruleText = rules.embeds[0].data.description;
   assert.match(ruleText, /\$5 USD once, for life/);
-  assert.match(ruleText, /VIP, Seller, and a custom role/);
+  assert.match(ruleText, /Seller role is \*\*optional\*\*/);\n  assert.match(ruleText, /virtual-pet extras/);\n  assert.match(ruleText, /anonymous reputation posts/);\n  assert.match(ruleText, /bulk deletion/);\n  assert.doesNotMatch(ruleText, /no ads/i);\n  assert.match(ruleText, /a ban from Kittisugar/);
   assert.match(ruleText, /monthly hosting costs/);
   assert.match(ruleText, /NSFW content in NSFW channels/i);
   assert.doesNotMatch(ruleText, /Porn category|nsfw.*category/i);
@@ -169,7 +169,7 @@ test("access, rules, and guide panels contain the required confirmations and upd
   assert.ok(guideText.includes(`## ୨୧ ${toRoyalBold("Start")}\n\n• <#100000000000000000>\nRead the welcome message`));
   assert.ok(guideText.includes("`/delete amount:` — delete your own recent messages."));
   assert.ok(guideText.includes("`/vip-delete amount:` — VIP message cleanup."));
-  assert.ok(guideText.includes("`/mod-delete amount: [member:]` — moderator cleanup."));
+  assert.ok(guideText.includes("`/mod-delete amount: [member:]` — moderator cleanup."));\n  assert.match(guideText, /!pet adopt/);\n  assert.match(guideText, /!pet room/);\n  assert.match(guideText, /!rep anonymous/);\n  assert.match(guideText, /selfies/);\n  assert.match(guideText, /introductions/);\n  assert.match(guideText, /pets/);
   assert.ok(guideText.includes("`!quote` — reply to a message with !quote to create an image quote."));
   assert.ok(guideText.includes("`/priv-chat create|add|remove|rename|leave|delete|commands` — manage your private chat."));
   assert.match(guideText, /show or hide channels/i);
