@@ -356,8 +356,8 @@ export function attachReputationSystem(client, store) {
         if (args.length > 1 && !mentioned) return message.reply("Select a member mention. Usage: !rep comments @member ♡");
         const target = mentioned ?? message.author;
         const entries = store.getCommentsForUser(message.guild.id, target.id).slice(-10).reverse();
-        const body = entries.length ? entries.map((item) => `**${item.anonymous ? "Anonymous VIP" : "<@" + item.authorId + ">"}** · <t:${Math.floor(Date.parse(item.createdAt) / 1000)}:R>\\n${item.text}`).join("\\n\\n").slice(0, 3800) : "No comments yet ♡";
-        const embed = new EmbedBuilder().setColor(COLOR).setTitle("୨୧ Reputation Comments ♡").setDescription(`**Member:** <@${target.id}>\\n\\n${body}`);
+        const body = entries.length ? entries.map((item) => `**${item.anonymous ? "Anonymous VIP" : "<@" + item.authorId + ">"}** · <t:${Math.floor(Date.parse(item.createdAt) / 1000)}:R>\n${item.text}`).join("\n\n").slice(0, 3800) : "No comments yet ♡";
+        const embed = new EmbedBuilder().setColor(COLOR).setTitle("୨୧ Reputation Comments ♡").setDescription(`**Member:** <@${target.id}>\n\n${body}`);
         return message.reply({ embeds: [embed], allowedMentions: { parse: [] } });
       }
       if (args[0]?.toLowerCase() === "top") {
