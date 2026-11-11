@@ -179,15 +179,8 @@ export async function ensureTicketPanel(client, panelChannelId = TICKET_PANEL_CH
       item.type === ChannelType.GuildText && item.name.normalize("NFKD").toLowerCase().replace(/\p{M}/gu, "").replace(/[^a-z]/g, "") === "support",
     ) ?? null;
   }
-  if (!channel && guild) {
-    channel = await guild.channels.create({
-      name: "💗｜୨୧•𝓼𝓾𝓹𝓹𝓸𝓻𝓽",
-      type: ChannelType.GuildText,
-      reason: "Create the Kittisugar Support channel because it was missing",
-    });
-  }
   if (!channel || channel.type !== ChannelType.GuildText) {
-    throw new Error("The Support panel channel could not be found or created.");
+    throw new Error("The existing Support panel channel could not be found; no channel was created.");
   }
   await channel.permissionOverwrites.edit(channel.guild.roles.everyone, {
     ViewChannel: true, SendMessages: false, ReadMessageHistory: true,
