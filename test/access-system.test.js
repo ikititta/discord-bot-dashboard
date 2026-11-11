@@ -137,7 +137,7 @@ test("access, rules, and guide panels contain the required confirmations and upd
   const rules = buildRulesPayload();
   const channelNames = ["get-access", "rules", "guide", "confessions", "loveletters", "suggestions", "quotes", "support", "private-chat", "self-roles"];
   const channels = channelNames.map((name, index) => ({ name, id: String(100000000000000000n + BigInt(index)), type: 0 }));
-  const guide = buildGuidePayload({ channels: { cache: { find: (predicate) => channels.find(predicate) } } });
+  const guide = buildGuidePayload({ channels: { cache: { find: (predicate) => channels.find(predicate), values: () => channels.values() } } });
 
   assert.equal(access.embeds[0].data.title, `୨୧ ${toRoyalBold("Get Access!")} ♡`);
   assert.ok(access.embeds[0].data.description.includes("please read **Rules** & **Guide**"));
