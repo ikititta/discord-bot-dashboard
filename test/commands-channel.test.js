@@ -18,6 +18,22 @@ test("commands board lists fun commands without mentioning the commands thread o
   assert.equal(COMMANDS_THREAD_NAME, "💬 𝗰𝗼𝗺𝗺𝗮𝗻𝗱𝘀");
 });
 
+test("commands thread detection accepts normalized Unicode names and uncached parents", () => {
+  const message = {
+    guild: {},
+    channel: {
+      name: "💬 𝗰𝗼𝗺𝗺𝗮𝗻𝗱𝘀",
+      parent: null,
+      isThread: () => true,
+    },
+  };
+  assert.equal(isCommandsThread(message), true);
+  assert.equal(isCommandsThread({
+    ...message,
+    channel: { ...message.channel, name: "💬 𝗰𝗼𝗺𝗺𝗮𝗻𝗱𝘀", parent: { name: "general" } },
+  }), false);
+});
+
 test("only messages in the dedicated commands thread are accepted", () => {
   const message = {
     guild: {},
