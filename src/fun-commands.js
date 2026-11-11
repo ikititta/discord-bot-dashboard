@@ -27,6 +27,7 @@ const TWO_PERSON_COMMANDS = Object.freeze({
   poke: { gif: "poke", text: "pokes" },
   bite: { gif: "bite", text: "bites" },
   kick: { gif: "kick", text: "kicks" },
+  kill: { gif: "kick", text: "defeats" },
   highfive: { gif: "highfive", text: "high-fives" },
   handhold: { gif: "handhold", text: "holds hands with" },
 });
@@ -48,6 +49,7 @@ const SOLO_COMMANDS = Object.freeze({
 });
 
 const BLOCKED_COMMANDS = new Set(["rape", "fuck"]);
+const GIF_CATEGORIES = new Set([...Object.values(TWO_PERSON_COMMANDS), ...Object.values(SOLO_COMMANDS)].map(({ gif }) => gif));
 
 export function normalizeFunRole(member) {
   const matches = Object.entries(FUN_ROLE_IDS)
@@ -102,7 +104,7 @@ export function buildFunStatsEmbed({ user, stats, full = false, received = false
 }
 
 export async function fetchAnimeGif(category, { fetchImpl = fetch } = {}) {
-  if (!/^[a-z]+$/.test(category ?? "")) throw new Error("Invalid anime GIF category.");
+  if (!GIF_CATEGORIES.has(category)) throw new Error("Invalid anime GIF category.");
   const response = await fetchImpl(`${API_BASE}/${category}`, {
     headers: { "User-Agent": "SugarDiscordBot/1.0 (https://github.com/ikititta/discord-bot-dashboard)" },
     signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
