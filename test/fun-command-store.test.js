@@ -19,8 +19,6 @@ test("fun command statistics persist actor usage, received actions, and partners
       actorId: "11111111111111111",
       targetId: "22222222222222222",
       command: "hug",
-      actorRole: "female",
-      targetRole: "male",
     });
 
     const reopened = new FunCommandStore(directory);
@@ -30,8 +28,6 @@ test("fun command statistics persist actor usage, received actions, and partners
     assert.equal(actor.total, 1);
     assert.equal(actor.commands.hug, 1);
     assert.equal(actor.partners["22222222222222222"], 1);
-    assert.equal(actor.lastRole, "female");
-    assert.equal(actor.lastTargetRole, "male");
     assert.equal(target.receivedTotal, 1);
     assert.equal(target.received.hug, 1);
     assert.equal(target.receivedFrom["11111111111111111"], 1);
