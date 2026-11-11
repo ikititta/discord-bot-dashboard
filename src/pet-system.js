@@ -128,50 +128,31 @@ function choose(values) {
   return values[Math.floor(Math.random() * values.length)];
 }
 
+function createPetVisualIdentity() {
+  return {
+    palette: choose(PET_VISUAL_TRAITS.palettes),
+    eyes: choose(PET_VISUAL_TRAITS.eyes),
+    markings: choose(PET_VISUAL_TRAITS.markings),
+    accessory: choose(PET_VISUAL_TRAITS.accessories),
+    personality: choose(PET_VISUAL_TRAITS.personalities),
+    artStatus: "not_generated",
+    artPath: null,
+    artCreatedAt: null,
+  };
+}
+
 function makePet() {
   const species = choose(PETS);
   return {
     id: randomUUID(),
     name: "Mochi",
     species,
-    visualIdentity: {
-      palette: choose(PET_VISUAL_TRAITS.palettes),
-      eyes: choose(PET_VISUAL_TRAITS.eyes),
-      markings: choose(PET_VISUAL_TRAITS.markings),
-      accessory: choose(PET_VISUAL_TRAITS.accessories),
-      personality: choose(PET_VISUAL_TRAITS.personalities),
-      artStatus: "not_generated",
-      artPath: null,
-      artCreatedAt: null,
-    },
+    visualIdentity: createPetVisualIdentity(),
     level: 1, xp: 0, hunger: 70, happiness: 70, coins: 100,
     inventory: [], room: "cozy room", outfit: "default", slots: 1, additionalPets: [], activePetIndex: 0,
     lastMinigame: null,
   };
 }
-
-function queuePetArtwork(message, store, profile, pet) {
-  if (!process.env.OPENAI_API_KEY || !pet.visualIdentity || pet.visualIdentity.artStatus === "generating" ||
-      pet.visualIdentity.artStatus === "ready") return;
-  pet.visualIdentity.artStatus = "generating";
-  store.save(message.guild.id, message.author.id, profile);
-  void generatePetArtwork({ pet, dataDir: path.dirname(store.file) }).then((file) => {
-    pet.visualIdentity.artStatus = "ready";
-    pet.visualIdentity.artPath = file;
-    pet.visualIdentity.artCreatedAt = new Date().toISOString();
-    store.save(message.guild.id, message.author.id, profile);
-    return message.channel.send({
-      content: `Your one-of-a-kind ${pet.name} artwork is ready ♡`,
-      files: [file],
-      allowedMentions: { parse: [] },
-    });
-  }).catch((error) => {
-    pet.visualIdentity.artStatus = "failed";
-    store.save(message.guild.id, message.author.id, profile);
-    console.error("[pets] AI artwork generation failed: " + error.message);
-  });
-}
-
 function status(pet) {
   return `**${pet.name}** the ${pet.species} · Level ${pet.level}
 ♡ Hunger: ${pet.hunger}/100 · Happiness: ${pet.happiness}/100
@@ -231,6 +212,10 @@ async function runPetCommand(message, store, client) {
     return reply("Now caring for " + pet.name + " ♡\n" + status(pet));
   }
   if (action === "view" || action === "status") {
+    pet.id ??= randomUUID();
+    pet.visualIdentity ??= createPetVisualIdentity();
+    store.save(guildId, userId, profile);
+    queuePetArtwork(message, store, profile, pet);
     const artPath = pet.visualIdentity?.artStatus === "ready" ? pet.visualIdentity.artPath : null;
     if (artPath && fs.existsSync(artPath)) {
       return message.reply({ content: status(pet), files: [artPath], allowedMentions: { repliedUser: false } });
