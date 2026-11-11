@@ -41,6 +41,22 @@ The application reads secrets from its process environment and does not load loc
 
 The retired legacy welcome and self-role panels remain retired. The current entry flow is implemented in `src/access-system.js` and uses the existing New and Member roles.
 
+## Fun commands
+
+The Kittisugar fun-command module uses the existing `Member` role as its 18+ access gate and does not restrict commands by channel. Two-person actions require a member mention; solo reactions do not.
+
+Two-person commands: `!slap`, `!bonk`, `!spank`, `!hug`, `!kiss`, `!cuddle`, `!pat`, `!poke`, `!bite`, `!kick`, `!kill`, `!highfive`, and `!handhold`.
+
+Solo commands: `!cry`, `!laugh`, `!dance`, `!sleep`, `!happy`, `!blush`, `!smug`, `!wave`, `!facepalm`, `!wink`, `!shrug`, `!smile`, and `!pout`.
+
+- `!stats` shows a member's own basic statistics.
+- `!vip stats` shows the caller's full statistics for VIP members.
+- `!vip stats @member` lets VIP members view another member's full statistics. Non-VIP callers receive: `Get VIP to see everyone's stats.`
+- `!rape` and `!fuck` are intentionally unavailable; Sugar responds with a consent reminder.
+- The initial GIF adapter uses Nekos.best's no-key anime reaction GIF endpoints. That service is SFW-only and does not offer gender-pair filtering or NSFW GIFs. `!spank` currently uses its non-explicit slap reaction as a playful substitute. Gender role IDs are recognized by the module, but role-specific GIF curation is not part of this initial adapter.
+
+Fun-command statistics are stored atomically in `fun-command-state.json` under the existing persistent data directory. The store validates its schema and bounds retained guild/member/partner records.
+
 ## Discord role management
 
 - Role names, colors, permissions, member assignments, and hierarchy are managed directly in Discord.
