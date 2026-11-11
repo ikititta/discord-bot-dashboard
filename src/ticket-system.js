@@ -58,15 +58,15 @@ export function buildTicketPanelPayload() {
     .setTitle(PANEL_TITLE)
     .setDescription(
       "Need help with something? Choose the option that best matches your request to open a private ticket with our team.\n\n" +
-      "**General** — Questions or general assistance.\\n" +
-      "**Buy VIP** — Questions about purchasing VIP or getting VIP access.\\n" +
-      "**Partnership** — Collaboration and server partnership inquiries.\\n" +
-      "**Apply** — Apply to become a member of our staff team.\\n" +
-      "**Get Verified** — Complete the verification steps to unlock member access to the server.\\n" +
-      "**Report** — Report a user, message, or rule violation.\\n" +
-      "**Appeal** — Appeal a warning, punishment, or restriction.\\n" +
-      "**Error** — Report bugs, errors, or technical problems.\\n" +
-      "**Others** — Requests that don't fit the other categories.\\n\\n" +
+      "**General** — Questions or general assistance.\n" +
+      "**Buy VIP** — Questions about purchasing VIP or getting VIP access.\n" +
+      "**Partnership** — Collaboration and server partnership inquiries.\n" +
+      "**Apply** — Apply to become a member of our staff team.\n" +
+      "**Get Verified** — Complete the verification steps to unlock member access to the server.\n" +
+      "**Report** — Report a user, message, or rule violation.\n" +
+      "**Appeal** — Appeal a warning, punishment, or restriction.\n" +
+      "**Error** — Report bugs, errors, or technical problems.\n" +
+      "**Others** — Requests that don't fit the other categories.\n\n" +
       `Have a suggestion? Share it in <#${SUGGESTIONS_CHANNEL_ID}>!`,
     );
 
@@ -222,7 +222,7 @@ async function handleTicketButton(interaction, { client, settings, panelChannelI
     await interaction.channel.send({ embeds: [new EmbedBuilder().setColor(PANEL_COLOR).setTitle(formatEmbedTitle("Ticket Closed")).setDescription(`This ticket was closed by <@${interaction.user.id}>.`)], allowedMentions: { parse: [] } });
     const transcript = await buildTicketTranscript(interaction.channel);
     await transcriptChannel.send({
-      embeds: [new EmbedBuilder().setColor(PANEL_COLOR).setTitle(formatEmbedTitle("Ticket Transcript")).setDescription(`**Ticket:** ${interaction.channel.name}\\n**Category:** ${ticketCategoryFromChannel(interaction.channel.name)}\\n**Opened by:** <@${ticket.openerId}>\\n**Closed by:** <@${interaction.user.id}>`)],
+      embeds: [new EmbedBuilder().setColor(PANEL_COLOR).setTitle(formatEmbedTitle("Ticket Transcript")).setDescription(`**Ticket:** ${interaction.channel.name}\n**Category:** ${ticketCategoryFromChannel(interaction.channel.name)}\n**Opened by:** <@${ticket.openerId}>\n**Closed by:** <@${interaction.user.id}>`)],
       files: [new AttachmentBuilder(Buffer.from(transcript, "utf8"), { name: `${interaction.channel.name}-transcript.txt` })],
       allowedMentions: { parse: [] },
     });
