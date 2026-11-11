@@ -16,8 +16,7 @@ import { attachCommunitySystem } from "./community-system.js";
 import { attachQuoteSystem } from "./quote-system.js";
 import { attachGeneralQuoteStickyTip } from "./general-quote-sticky.js";
 import { attachAccessSystem } from "./access-system.js";
-import { attachRolesAuditSystem } from "./roles-audit.js";
-import { attachRoleOrganizationSystem } from "./roles-organize.js";
+import { registerApplicationCommands } from "./command-registry.js";
 import { attachModerationSystem } from "./moderation-system.js";
 import { renameMatchingChannels } from "./channel-renames.js";
 import { attachForumVisibilitySystem } from "./forum-visibility.js";
@@ -157,9 +156,8 @@ export function createBot({
   attachQuoteSystem(client, { token, applicationId });
   attachGeneralQuoteStickyTip(client, { store: stickyPanels });
   attachAccessSystem(client);
-  attachRolesAuditSystem(client, { token, applicationId });
-  attachRoleOrganizationSystem(client, { token, applicationId });
   attachForumVisibilitySystem(client);
+  attachRetiredRoleCommandCleanup(client, { token, applicationId });
   if (autoModeration) attachModerationSystem(client, { settings, store: autoModeration });
 
   client.login(token).catch((error) => {
@@ -184,6 +182,40 @@ export function createBot({
   });
 
   return client;
+}
+
+/**
+ * Remove the retired role administration commands from each guild while
+ * preserving commands registered by every other Sugar feature.
+ */
+function attachRetiredRoleCommandCleanup(client, { token, applicationId }) {
+  let readyHandled = false;
+
+  const removeCommands = async (guildId) => {
+    await registerApplicationCommands({
+      token,
+      applicationId,
+      guildId,
+      commands: [],
+      removeCommandNames: ["roles-organize", "roles-audit"],
+    });
+  };
+
+  client.once(Events.ClientReady, () => {
+    readyHandled = true;
+    for (const guild of client.guilds.cache.values()) {
+      void removeCommands(guild.id).catch((error) => {
+        console.error(`[commands] retired role commands cleanup failed in ${guild.id}: ${error.message}`);
+      });
+    }
+  });
+
+  client.on(Events.GuildCreate, (guild) => {
+    if (!readyHandled) return;
+    void removeCommands(guild.id).catch((error) => {
+      console.error(`[commands] retired role commands cleanup failed in ${guild.id}: ${error.message}`);
+    });
+  });
 }
 
 export function shouldPubliclyLogDeletedMessage(message, moderationLogs) {
