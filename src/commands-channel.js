@@ -2,9 +2,7 @@ import {
   ChannelType,
   EmbedBuilder,
   Events,
-  PermissionFlagsBits,
 } from "discord.js";
-import { toRoyalBold } from "./embed-format.js";
 
 export const COMMANDS_CHANNEL_NAME = "💬｜୨୧•𝓬𝓸𝓶𝓶𝓪𝓷𝓭𝓼";
 export const COMMANDS_THREAD_NAME = "💬 𝗰𝗼𝗺𝗺𝗮𝗻𝗱𝘀";
