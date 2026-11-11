@@ -75,8 +75,8 @@ export class FunCommandStore {
   }
 
   createRelationshipProposal({ guildId, proposerId, targetId, type }) {
-    if (!/^\\d{17,20}$/.test(guildId ?? "") || !/^\\d{17,20}$/.test(proposerId ?? "") ||
-        !/^\\d{17,20}$/.test(targetId ?? "") || proposerId === targetId ||
+    if (!/^\d{17,20}$/.test(guildId ?? "") || !/^\d{17,20}$/.test(proposerId ?? "") ||
+        !/^\d{17,20}$/.test(targetId ?? "") || proposerId === targetId ||
         !["couple", "marriage"].includes(type)) throw new Error("Invalid relationship proposal.");
     const guild = this.#guild(guildId);
     guild.relationships ??= {};
@@ -135,7 +135,7 @@ export class FunCommandStore {
   }
 
   #guild(guildId) {
-    if (!/^\\d{17,20}$/.test(guildId ?? "")) throw new Error("Invalid guild ID.");
+    if (!/^\d{17,20}$/.test(guildId ?? "")) throw new Error("Invalid guild ID.");
     return this.data.guilds[guildId] ??= { users: {}, nsfwAutoAccept: {}, relationships: {}, proposals: [] };
   }
 
