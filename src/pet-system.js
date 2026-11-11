@@ -5,6 +5,7 @@ import {
   ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, EmbedBuilder, Events, PermissionFlagsBits,
 } from "discord.js";
 import { toRoyalBold } from "./embed-format.js";
+import { generatePetArtwork } from "./pet-art.js";
 
 const COLOR = 0xffd9ff;
 const VIP_ROLE_ID = "1568188640113463437";
@@ -148,6 +149,29 @@ function makePet() {
     lastMinigame: null,
   };
 }
+
+function queuePetArtwork(message, store, profile, pet) {
+  if (!process.env.OPENAI_API_KEY || !pet.visualIdentity || pet.visualIdentity.artStatus === "generating" ||
+      pet.visualIdentity.artStatus === "ready") return;
+  pet.visualIdentity.artStatus = "generating";
+  store.save(message.guild.id, message.author.id, profile);
+  void generatePetArtwork({ pet, dataDir: path.dirname(store.file) }).then((file) => {
+    pet.visualIdentity.artStatus = "ready";
+    pet.visualIdentity.artPath = file;
+    pet.visualIdentity.artCreatedAt = new Date().toISOString();
+    store.save(message.guild.id, message.author.id, profile);
+    return message.channel.send({
+      content: `Your one-of-a-kind ${pet.name} artwork is ready ♡`,
+      files: [file],
+      allowedMentions: { parse: [] },
+    });
+  }).catch((error) => {
+    pet.visualIdentity.artStatus = "failed";
+    store.save(message.guild.id, message.author.id, profile);
+    console.error("[pets] AI artwork generation failed: " + error.message);
+  });
+}
+
 function status(pet) {
   return `**${pet.name}** the ${pet.species} · Level ${pet.level}
 ♡ Hunger: ${pet.hunger}/100 · Happiness: ${pet.happiness}/100
@@ -206,7 +230,13 @@ async function runPetCommand(message, store, client) {
     pet = index === 1 ? profile : profile.additionalPets[index - 2];
     return reply("Now caring for " + pet.name + " ♡\n" + status(pet));
   }
-  if (action === "view" || action === "status") return reply(status(pet));
+  if (action === "view" || action === "status") {
+    const artPath = pet.visualIdentity?.artStatus === "ready" ? pet.visualIdentity.artPath : null;
+    if (artPath && fs.existsSync(artPath)) {
+      return message.reply({ content: status(pet), files: [artPath], allowedMentions: { repliedUser: false } });
+    }
+    return reply(status(pet) + (pet.visualIdentity?.artStatus === "generating" ? "\\n♡ Your unique artwork is being created..." : ""));
+  }
 
   if (action === "feed") {
     if (pet.hunger >= 100) return reply("Your pet is already full ♡");
