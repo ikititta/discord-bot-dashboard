@@ -49,6 +49,7 @@ export function createBot({
   suggestionStore,
   stickyPanels,
   funCommands,
+  reputationStore,
   autoModeration,
 }) {
   const client = new Client({
