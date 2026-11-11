@@ -55,7 +55,7 @@ Solo commands: `!cry`, `!laugh`, `!dance`, `!sleep`, `!happy`, `!blush`, `!smug`
 - `!vip stats` shows the caller full statistics for VIP members.
 - `!vip stats @member` lets VIP members view another member full statistics. VIP unlocks full reports and member lookups; non-VIP members can still use `!stats` for their own summary.
 - `!rape` and `!fuck` are intentionally unavailable; Sugar responds with a consent reminder.
-- The GIF adapter uses Gifukai for `hug`, `kiss`, `pat`, `cry`, `sleep`, and `pout`, with female/male pair filters (`ff`, `mm`, `fm`, `mf`) and solo filters (`f`, `m`); other actions fall back to Nekos.best. Both sources are SFW-only. Neither provider supports Transgender or Non-binary pair categories, so those roles receive an unfiltered anime GIF rather than being misclassified. `!spank` currently uses a non-explicit slap reaction as a playful substitute. NSFW GIFs and commands are not included in this draft.
+- The GIF adapter uses Gifukai for supported SFW actions and Nekos.best as the general SFW fallback. `!fuck` is separate: it uses PurrBot API’s dedicated `/img/nsfw/fuck/gif` endpoint and accepts only GIF URLs hosted in that explicit NSFW category. It never falls back to a SFW kiss or reaction GIF. `!spank` remains a playful, non-explicit slap reaction.
 
 Fun-command statistics are stored atomically in `fun-command-state.json` under the existing persistent data directory. The store validates its schema and bounds retained guild/member/partner records.
 
