@@ -825,33 +825,26 @@ async function publishThreadReply(interaction, channel, kind, mode, parentId) {
       );
     }
     if (!repliesChannel) {
-      const everyoneId = interaction.guild.roles.everyone.id;
-      const permissionOverwrites = channel.permissionOverwrites.cache
-        .filter((overwrite) => overwrite.id !== everyoneId && overwrite.id !== interaction.client.user.id)
-        .map((overwrite) => ({
-          id: overwrite.id,
-          type: overwrite.type,
-          allow: overwrite.allow.bitfield,
-          deny: overwrite.deny.bitfield,
-        }));
-      permissionOverwrites.push({
-        id: everyoneId,
-        allow: [
-          PermissionFlagsBits.ViewChannel,
-          PermissionFlagsBits.SendMessages,
-          PermissionFlagsBits.ReadMessageHistory,
-        ],
-      });
-      permissionOverwrites.push({
-        id: interaction.client.user.id,
-        allow: [
-          PermissionFlagsBits.ViewChannel,
-          PermissionFlagsBits.SendMessages,
-          PermissionFlagsBits.ReadMessageHistory,
-          PermissionFlagsBits.EmbedLinks,
-          PermissionFlagsBits.ManageMessages,
-        ],
-      });
+      const permissionOverwrites = [
+        {
+          id: interaction.guild.roles.everyone.id,
+          allow: [
+            PermissionFlagsBits.ViewChannel,
+            PermissionFlagsBits.SendMessages,
+            PermissionFlagsBits.ReadMessageHistory,
+          ],
+        },
+        {
+          id: interaction.client.user.id,
+          allow: [
+            PermissionFlagsBits.ViewChannel,
+            PermissionFlagsBits.SendMessages,
+            PermissionFlagsBits.ReadMessageHistory,
+            PermissionFlagsBits.EmbedLinks,
+            PermissionFlagsBits.ManageMessages,
+          ],
+        },
+      ];
       repliesChannel = await interaction.guild.channels.create({
         name: buildCommunityRepliesChannelName(kind, serial),
         type: ChannelType.GuildText,
