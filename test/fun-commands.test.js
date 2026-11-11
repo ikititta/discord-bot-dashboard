@@ -17,6 +17,12 @@ function memberWithRoles(ids) {
 }
 
 test("fun commands use the existing Kittisugar gender role IDs only", () => {
+  assert.deepEqual(FUN_ROLE_IDS, {
+    female: "1569638102949953567",
+    male: "1569807000278269983",
+    trans: "1569807011217145948",
+    "non-binary": "1569807020809396455",
+  });
   assert.equal(normalizeFunRole(memberWithRoles([FUN_ROLE_IDS.female])), "female");
   assert.equal(normalizeFunRole(memberWithRoles([FUN_ROLE_IDS.male])), "male");
   assert.equal(normalizeFunRole(memberWithRoles([FUN_ROLE_IDS.trans])), "trans");
