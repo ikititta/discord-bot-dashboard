@@ -64,6 +64,8 @@ test("fun help explains command types, stats, and VIP access", () => {
   assert.match(fields, /Two-person commands/);
   assert.match(fields, /Solo commands/);
   assert.doesNotMatch(embed.data.footer.text, /consent/i);
+  assert.match(fields, /!fuck @member/);
+  assert.doesNotMatch(fields, /NSFW preferences|!nsfw-on|!nsfw-off|approval/i);
 });
 
 test("paired and solo commands enforce the correct mention mode", () => {
