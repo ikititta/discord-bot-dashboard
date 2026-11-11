@@ -173,7 +173,7 @@ export function isVerifiedAdult(member) {
   // Resolve Member by its live role name as well as the legacy ID. The
   // onboarding system manages this role by name, so its ID may change.
   const hasMemberRole = typeof roles.some === "function"
-    ? roles.some((role) => String(role?.name ?? "").normalize("NFKD").toLowerCase().replace(/\\p{M}/gu, "").replace(/[^a-z0-9]/g, "") === "member")
+    ? roles.some((role) => String(role?.name ?? "").normalize("NFKD").toLowerCase().replace(/\p{M}/gu, "").replace(/[^a-z0-9]/g, "") === "member")
     : false;
   return Boolean(roles.has?.(FUN_MEMBER_ROLE_ID) || hasMemberRole);
 }
@@ -311,7 +311,7 @@ export function attachFunCommands(client, { store, fetchImpl = fetch } = {}) {
     const args = match[2] ?? "";
     if (!isCommandsThread(message)) {
       const parentName = String(message.channel?.parent?.name ?? message.channel?.name ?? "")
-        .normalize("NFKD").toLowerCase().replace(/\\p{M}/gu, "").replace(/[^a-z0-9]/g, "");
+        .normalize("NFKD").toLowerCase().replace(/\p{M}/gu, "").replace(/[^a-z0-9]/g, "");
       if (parentName.includes("commands") &&
           (getFunCommandDefinition(name) || name === "funhelp" || name === "stats" || name === "vip")) {
         await safeReply(message, { content: "Please use the 💬 commands thread for fun commands ♡" });
