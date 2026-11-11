@@ -139,7 +139,7 @@ export function buildRulesPayload(guild) {
       `## ${toRoyalBold("01 · Respect")}
 No harassment, hate, threats, bullying, spam, or sharing private information.`,
       `## ${toRoyalBold("02 · Content")}
-Keep NSFW content in NSFW channels. VIP members may post it elsewhere. No illegal or non-consensual intimate content. NSFW interactions require the other member's approval unless they enabled automatic acceptance with '!nsfw-on'. Use '!nsfw-off' to require approval again.`,
+Keep NSFW content in NSFW channels. VIP members may post it elsewhere. No illegal or non-consensual intimate content. Fun interaction commands run automatically for verified Member accounts; follow Kittisugar's server rules.`,
       `## ${toRoyalBold("03 · Promotions & Selling")}
 Only VIP members may promote or sell in ${promotionChannel}. VIP is **$5 USD once, for life** and includes **VIP, Seller, and a custom role**. No unsolicited ads in chats, profiles, or DMs.`,
       `## ${toRoyalBold("04 · Warnings")}
@@ -191,7 +191,6 @@ export function buildGuidePayload(guild) {
       "`!quote` — reply to a message with !quote to create an image quote.\n" +
       "`/priv-chat create|add|remove|rename|leave|delete|commands` — manage your private chat.\n" +
       "`/fun help` — view the fun-command guide.\n" +
-      "`!nsfw-on` — automatically accept NSFW interaction requests. `!nsfw-off` — require approval for each request again.\n" +
       "`!propose @member` / `!marry @member` — propose marriage. `!couple @member` — ask to become a couple; the other member must accept.\n" +
       "`!breakup` / `!divorce` — end your current relationship.\n" +
       "`!stats` — view your basic fun-command statistics.\n" +
