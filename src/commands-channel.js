@@ -13,11 +13,10 @@ export function buildCommandsThreadGuidePayload() {
       .setColor(COLOR)
       .setTitle(COMMANDS_GUIDE_TITLE)
       .setDescription(
-        "**All reputation commands**\n\n" +
-        "`!rep` — check your own reputation score.\n" +
-        "`!rep @member` — check another member's reputation score.\n" +
-        "`!rep top` — see the top positive and negative reputation rankings.\n" +
-        "`!rep comments @member` — read the latest reputation comments for a member.\n\n" +
+        "**Reputation commands**\n\n" +
+        "`!rep` — view your reputation, positive and negative votes, and comments.\n" +
+        "`!rep @member` — view another member's reputation, positive and negative votes, and comments.\n" +
+        "`!rep top` — see the positive and negative reputation rankings.\n\n" +
         "♡ Type these commands directly in this thread. They do not work in other channels."
       )
       .setFooter({ text: "Kittisugar · Reputation help ♡" })],
@@ -45,15 +44,10 @@ export function buildCommandsPanelPayload() {
       .setColor(COLOR)
       .setTitle(PANEL_TITLE)
       .setDescription(
-        "This is the Kittisugar command board ♡\n\n" +
-        "**Quick guide**\n" +
-        "`!funhelp` — see the fun commands.\n" +
-        "`!stats` — view your basic fun-command stats.\n" +
-        "`!vip stats @member` — VIP stats for another member.\n" +
-        "`!rep` — view your reputation.\n" +
-        "`!rep @member` — view another member's reputation.\n" +
-        "`!rep top` — view the positive and negative rankings.\n" +
-        "`!rep comments @member` — view a member's latest comments. (All !rep commands work inside this thread only.)"
+        "**Reputation commands**\n\n" +
+        "`!rep` — your reputation, positive and negative votes, and comments.\n" +
+        "`!rep @member` — another member's reputation, positive and negative votes, and comments.\n" +
+        "`!rep top` — positive and negative rankings."
       )
       .setFooter({ text: "Kittisugar commands ♡" })],
   };
