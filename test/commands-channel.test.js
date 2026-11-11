@@ -8,42 +8,25 @@ import {
   isCommandsThread,
 } from "../src/commands-channel.js";
 
-test("commands board lists fun commands without mentioning the commands thread or reputation", () => {
+test("commands board is designed to live in Reputation and creates a thread from its embed", () => {
   const payload = buildCommandsPanelPayload();
   assert.equal(payload.embeds.length, 1);
-  assert.doesNotMatch(payload.embeds[0].data.description, /𝗰𝗼𝗺𝗺𝗮𝗻𝗱𝘀|thread/i);
   assert.match(payload.embeds[0].data.description, /!funhelp/);
-  assert.doesNotMatch(payload.embeds[0].data.description, /!rep/i);
-  assert.equal(COMMANDS_CHANNEL_NAME, "💬｜୨୧•𝓬𝓸𝓶𝓶𝓪𝓷𝓭𝓼");
+  assert.match(payload.embeds[0].data.description, /!rep/);
+  assert.equal(COMMANDS_CHANNEL_NAME, "reputation");
   assert.equal(COMMANDS_THREAD_NAME, "💬 𝗰𝗼𝗺𝗺𝗮𝗻𝗱𝘀");
 });
 
-test("commands thread detection accepts normalized Unicode names and uncached parents", () => {
-  const message = {
-    guild: {},
-    channel: {
-      name: "💬 𝗰𝗼𝗺𝗺𝗮𝗻𝗱𝘀",
-      parent: null,
-      isThread: () => true,
-    },
-  };
-  assert.equal(isCommandsThread(message), true);
-  assert.equal(isCommandsThread({
-    ...message,
-    channel: { ...message.channel, name: "💬 𝗰𝗼𝗺𝗺𝗮𝗻𝗱𝘀", parent: { name: "general" } },
-  }), false);
-});
-
-test("only messages in the dedicated commands thread are accepted", () => {
+test("only the commands thread under Reputation is accepted for rep commands", () => {
   const message = {
     guild: {},
     channel: {
       name: COMMANDS_THREAD_NAME,
-      parent: { name: COMMANDS_CHANNEL_NAME },
+      parent: { name: "reputation" },
       isThread: () => true,
     },
   };
   assert.equal(isCommandsThread(message), true);
-  assert.equal(isCommandsThread({ ...message, channel: { ...message.channel, name: "general" } }), false);
+  assert.equal(isCommandsThread({ ...message, channel: { ...message.channel, parent: { name: "general" } } }), false);
   assert.equal(isCommandsThread({ ...message, channel: { ...message.channel, isThread: () => false } }), false);
 });
