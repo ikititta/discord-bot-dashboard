@@ -33,6 +33,14 @@ test("ordinary member messages in server text channels receive reactions", () =>
   })), true);
 });
 
+test("automatic reactions are disabled in the Comments thread", () => {
+  const commentsThread = {
+    name: "Comments", parentId: "community-channel", topic: null,
+    isThread: () => true, isTextBased: () => true,
+  };
+  assert.equal(shouldAutoReactToMessage(message({ channel: commentsThread })), false);
+});
+
 test("bot, webhook, system, and DM messages are ignored", () => {
   assert.equal(shouldAutoReactToMessage(message({ author: { bot: true } })), false);
   assert.equal(shouldAutoReactToMessage(message({ webhookId: "webhook-1" })), false);
