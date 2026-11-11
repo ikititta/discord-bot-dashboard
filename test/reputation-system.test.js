@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 
-import { ReputationStore } from "../src/reputation-system.js";
+import { ReputationStore, makePanelPayload } from "../src/reputation-system.js";
 
 function temporaryDirectory() {
   return fs.mkdtempSync(path.join(os.tmpdir(), "sugar-reputation-"));
@@ -84,4 +84,13 @@ test("reputation votes can be positive or negative and one member can update the
   } finally {
     fs.rmSync(directory, { recursive: true, force: true });
   }
+});
+
+
+test("reputation panel exposes only English positive and negative vote buttons", () => {
+  const payload = makePanelPayload();
+  const buttons = payload.components.flatMap((row) => row.toJSON().components);
+  assert.deepEqual(buttons.map((button) => button.label), ["Give Positive", "Give Negative"]);
+  assert.deepEqual(buttons.map((button) => button.style), [3, 4]);
+  assert.doesNotMatch(payload.embeds[0].data.description, /Leave a Comment|Dar positiva|Dar negativa/i);
 });
