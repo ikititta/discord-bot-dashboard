@@ -10,10 +10,11 @@ function emptyState() {
   return { version: VERSION, guilds: {} };
 }
 
-function validCounterMap(value) {
+function validCounterMap(value, { idsOnly = false } = {}) {
   return value && typeof value === "object" && !Array.isArray(value) &&
     Object.entries(value).every(([key, count]) =>
-      /^\d{1,20}$/.test(key) && Number.isSafeInteger(count) && count >= 0,
+      (idsOnly ? /^\d{17,20}$/.test(key) : /^[a-z][a-z0-9-]{0,30}$/.test(key)) &&
+      Number.isSafeInteger(count) && count >= 0,
     );
 }
 
@@ -22,7 +23,7 @@ function validUserStats(value) {
     Number.isSafeInteger(value.total) && value.total >= 0 &&
     Number.isSafeInteger(value.receivedTotal) && value.receivedTotal >= 0 &&
     validCounterMap(value.commands) && validCounterMap(value.received) &&
-    validCounterMap(value.partners) && validCounterMap(value.receivedFrom) &&
+    validCounterMap(value.partners, { idsOnly: true }) && validCounterMap(value.receivedFrom, { idsOnly: true }) &&
     typeof value.lastUsed === "string";
 }
 
