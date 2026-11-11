@@ -214,7 +214,7 @@ function buildServerMap(guild) {
   const uncategorized = [...guild.channels.cache.values()].filter((channel) => !channel.parentId && channel.type !== ChannelType.GuildCategory && !channel.isThread?.()).sort((a, b) => a.rawPosition - b.rawPosition);
   if (uncategorized.length) sections.push(`**Other channels**\n${uncategorized.slice(0, 12).map((channel) => `<#${channel.id}>`).join(" · ")}`);
   const map = sections.join("\n");
-  return map ? `\n\n## ୨୧ ${guideSectionTitle("Channels & Categories")}\n\n${map}`.slice(0, 1350) : "";
+  return map ? `\n## ୨୧ ${guideSectionTitle("Channels & Categories")}\n\n${map}`.slice(0, 1350) : "";
 }
 
 async function refreshDashboardGuide(client, guild) {
