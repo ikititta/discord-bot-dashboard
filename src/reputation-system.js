@@ -1,4 +1,4 @@
-import { ensureCommandsBoard } from "./commands-channel.js";
+import { ensureCommandsBoard, isCommandsThread, refreshCommandsThreadSticky } from "./commands-channel.js";
 import fs from "node:fs";
 import path from "node:path";
 import {
@@ -371,6 +371,17 @@ export function attachReputationSystem(client, store) {
       }
     }
   });
+  const commandsStickyQueues = new Map();
+  client.on(Events.MessageCreate, (message) => {
+    if (!message.guild || message.author.bot || !isCommandsThread(message)) return;
+    const state = commandsStickyQueues.get(message.channel.id) ?? { running: Promise.resolve() };
+    state.running = state.running.then(async () => {
+      const thread = await client.channels.fetch(message.channel.id).catch(() => null);
+      if (!thread?.isThread?.()) return;
+      await refreshCommandsThreadSticky(thread, client);
+    }).catch((error) => console.error("[commands] sticky guide failed: " + error.message));
+    commandsStickyQueues.set(message.channel.id, state);
+  });
   client.on(Events.MessageCreate, async (message) => {
     if (!message.guild || message.author.bot || !isCommandsThread(message) || !/^!rep(?:\s|$)/i.test(message.content.trim())) return;
     const args = message.content.trim().split(/\s+/).slice(1);
@@ -387,6 +398,12 @@ export function attachReputationSystem(client, store) {
             ...top.filter((x) => x.reputation < 0).sort((a, b) => a.reputation - b.reputation).slice(0, 10).map((x, i) => `**${i + 1}.** <@${x.userId}> — **${x.reputation}** rep`),
           ].join("\n") : "No reputation votes yet ♡");
         return message.reply({ embeds: [embed], allowedMentions: { parse: [] } });
+      }
+      if (args[0]?.toLowerCase() === "comments" && !mentioned) {
+        return message.reply("Please mention a member. Usage: `!rep comments @member` ♡");
+      }
+      if (args[0]?.startsWith("@") && !mentioned) {
+        return message.reply("Please select a member mention from Discord's suggestions. Usage: `!rep @member` ♡");
       }
       if (args[0]?.toLowerCase() === "comments" && mentioned) {
         const entries = store.getCommentsForUser(message.guild.id, mentioned.id).slice(-5).reverse();
