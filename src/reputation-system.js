@@ -127,7 +127,7 @@ export function makePanelPayload() {
     ),
   ] };
 }
-function buildTopEmbed(store, guild) {
+export function buildTopEmbed(store, guild) {
   const ranking = store.getTop(guild.id, 1000);
   const positive = ranking.filter((item) => item.reputation > 0).sort((a, b) => b.reputation - a.reputation).slice(0, 10);
   const negative = ranking.filter((item) => item.reputation < 0).sort((a, b) => a.reputation - b.reputation).slice(0, 10);
