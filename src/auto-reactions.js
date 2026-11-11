@@ -25,6 +25,7 @@ export function shouldAutoReactToMessage(message, { stickyPanels } = {}) {
 
   const channel = message.channel;
   if (!channel || EXCLUDED_CHANNEL_IDS.has(message.channelId)) return false;
+  if (channel.isThread?.() && String(channel.name ?? "").trim().toLowerCase() === "comments") return false;
   const parentChannel = channel.parent ?? message.guild.channels?.cache?.get(channel.parentId);
   const parentCategoryId = parentChannel?.parentId;
   if (
