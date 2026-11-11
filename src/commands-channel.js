@@ -110,6 +110,7 @@ async function ensureCommandsChannel(guild, client) {
   let panel;
   if (previous && (!activity || activity.createdTimestamp <= previous.createdTimestamp)) {
     panel = await previous.edit(buildCommandsPanelPayload());
+    if (panel.pinned) await panel.unpin().catch((error) => console.error("[commands] could not unpin command board: " + error.message));
   } else {
     panel = await channel.send(buildCommandsPanelPayload());
     if (previous) await previous.delete().catch(() => {});
