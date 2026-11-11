@@ -260,26 +260,21 @@ async function applyStartPermissions(channel, guild, newRole, botId) {
   });
 }
 
-function findTextChannel(guild, category, expectedName) {
+function findTextChannel(guild, _category, expectedName) {
   const expected = normalizeName(expectedName);
   return guild.channels.cache.find((channel) =>
     channel.type === ChannelType.GuildText &&
-    channel.parentId === category.id &&
     normalizeName(channel.name) === expected,
   ) ?? null;
 }
 
 async function ensureTextChannel(guild, category, name, newRole, botId) {
-  let channel = findTextChannel(guild, category, name);
+  const channel = findTextChannel(guild, category, name);
   if (!channel) {
-    channel = await guild.channels.create({
-      name,
-      type: ChannelType.GuildText,
-      parent: category.id,
-      reason: "Set up the Kittisugar New-member access flow",
-    });
+    console.warn(`[access] existing #${name} channel was not found in guild ${guild.id}; no channel was created.`);
+    return null;
   }
-  if (channel.name !== name) await channel.setName(name, "Apply Kittisugar start-channel naming style");
+  // Keep the current name and category exactly as the server owner set them.
   await applyStartPermissions(channel, guild, newRole, botId);
   return channel;
 }
@@ -291,15 +286,12 @@ export async function ensureStartChannels(guild, client) {
     return null;
   }
 
-  let category = guild.channels.cache.find((channel) =>
+  const category = guild.channels.cache.find((channel) =>
     channel.type === ChannelType.GuildCategory && normalizeName(channel.name) === START_CATEGORY_NAME,
   );
   if (!category) {
-    category = await guild.channels.create({
-      name: START_CATEGORY_NAME,
-      type: ChannelType.GuildCategory,
-      reason: "Create the Kittisugar entry category",
-    });
+    console.warn(`[access] existing start category was not found in guild ${guild.id}; no category or channels were created.`);
+    return null;
   }
 
   await applyStartPermissions(category, guild, newRole, client.user.id);
@@ -307,9 +299,11 @@ export async function ensureStartChannels(guild, client) {
   const rules = await ensureTextChannel(guild, category, RULES_CHANNEL_NAME, newRole, client.user.id);
   const guide = await ensureTextChannel(guild, category, GUIDE_CHANNEL_NAME, newRole, client.user.id);
 
-  await upsertPanel(access, client, `୨୧ ${toRoyalBold("Get Access!")} ♡`, buildAccessPanelPayload(guild, { rulesChannel: rules, guideChannel: guide }));
+  if (access) {
+    await upsertPanel(access, client, `୨୧ ${toRoyalBold("Get Access!")} ♡`, buildAccessPanelPayload(guild, { rulesChannel: rules, guideChannel: guide }));
+  }
 
-  // Rules and Guide are now member-managed text channels; Sugar must not
+  // Rules and Guide are member-managed text channels; Sugar must not
   // automatically publish or refresh embeds in either channel.
   const dashboard = guild.channels.cache.find((channel) =>
     channel.type === ChannelType.GuildText && normalizeName(channel.name) === "dashboard",
@@ -321,7 +315,7 @@ export async function ensureStartChannels(guild, client) {
     });
   }
 
-  console.info(`[access] start category ready for guild ${guild.id}`);
+  console.info(`[access] start category checked for guild ${guild.id}; no channels were created or renamed.`);
   return { category, access, rules, guide };
 }
 
