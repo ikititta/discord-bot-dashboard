@@ -257,7 +257,16 @@ export function attachPetSystem(client, store) {
     void ensurePetsChannel(guild, client, store).catch((error) => console.error("[pets] channel setup failed: " + error.message));
   });
   client.on(Events.InteractionCreate, async (interaction) => {
-    if (!interaction.isButton?.() || interaction.customId !== BUTTON_ID) return;
+    if (!interaction.isButton?.() || ![BUTTON_ID, "sugar-pets:global-top"].includes(interaction.customId)) return;
+    if (interaction.customId === "sugar-pets:global-top") {
+      try {
+        if (!interaction.guild) return interaction.reply({ content: "The global pet top is only available inside a server ♡", ephemeral: true });
+        return interaction.reply({ embeds: [buildGlobalPetLeaderboard(store, interaction.guild.id)], ephemeral: true });
+      } catch (error) {
+        console.error("[pets] leaderboard failed: " + error.message);
+        return interaction.reply({ content: "Could not load the global pet top. Please try again ♡", ephemeral: true });
+      }
+    }
     try {
       const guild = interaction.guild;
       if (!guild) return interaction.reply({ content: "Pet rooms are only available inside a server ♡", ephemeral: true });
@@ -301,7 +310,7 @@ export function attachPetSystem(client, store) {
           reason: "Create a private personal pet channel",
         });
         await petChannel.send({
-          content: `Welcome <@${interaction.user.id}>! Use your !pet commands in this private channel ♡`,
+          content: `Welcome <@${interaction.user.id}>! Your little pet corner is ready ♡`,
           allowedMentions: { users: [interaction.user.id] },
         });
       }
