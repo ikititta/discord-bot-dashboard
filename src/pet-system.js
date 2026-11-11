@@ -75,6 +75,12 @@ function buildPetEmbed() {
       "Open your pet room and start chatting with your little companion ♡"
     ).setFooter({ text: "Your pet's progress is saved ♡" });
 }
+function buildPetCommandsEmbed() {
+  return new EmbedBuilder().setColor(COLOR).setTitle("୨୧ 𝓟𝓮𝓽 𝓡𝓸𝓸𝓶 · 𝓒𝓸𝓶𝓶𝓪𝓷𝓭𝓼 ♡")
+    .setDescription("**Everyone**\n`!pet adopt` · `!pet` · `!pet feed` · `!pet play` · `!pet cuddle`\n`!pet shop` · `!pet buy treat/toy` · `!pet inventory`\n`!pet rename <name>` · `!pet select <number>`\n\n**VIP extras**\n`!pet room` · `!pet outfit <name>` · `!pet rare` · `!pet slots` · `!pet minigame")
+    .setFooter({ text: "Use these commands in your private pet room ♡" });
+}
+
 function buildGlobalPetLeaderboard(store, guildId) {
   const entries = [];
   for (const [userId, profile] of Object.entries(store.data.guilds[guildId] ?? {})) {
@@ -311,9 +317,13 @@ export function attachPetSystem(client, store) {
         });
         await petChannel.send({
           content: `Welcome <@${interaction.user.id}>! Your little pet corner is ready ♡`,
+          embeds: [buildPetCommandsEmbed()],
           allowedMentions: { users: [interaction.user.id] },
         });
       }
+      const roomMessages = await petChannel.messages.fetch({ limit: 20 });
+      const hasCommands = roomMessages.some((message) => message.author?.id === client.user.id && message.embeds.some((embed) => embed.title === "୨୧ 𝓟𝓮𝓽 𝓡𝓸𝓸𝓶 · 𝓒𝓸𝓶𝓶𝓪𝓷𝓭𝓼 ♡"));
+      if (!hasCommands) await petChannel.send({ embeds: [buildPetCommandsEmbed()] });
       await petChannel.permissionOverwrites.edit(interaction.user.id, { AddReactions: false });
       await petChannel.permissionOverwrites.edit(client.user.id, { AddReactions: false });
       await interaction.reply({ content: `Your pet room is ready: <#${petChannel.id}> ♡`, ephemeral: true });
