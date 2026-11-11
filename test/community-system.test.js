@@ -16,6 +16,7 @@ import {
   buildPublicationModePicker,
   buildPublicationRecipientPicker,
   buildCommunityPostComponents,
+  buildCommunityRepliesChannelName,
   buildLoveLetterReplyComponents,
   buildCommunityThreadReplyComponents,
   buildThreadReplyModePicker,
@@ -169,10 +170,20 @@ test("legacy standalone confess picker now opens two anonymous-or-named buttons"
   assert.ok(buttons.every((item) => item.type === 2));
 });
 
-test("reply thread lookup fetches the thread by its starter message ID", () => {
+test("confession and love letter replies use public text channel names with their post numbers", () => {
+  assert.equal(
+    buildCommunityRepliesChannelName("confession", "001"),
+    "🤫｜୨୧・𝓬𝓸𝓷𝓯𝓮𝓼𝓼𝓲𝓸𝓷-001-𝓻𝓮𝓹𝓵𝓲𝓮𝓼",
+  );
+  assert.equal(
+    buildCommunityRepliesChannelName("letter", "012"),
+    "💌｜୨୧・𝓵𝓸𝓿𝓮-𝓵𝓮𝓽𝓽𝓮𝓻-012-𝓻𝓮𝓹𝓵𝓲𝓮𝓼",
+  );
+  assert.throws(() => buildCommunityRepliesChannelName("poll", "001"), /Invalid/);
   const source = fs.readFileSync(new URL("../src/community-system.js", import.meta.url), "utf8");
-  assert.match(source, /channel\.threads\.fetch\(parent\.id, \{ force: true \}\)/);
-  assert.doesNotMatch(source, /threads\.fetch\(\{\s*message:/);
+  assert.ok(source.includes("guild.channels.create("));
+  assert.ok(!source.includes("channel.threads.fetch(parent.id"));
+  assert.ok(!source.includes("parent.startThread("));
 });
 
 test("community post reply picker offers anonymous and named thread replies", () => {

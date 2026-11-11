@@ -13,7 +13,7 @@ import {
   StringSelectMenuBuilder,
 } from "discord.js";
 
-import { formatEmbedTitle } from "./embed-format.js";
+import { formatEmbedTitle, toRoyalBold } from "./embed-format.js";
 import { attachStickyPanel } from "./sticky-panels.js";
 
 export const CONFESSIONS_CHANNEL_ID = "1568179046209028106";
@@ -50,7 +50,7 @@ function communityThreadReplyButton(kind, messageId) {
 }
 
 export function buildCommunityThreadReplyComponents(kind, messageId) {
-  if (!validReplyKind(kind) || !/^\d{17,20}$/.test(messageId ?? "")) {
+  if (!validReplyKind(kind) || !/^(?:0|\d{17,20})$/.test(messageId ?? "")) {
     throw new Error("Invalid thread reply target.");
   }
   return [new ActionRowBuilder().addComponents(
@@ -388,12 +388,9 @@ async function handleCommunityButton(interaction) {
 
   if (id.startsWith("thread-reply:")) {
     const [, kind, messageId] = id.split(":");
-    const thread = interaction.channel;
-    const expectedParent = kind === "confession" ? CONFESSIONS_CHANNEL_ID
-      : kind === "letter" ? LOVE_LETTERS_CHANNEL_ID : null;
-    if (!expectedParent || !/^\d{17,20}$/.test(messageId ?? "") ||
+    if (!validReplyKind(kind) || !/^\d{17,20}$/.test(messageId ?? "") ||
         interaction.message?.id !== messageId || !interaction.inGuild() ||
-        !thread?.isThread?.() || thread.parentId !== expectedParent ||
+        !isPublicRepliesChannel(interaction.channel, kind) ||
         !hasThreadReplyButton(interaction.message, kind, messageId)) {
       return replyEphemeral(interaction, "This reply button is no longer valid.");
     }
@@ -402,11 +399,8 @@ async function handleCommunityButton(interaction) {
 
   if (id.startsWith("thread-reply-mode:")) {
     const [, kind, mode, messageId] = id.split(":");
-    const thread = interaction.channel;
-    const expectedParent = kind === "confession" ? CONFESSIONS_CHANNEL_ID
-      : kind === "letter" ? LOVE_LETTERS_CHANNEL_ID : null;
-    if (!expectedParent || !validMode(mode) || !/^\d{17,20}$/.test(messageId ?? "") ||
-        !interaction.inGuild() || !thread?.isThread?.() || thread.parentId !== expectedParent) {
+    if (!validReplyKind(kind) || !validMode(mode) || !/^\d{17,20}$/.test(messageId ?? "") ||
+        !interaction.inGuild() || !isPublicRepliesChannel(interaction.channel, kind)) {
       return replyEphemeral(interaction, "This reply option is no longer valid.");
     }
     return interaction.showModal(buildThreadReplyModal(kind, mode, messageId));
@@ -623,9 +617,7 @@ async function handleCommunityModal(interaction, { store, settings, suggestionSt
   const threadReplyKind = threadReplyParts[1];
   const validThreadReplyLocation = isThreadReply &&
     ["confession", "letter"].includes(threadReplyKind) &&
-    interaction.channel?.isThread?.() &&
-    interaction.channel.parentId === (threadReplyKind === "confession"
-      ? CONFESSIONS_CHANNEL_ID : LOVE_LETTERS_CHANNEL_ID);
+    isPublicRepliesChannel(interaction.channel, threadReplyKind);
   if ((!expectedChannel && !validThreadReplyLocation) || (isReport
     ? !isExpectedCommunityLocation(interaction, expectedChannel)
     : isThreadReply ? !validThreadReplyLocation : interaction.channelId !== expectedChannel)) {
@@ -768,8 +760,8 @@ async function handleCommunityModal(interaction, { store, settings, suggestionSt
 }
 
 async function publishCommunityThreadMessageReply(interaction, kind, mode, targetId) {
-  const thread = interaction.channel;
-  const target = await thread.messages.fetch(targetId).catch(() => null);
+  const repliesChannel = interaction.channel;
+  const target = await repliesChannel.messages.fetch(targetId).catch(() => null);
   if (!target || target.author?.id !== interaction.client.user.id ||
       !hasThreadReplyButton(target, kind, targetId)) {
     return interaction.editReply("This reply is no longer available.");
@@ -791,7 +783,7 @@ async function publishCommunityThreadMessageReply(interaction, kind, mode, targe
     });
   }
   const components = buildCommunityThreadReplyComponents(kind, "0");
-  const reply = await thread.send({
+  const reply = await repliesChannel.send({
     embeds: [embed],
     components,
     allowedMentions: { parse: [] },
@@ -799,7 +791,7 @@ async function publishCommunityThreadMessageReply(interaction, kind, mode, targe
   await reply.edit({ components: buildCommunityThreadReplyComponents(kind, reply.id) }).catch((error) => {
     console.error(`[community] thread reply buttons could not be refreshed (reply=${reply.id}):`, error);
   });
-  return interaction.editReply("Your reply has been added to the thread ♡");
+  return interaction.editReply("Your reply has been added ♡");
 }
 
 function formatReplyDescription(body, replyName, targetName) {
@@ -811,78 +803,90 @@ function formatReplyDescription(body, replyName, targetName) {
 
 async function publishThreadReply(interaction, channel, kind, mode, parentId) {
   try {
-  const parent = await channel.messages.fetch(parentId).catch(() => null);
-  if (!parent) return interaction.editReply("The original post could not be found.");
-  const expectedReplyId = `${PREFIX}reply:${kind}:${parentId}`;
-  const hasMatchingReplyButton = parent.components.some((row) =>
-    row.components.some((component) => component.customId === expectedReplyId),
-  );
-  if (parent.author?.id !== interaction.client.user.id || !hasMatchingReplyButton || !parent.embeds.length) {
-    return interaction.editReply("This message is not a replyable community post.");
-  }
-  // Fetch even when Discord reports no active thread: an archived thread may
-  // already exist for this message, and trying to create a second one fails.
-  let thread;
-  try {
-    thread = await channel.threads.fetch(parent.id, { force: true });
-  } catch (error) {
-    // Discord reports an unknown channel when no thread exists for this message.
-    if (error?.code !== 10003 && error?.code !== 10008) throw error;
-    thread = null;
-  }
-  if (thread?.locked) await thread.setLocked(false, "Reopening community replies");
-  if (thread?.archived) await thread.setArchived(false, "Reopening community replies");
-  if (!thread) {
-    const botMember = interaction.guild.members.me ?? await interaction.guild.members.fetchMe();
-    const permissions = channel.permissionsFor(botMember);
-    if (!permissions?.has(PermissionFlagsBits.CreatePublicThreads)) {
-      return interaction.editReply("Sugar needs permission to create public reply threads in this channel.");
+    const parent = await channel.messages.fetch(parentId).catch(() => null);
+    if (!parent) return interaction.editReply("The original post could not be found.");
+    const expectedReplyId = `${PREFIX}reply:${kind}:${parentId}`;
+    const hasMatchingReplyButton = parent.components.some((row) =>
+      row.components.some((component) => component.customId === expectedReplyId),
+    );
+    if (parent.author?.id !== interaction.client.user.id || !hasMatchingReplyButton || !parent.embeds.length) {
+      return interaction.editReply("This message is not a replyable community post.");
     }
-    thread = await parent.startThread({
-      name: `${kind === "confession" ? "Confession" : "Love Letter"} replies`,
-      autoArchiveDuration: 1440,
-      reason: "Community post replies",
+    const serial = /#(\d{3})/.exec(parent.embeds[0].title ?? "")?.[1];
+    if (!serial) return interaction.editReply("The original post number could not be identified.");
+    const topic = `sugar-community-replies:${kind}:${parentId}`;
+    let repliesChannel = interaction.guild.channels.cache.find((item) =>
+      item.type === ChannelType.GuildText && item.topic === topic,
+    );
+    if (!repliesChannel) {
+      await interaction.guild.channels.fetch();
+      repliesChannel = interaction.guild.channels.cache.find((item) =>
+        item.type === ChannelType.GuildText && item.topic === topic,
+      );
+    }
+    if (!repliesChannel) {
+      const permissionOverwrites = [
+        {
+          id: interaction.guild.roles.everyone.id,
+          allow: [
+            PermissionFlagsBits.ViewChannel,
+            PermissionFlagsBits.SendMessages,
+            PermissionFlagsBits.ReadMessageHistory,
+          ],
+        },
+        {
+          id: interaction.client.user.id,
+          allow: [
+            PermissionFlagsBits.ViewChannel,
+            PermissionFlagsBits.SendMessages,
+            PermissionFlagsBits.ReadMessageHistory,
+            PermissionFlagsBits.EmbedLinks,
+            PermissionFlagsBits.ManageMessages,
+          ],
+        },
+      ];
+      repliesChannel = await interaction.guild.channels.create({
+        name: buildCommunityRepliesChannelName(kind, serial),
+        type: ChannelType.GuildText,
+        ...(channel.parentId ? { parent: channel.parentId } : {}),
+        topic,
+        permissionOverwrites,
+        reason: `Create public replies for ${kind} #${serial}`,
+      });
+    }
+    const replyBody = cleanText(interaction.fields.getTextInputValue("body"), 1800);
+    if (!replyBody) return interaction.editReply("Please write a reply before submitting.");
+    const replyName = mode === "named"
+      ? (interaction.member?.displayName ?? interaction.user.globalName ?? interaction.user.username)
+      : null;
+    const parentName = parent.embeds?.[0]?.author?.name ?? null;
+    const embed = new EmbedBuilder()
+      .setColor(COLOR)
+      .setTitle(formatEmbedTitle(mode === "anonymous" ? "Anonymous Reply" : "Reply"))
+      .setDescription(formatReplyDescription(replyBody, replyName, parentName));
+    if (replyName) {
+      embed.setAuthor({
+        name: replyName,
+        iconURL: interaction.user.displayAvatarURL(),
+      });
+    }
+    const reply = await repliesChannel.send({
+      embeds: [embed],
+      components: buildCommunityThreadReplyComponents(kind, "0"),
+      allowedMentions: { parse: [] },
     });
-  }
-  const botMember = interaction.guild.members.me ?? await interaction.guild.members.fetchMe();
-  if (!thread.permissionsFor(botMember)?.has(PermissionFlagsBits.SendMessagesInThreads)) {
-    return interaction.editReply("Sugar needs permission to send messages in reply threads.");
-  }
-  const replyBody = cleanText(interaction.fields.getTextInputValue("body"), 1800);
-  if (!replyBody) return interaction.editReply("Please write a reply before submitting.");
-  const replyName = mode === "named"
-    ? (interaction.member?.displayName ?? interaction.user.globalName ?? interaction.user.username)
-    : null;
-  const parentName = parent.embeds?.[0]?.author?.name ?? null;
-  const embed = new EmbedBuilder()
-    .setColor(COLOR)
-    .setTitle(formatEmbedTitle(mode === "anonymous" ? "Anonymous Reply" : "Reply"))
-    .setDescription(formatReplyDescription(replyBody, replyName, parentName));
-  if (replyName) {
-    embed.setAuthor({
-      name: replyName,
-      iconURL: interaction.user.displayAvatarURL(),
+    await reply.edit({
+      components: buildCommunityThreadReplyComponents(kind, reply.id),
+    }).catch((error) => {
+      console.error(`[community] reply report button update failed (reply=${reply.id}):`, error);
     });
-  }
-  const reply = await thread.send({
-    embeds: [embed],
-    components: buildCommunityThreadReplyComponents(kind, "0"),
-    allowedMentions: { parse: [] },
-  });
-  await reply.edit({
-    components: buildCommunityThreadReplyComponents(kind, reply.id),
-  }).catch((error) => {
-    // The reply is already published; a button refresh failure must not report
-    // the whole publication as failed.
-    console.error(`[community] reply report button update failed (reply=${reply.id}):`, error);
-  });
-  return interaction.editReply("Your reply has been added to the thread ♡");
+    return interaction.editReply(`Your reply has been added: <#${repliesChannel.id}> ♡`);
   } catch (error) {
-    console.error(`[community] reply publish failed (guild=${interaction.guildId}, channel=${channel.id}, parent=${parentId}, code=${error?.code ?? "unknown"}):`, error);
+    console.error(`[community] public reply channel failed (guild=${interaction.guildId}, channel=${channel.id}, parent=${parentId}, code=${error?.code ?? "unknown"}):`, error);
     if (error?.code === 50013) {
-      return interaction.editReply("Sugar needs permission to create or reopen the reply thread and send messages in it. Please ask a moderator to check Create Public Threads, Send Messages in Threads, and Manage Threads permissions.");
+      return interaction.editReply("Sugar needs Manage Channels and permission to send messages in public replies channels. Please ask a moderator to check Sugar's permissions.");
     }
-    return interaction.editReply("Sugar couldn't open the reply thread or send your reply. Please ask a moderator to check Sugar's thread permissions and try again.");
+    return interaction.editReply("Sugar couldn't open the public replies channel or send your reply. Please try again or ask a moderator to check Sugar's permissions.");
   }
 }
 
@@ -914,7 +918,28 @@ function reportChannelForKind(kind) {
 }
 
 function isExpectedCommunityLocation(interaction, expectedChannelId) {
-  return interaction.channelId === expectedChannelId || interaction.channel?.parentId === expectedChannelId;
+  const kind = expectedChannelId === CONFESSIONS_CHANNEL_ID ? "confession"
+    : expectedChannelId === LOVE_LETTERS_CHANNEL_ID ? "letter" : null;
+  return interaction.channelId === expectedChannelId ||
+    interaction.channel?.parentId === expectedChannelId ||
+    (kind !== null && isPublicRepliesChannel(interaction.channel, kind));
+}
+
+function isPublicRepliesChannel(channel, kind) {
+  return validReplyKind(kind) &&
+    channel?.type === ChannelType.GuildText &&
+    channel.topic?.startsWith(`sugar-community-replies:${kind}:`) === true;
+}
+
+export function buildCommunityRepliesChannelName(kind, serial) {
+  if (!validReplyKind(kind) || !/^\d{3}$/.test(String(serial ?? ""))) {
+    throw new Error("Invalid community replies channel name.");
+  }
+  const label = kind === "confession"
+    ? `confession-${serial}-replies`
+    : `love-letter-${serial}-replies`;
+  const emoji = kind === "confession" ? "🤫" : "💌";
+  return `${emoji}｜୨୧・${toRoyalBold(label)}`;
 }
 
 function hasThreadReplyButton(message, kind, messageId) {

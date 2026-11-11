@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { PetStore } from "../src/pet-system.js";
+import { PetStore, formatPetChannelName } from "../src/pet-system.js";
 
 test("virtual pet data persists across store restarts", () => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), "kittisugar-pets-"));
@@ -34,4 +34,10 @@ test("missing pet data starts with an empty guild collection", () => {
   } finally {
     fs.rmSync(directory, { recursive: true, force: true });
   }
+});
+
+test("personal pet rooms use private text-channel title format", () => {
+  const name = formatPetChannelName("Kitti");
+  assert.match(name, /^🐾｜୨୧・.+’s 𝓹𝓮𝓽$/u);
+  assert.ok(name.length < 100);
 });

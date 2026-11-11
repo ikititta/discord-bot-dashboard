@@ -1,8 +1,9 @@
 import fs from "node:fs";
 import path from "node:path";
 import {
-  ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, EmbedBuilder, Events,
+  ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, EmbedBuilder, Events, PermissionFlagsBits,
 } from "discord.js";
+import { toRoyalBold } from "./embed-format.js";
 
 const COLOR = 0xffd9ff;
 const VIP_ROLE_ID = "1568188640113463437";
@@ -41,6 +42,15 @@ export class PetStore {
   }
 }
 
+function normalizePetChannelLabel(value) {
+  const label = String(value ?? "member").normalize("NFKC").toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-+|-+$/g, "").slice(0, 42).replace(/-+$/g, "");
+  return label || "member";
+}
+export function formatPetChannelName(username) {
+  return `🐾｜୨୧・${toRoyalBold(normalizePetChannelLabel(username))}’s 𝓹𝓮𝓽`;
+}
+
 function isVip(member) {
   return member?.roles?.cache?.has(VIP_ROLE_ID) === true;
 }
@@ -49,8 +59,8 @@ function buildPetEmbed() {
     .setDescription(
       "Welcome to the Kittisugar pet corner! Adopt a little friend, look after them, and watch them grow.\n\n" +
       "**Where to use commands**\n" +
-      "♡ First, press **Open Pet Room ♡** below. Sugar will open your personal pet thread.\n" +
-      "♡ Send all `!pet` commands inside that thread — not in the main pets channel.\n" +
+      "♡ First, press **Open Pet Room ♡** in the main pets panel. Sugar will open your personal pet channel.\n" +
+      "♡ Send all `!pet` commands inside that channel — not in the main pets channel.\n" +
       "♡ Everyone can adopt a pet and use the basic care commands. VIP unlocks extra rooms, outfits, rare pets, more pet slots, and minigames.\n\n" +
       "**Everyone**\n" +
       "`!pet adopt` — adopt your first pet. `!pet` — view its status.\n" +
@@ -86,12 +96,12 @@ async function ensurePetsChannel(guild, client) {
     });
   }
   await channel.permissionOverwrites.edit(guild.roles.everyone, {
-    ViewChannel: true, SendMessages: false, SendMessagesInThreads: true, ReadMessageHistory: true,
-  }, "Keep the virtual pets channel panel read-only");
+    ViewChannel: true, SendMessages: false, CreatePublicThreads: false, SendMessagesInThreads: false, ReadMessageHistory: true,
+  }, "Keep the virtual pets panel read-only");
   await channel.permissionOverwrites.edit(client.user.id, {
     ViewChannel: true, SendMessages: true, EmbedLinks: true, ReadMessageHistory: true,
-    ManageMessages: true, CreatePublicThreads: true, SendMessagesInThreads: true, ManageThreads: true,
-  }, "Allow Sugar to maintain the pet panel and create pet threads");
+    ManageMessages: true,
+  }, "Allow Sugar to maintain the pets panel");
   const recent = await channel.messages.fetch({ limit: 50 });
   const old = recent.find((message) => message.author?.id === client.user.id &&
     message.embeds.some((embed) => embed.title === "୨୧ 𝓥𝓲𝓻𝓽𝓾𝓪𝓵 𝓟𝓮𝓽𝓼 ♡"));
@@ -218,25 +228,70 @@ export function attachPetSystem(client, store) {
   client.on(Events.InteractionCreate, async (interaction) => {
     if (!interaction.isButton?.() || interaction.customId !== BUTTON_ID) return;
     try {
-      const thread = await interaction.channel.threads.create({
-        name: `${interaction.user.username}'s pet room`.slice(0, 100),
-        autoArchiveDuration: 1440,
-        type: ChannelType.PublicThread,
-        reason: "Open a member's Kittisugar pet command thread",
-      });
-      await thread.members.add(interaction.user.id);
-      await thread.send({ content: `Welcome <@${interaction.user.id}>! Your pet commands go here ♡`, embeds: [buildPetEmbed()] });
-      await interaction.reply({ content: `Your pet room is ready: <#${thread.id}> ♡`, ephemeral: true });
+      const guild = interaction.guild;
+      if (!guild || interaction.channel?.name !== CHANNEL_NAME) {
+        return interaction.reply({ content: "Please open your pet room from the pets panel ♡", ephemeral: true });
+      }
+      const topic = `Sugar personal pet room for ${interaction.user.id}`;
+      let petChannel = guild.channels.cache.find((item) =>
+        item.type === ChannelType.GuildText && item.topic === topic,
+      );
+      if (!petChannel) {
+        await guild.channels.fetch();
+        petChannel = guild.channels.cache.find((item) =>
+          item.type === ChannelType.GuildText && item.topic === topic,
+        );
+      }
+      if (!petChannel) {
+        petChannel = await guild.channels.create({
+          name: formatPetChannelName(interaction.user.username),
+          type: ChannelType.GuildText,
+          ...(interaction.channel.parentId ? { parent: interaction.channel.parentId } : {}),
+          topic,
+          permissionOverwrites: [
+            { id: guild.roles.everyone.id, deny: [PermissionFlagsBits.ViewChannel] },
+            {
+              id: interaction.user.id,
+              allow: [
+                PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages,
+                PermissionFlagsBits.ReadMessageHistory, PermissionFlagsBits.AttachFiles,
+                PermissionFlagsBits.EmbedLinks, PermissionFlagsBits.AddReactions,
+              ],
+            },
+            {
+              id: client.user.id,
+              allow: [
+                PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages,
+                PermissionFlagsBits.ReadMessageHistory, PermissionFlagsBits.EmbedLinks,
+                PermissionFlagsBits.ManageMessages,
+              ],
+            },
+          ],
+          reason: "Create a private personal pet channel",
+        });
+        await petChannel.send({
+          content: `Welcome <@${interaction.user.id}>! Your pet commands go here ♡`,
+          embeds: [buildPetEmbed()],
+          allowedMentions: { users: [interaction.user.id] },
+        });
+      }
+      await interaction.reply({ content: `Your pet room is ready: <#${petChannel.id}> ♡`, ephemeral: true });
     } catch (error) {
-      console.error("[pets] could not open pet thread: " + error.message);
-      if (!interaction.replied) await interaction.reply({ content: "I couldn't open your pet room. Please try again ♡", ephemeral: true }).catch(() => {});
+      console.error("[pets] could not open pet channel: " + error.message);
+      if (!interaction.replied) await interaction.reply({
+        content: "I couldn't open your pet room. Please try again ♡",
+        ephemeral: true,
+      }).catch(() => {});
     }
   });
   client.on(Events.MessageCreate, async (message) => {
-    if (!message.guild || message.author?.bot || !message.channel?.isThread?.()) return;
-    const parent = message.channel.parent;
-    if (!parent || parent.name !== CHANNEL_NAME || !/^!pet(?:\s|$)/i.test(message.content.trim())) return;
+    if (!message.guild || message.author?.bot || message.channel?.type !== ChannelType.GuildText) return;
+    const ownerId = /^Sugar personal pet room for (\d{17,20})$/.exec(message.channel.topic ?? "")?.[1];
+    if (!ownerId || ownerId !== message.author.id || !/^!pet(?:\s|$)/i.test(message.content.trim())) return;
     try { await runPetCommand(message, store); }
-    catch (error) { console.error("[pets] command failed: " + error.message); await message.reply("Something went wrong with your pet command ♡").catch(() => {}); }
+    catch (error) {
+      console.error("[pets] command failed: " + error.message);
+      await message.reply("Something went wrong with your pet command ♡").catch(() => {});
+    }
   });
 }

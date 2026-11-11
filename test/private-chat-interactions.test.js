@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { ChannelType } from "discord.js";
 
 import { handlePrivateChatInteraction } from "../src/private-chat-system.js";
+import { formatPrivateChatChannelName } from "../src/private-chat-format.js";
 
 const OWNER_ID = "323456789012345678";
 const MEMBER_ID = "423456789012345678";
@@ -165,4 +166,8 @@ test("non-owners cannot use owner-only private-chat buttons", async () => {
       `${action} should remain owner-only`,
     );
   }
+});
+
+test("private chat channel names use the requested decorative spacing", () => {
+  assert.equal(formatPrivateChatChannelName("test"), "👤｜୨୧ ・𝓽𝓮𝓼𝓽");
 });
