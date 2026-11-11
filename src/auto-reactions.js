@@ -8,6 +8,7 @@ import {
 export const AUTO_REACTIONS = ["😊", "😭", "😔", "💀", "💗"];
 
 const EXCLUDED_CHANNEL_IDS = new Set([
+  "1569930648804925522",
   TICKET_PANEL_CHANNEL_ID,
   TICKET_TRANSCRIPTS_CHANNEL_ID,
   REPORTS_CHANNEL_ID,
