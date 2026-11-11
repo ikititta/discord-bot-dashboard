@@ -21,7 +21,6 @@ import { attachModerationSystem } from "./moderation-system.js";
 import { renameMatchingChannels } from "./channel-renames.js";
 import { attachForumVisibilitySystem } from "./forum-visibility.js";
 import { attachFunCommands } from "./fun-commands.js";
-import { attachCommandsChannel } from "./commands-channel.js";
 import { attachReputationSystem } from "./reputation-system.js";
 
 const COLORS = { join: 0x4ade80, leave: 0xf87171, edit: 0xfbbf24, delete: 0xf87171 };
@@ -162,7 +161,6 @@ export function createBot({
   attachGeneralQuoteStickyTip(client, { store: stickyPanels });
   attachAccessSystem(client, { settings });
   attachForumVisibilitySystem(client);
-  attachCommandsChannel(client);
   attachFunCommands(client, { store: funCommands });
   if (reputationStore) attachReputationSystem(client, reputationStore);
   attachRetiredRoleCommandCleanup(client, { token, applicationId });
