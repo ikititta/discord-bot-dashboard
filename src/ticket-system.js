@@ -176,7 +176,7 @@ export async function ensureTicketPanel(client, panelChannelId = TICKET_PANEL_CH
   const guild = channel?.guild ?? client.guilds.cache.first();
   if (!channel && guild) {
     channel = guild.channels.cache.find((item) =>
-      item.type === ChannelType.GuildText && /support/i.test(item.name.replace(/[^a-z]/gi, "")),
+      item.type === ChannelType.GuildText && item.name.normalize("NFKD").toLowerCase().replace(/\\p{M}/gu, "").replace(/[^a-z]/g, "") === "support",
     ) ?? null;
   }
   if (!channel && guild) {
