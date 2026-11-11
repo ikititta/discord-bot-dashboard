@@ -66,6 +66,7 @@ Do not move production hosting to Replit. Do not change deployment settings, env
 - test/deepseek.test.js and test/message-handler.test.js — mocked provider, local trigger, duplicate, timeout, and limit tests.
 - test/web.test.js — HTTP route tests using a stub Discord client rather than production credentials.
 - test/access-system.test.js — access-role transitions, verification safeguards, and onboarding panel content.
+- test/fun-commands.test.js and test/fun-command-store.test.js — fun-command role detection, GIF URL validation, stats embeds, and persistent counters.
 
 Keep new functionality in the module that owns that responsibility. Avoid turning index.js into a feature module or combining unrelated concerns.
 
