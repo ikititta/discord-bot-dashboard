@@ -1,4 +1,4 @@
-import { ensureCommandsBoard, isCommandsThread, refreshCommandsThreadSticky } from "./commands-channel.js";
+import { ensureCommandsBoard } from "./commands-channel.js";
 import fs from "node:fs";
 import path from "node:path";
 import {
@@ -12,6 +12,7 @@ const MEMBER_ROLE_ID = "1568188534836428812";
 const PREFIX = "sugar-reputation:";
 const MAX_COMMENTS = 5000;
 const MAX_COMMENT_LENGTH = 800;
+const REPUTATION_CHANNEL_ID = "1570221195222057150";
 
 export class ReputationStore {
   constructor(dataDir) {
@@ -158,9 +159,7 @@ async function upsert(channel, client, title, payload) {
   return old ? old.edit(payload) : channel.send(payload);
 }
 async function ensureTextChannel(guild, name) {
-  let channel = guild.channels.cache.find((c) => c.type === ChannelType.GuildText && c.name === name);
-  if (channel) return channel;
-  return guild.channels.create({ name, type: ChannelType.GuildText, reason: "Create Kittisugar community channel" });
+  return guild.channels.cache.find((c) => c.type === ChannelType.GuildText && c.name === name) ?? null;
 }
 const TOP_TITLE = "୨୧ 𝓣𝓸𝓹 𝓡𝓮𝓹𝓾𝓽𝓪𝓽𝓲𝓸𝓷 ♡";
 const PANEL_TITLE = "୨୧ 𝓡𝓮𝓹𝓾𝓽𝓪𝓽𝓲𝓸𝓷 ♡";
@@ -196,9 +195,10 @@ async function ensureStickyReputationPanels(channel, client, store, guild) {
 }
 
 async function setup(guild, client, store) {
-  const welcomes = await ensureTextChannel(guild, "welcomes");
-  const reputation = await ensureTextChannel(guild, "reputation");
-  for (const channel of [welcomes, reputation]) {
+  const reputation = await guild.channels.fetch(REPUTATION_CHANNEL_ID).catch(() => null);
+  if (!reputation || reputation.type !== ChannelType.GuildText) throw new Error("Configured reputation channel " + REPUTATION_CHANNEL_ID + " was not found; no channel was created.");
+  const welcomes = null;
+  for (const channel of [reputation]) {
     await channel.permissionOverwrites.edit(guild.roles.everyone, { ViewChannel: true, SendMessages: false },
       "Keep Kittisugar welcome and reputation channels read-only");
     await channel.permissionOverwrites.edit(client.user.id, {
@@ -253,7 +253,7 @@ export function attachReputationSystem(client, store) {
   client.on(Events.GuildCreate, (guild) => { void setup(guild, client, store).catch((e) => console.error("[reputation] setup failed: " + e.message)); });
   const stickyQueues = new Map();
   client.on(Events.MessageCreate, (message) => {
-    if (!message.guild || message.channel?.isThread?.() || message.channel?.name !== "reputation") return;
+    if (!message.guild || message.channel?.isThread?.() || message.channel?.id !== REPUTATION_CHANNEL_ID) return;
     const state = stickyQueues.get(message.guild.id) ?? { running: Promise.resolve() };
     state.running = state.running.then(async () => {
       const channel = await client.channels.fetch(message.channelId).catch(() => null);
@@ -268,8 +268,8 @@ export function attachReputationSystem(client, store) {
   });
   client.on(Events.GuildMemberAdd, async (newMember) => {
     try {
-      const channel = newMember.guild.channels.cache.find((c) => c.type === ChannelType.GuildText && c.name === "welcomes")
-        ?? await ensureTextChannel(newMember.guild, "welcomes");
+      const channel = newMember.guild.channels.cache.find((c) => c.type === ChannelType.GuildText && c.name === "welcomes");
+      if (!channel) return;
       const guideChannel = newMember.guild.channels.cache.find((c) => c.type === ChannelType.GuildText && /guide/i.test(c.name));
       const embed = new EmbedBuilder().setColor(COLOR).setTitle("୨୧ 𝓦𝓮𝓵𝓬𝓸𝓶𝓮 𝓽𝓸 𝓚𝓲𝓽𝓽𝓲𝓼𝓾𝓰𝓪𝓻 ♡")
         .setDescription(`Welcome, <@${newMember.id}>! We're so happy you're here.\n\nTake a little moment to read the rules and visit ${guideChannel ? `<#${guideChannel.id}>` : "**Guide**"} to find your way around. We hope Kittisugar feels like a sweet place to call home. ♡\n\nYou're member **#${newMember.guild.memberCount}**.`)
@@ -339,7 +339,7 @@ export function attachReputationSystem(client, store) {
         }
         const comment = interaction.fields.getTextInputValue("comment").trim();
         const score = store.vote({ guildId: interaction.guildId, authorId: interaction.user.id, targetId, value, comment });
-        const channel = interaction.guild.channels.cache.find((c) => c.type === ChannelType.GuildText && c.name === "reputation");
+        const channel = interaction.guild.channels.cache.get(REPUTATION_CHANNEL_ID);
         if (channel) {
           if (comment) {
             const embed = new EmbedBuilder().setColor(COLOR)
@@ -384,7 +384,7 @@ export function attachReputationSystem(client, store) {
   });
   const commandsStickyQueues = new Map();
   client.on(Events.MessageCreate, (message) => {
-    if (!message.guild || message.author.bot || !isCommandsThread(message)) return;
+    if (!message.guild || message.author.bot || message.channel?.parentId !== REPUTATION_CHANNEL_ID || !message.channel?.isThread?.()) return;
     const state = commandsStickyQueues.get(message.channel.id) ?? { running: Promise.resolve() };
     state.running = state.running.then(async () => {
       const thread = await client.channels.fetch(message.channel.id).catch(() => null);
