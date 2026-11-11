@@ -75,8 +75,8 @@ export class FunCommandStore {
   }
 
   setInteractionConsent(guildId, actorId, targetId, command) {
-    if (!/^\\d{17,20}$/.test(guildId ?? "") || !/^\\d{17,20}$/.test(actorId ?? "") ||
-        !/^\\d{17,20}$/.test(targetId ?? "") || actorId === targetId ||
+    if (!/^\d{17,20}$/.test(guildId ?? "") || !/^\d{17,20}$/.test(actorId ?? "") ||
+        !/^\d{17,20}$/.test(targetId ?? "") || actorId === targetId ||
         !["kiss", "fuck"].includes(command)) throw new Error("Invalid interaction consent.");
     const guild = this.#guild(guildId);
     guild.interactionConsents ??= {};
