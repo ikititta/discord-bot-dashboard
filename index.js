@@ -95,6 +95,7 @@ const client = createBot({
   suggestionStore,
   stickyPanels,
   funCommands,
+  reputationStore,
 });
 
 const { app, redirectUri } = createWeb({
