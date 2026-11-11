@@ -210,8 +210,7 @@ export function buildFunHelpEmbed() {
     .setDescription("Use these commands in Kittisugar. Every fun command requires the Member role (18+ verification). Two-person commands need a member mention; solo commands do not.")
     .addFields(
       { name: "Relationships", value: "!couple @member · !propose @member · !marry @member · !breakup · !divorce. The other member must accept proposals." },
-      { name: "NSFW preferences", value: "!nsfw-on — automatically accept NSFW requests. !nsfw-off — require individual approval again." },
-      { name: "Two-person commands", value: "!hug @member · !slap @member · !bonk @member · !spank @member · !kiss @member · !cuddle @member · !pat @member · !poke @member · !bite @member · !kick @member · !kill @member · !highfive @member · !handhold @member" },
+      { name: "Two-person commands", value: "!hug @member · !slap @member · !bonk @member · !spank @member · !kiss @member · !fuck @member · !cuddle @member · !pat @member · !poke @member · !bite @member · !kick @member · !kill @member · !highfive @member · !handhold @member" },
       { name: "Solo commands", value: "!cry · !laugh · !dance · !sleep · !happy · !blush · !smug · !wave · !facepalm · !wink · !shrug · !smile · !pout" },
       { name: "Statistics", value: "!stats — see your own basic stats.\n!vip stats — VIP members see their complete stats.\n!vip stats @member — VIP members see another members complete stats.\nStats count commands used, interactions received, and interaction partners." },
       { name: "VIP", value: "VIP is a server role. It unlocks complete statistics and the ability to look up other members stats. Without VIP, you can still use !stats to see your own summary." },
@@ -311,77 +310,6 @@ function relationshipRow(id) {
     new ButtonBuilder().setCustomId(RELATION_PREFIX + id + ":no").setLabel("Decline").setStyle(ButtonStyle.Secondary),
   );
 }
-const NSFW_PREFIX = "sugar-nsfw:";
-const NSFW_COMMANDS = new Set(["fuck", "spank"]);
-const CONSENT_COMMANDS = new Set(["kiss", "fuck"]);
-
-function nsfwRequestRow(guildId, channelId, actorId, targetId, command) {
-  const id = [guildId, channelId, actorId, targetId, command].join(".");
-  return new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId(NSFW_PREFIX + id + ".yes").setLabel("Accept ♡").setStyle(ButtonStyle.Success),
-    new ButtonBuilder().setCustomId(NSFW_PREFIX + id + ".no").setLabel("Decline").setStyle(ButtonStyle.Secondary),
-  );
-}
-
-async function sendNsfwResult({ guild, channel, actorId, targetId, command, fetchImpl, store }) {
-  const actor = await guild.members.fetch(actorId).catch(() => null);
-  const target = await guild.members.fetch(targetId).catch(() => null);
-  if (!actor || !target || !isVerifiedAdult(actor) || !isVerifiedAdult(target)) {
-    await channel.send({ content: "The request expired because both members must still have the Member role ♡", allowedMentions: { parse: [] } });
-    return false;
-  }
-  const definition = getFunCommandDefinition(command);
-  store.record({ guildId: guild.id, actorId, targetId, command });
-  let gif = null;
-  try {
-    gif = await fetchAnimeGif(definition.gif, {
-      fetchImpl,
-      actorRole: normalizeFunRole(actor),
-      targetRole: normalizeFunRole(target),
-    });
-  } catch (error) {
-    console.warn("[fun] approved NSFW GIF lookup failed: " + error.message);
-  }
-  const embed = new EmbedBuilder().setColor(COLOR);
-  if (gif) {
-    embed.setImage(gif.url);
-    if (gif.anime) embed.setFooter({ text: "Anime: " + gif.anime + " · " + gif.source });
-  } else {
-    embed.setFooter({ text: "Anime GIF unavailable right now ♡" });
-  }
-  await channel.send({
-    content: buildFunActionText(actorId, targetId, definition),
-    embeds: [embed],
-    allowedMentions: { parse: [], users: [actorId, targetId] },
-  });
-  return true;
-}
-
-async function handleNsfwButton(interaction, { store, fetchImpl }) {
-  if (!interaction.customId.startsWith(NSFW_PREFIX)) return false;
-  const [guildId, channelId, actorId, targetId, command, decision] =
-    interaction.customId.slice(NSFW_PREFIX.length).split(".");
-  if (interaction.user.id !== targetId || !["kiss", "fuck", "spank"].includes(command) ||
-      !["yes", "no"].includes(decision)) {
-    await interaction.reply({ content: "Only the person who received this request can answer ♡", ephemeral: true });
-    return true;
-  }
-  if (decision === "no") {
-    await interaction.update({ content: "You declined the NSFW request. No action was posted ♡", components: [] });
-    return true;
-  }
-  const guild = await interaction.client.guilds.fetch(guildId).catch(() => null);
-  const channel = guild ? await guild.channels.fetch(channelId).catch(() => null) : null;
-  if (!guild || !channel?.isTextBased()) {
-    await interaction.update({ content: "The original channel is no longer available. The request was not posted.", components: [] });
-    return true;
-  }
-  await interaction.update({ content: "You accepted the request ♡", components: [] });
-  const posted = await sendNsfwResult({ guild, channel, actorId, targetId, command, fetchImpl, store });
-  if (posted && CONSENT_COMMANDS.has(command)) store.setInteractionConsent(guildId, actorId, targetId, command);
-  return true;
-}
-
 async function handleRelationshipButton(interaction, store) {
   if (!interaction.customId.startsWith(RELATION_PREFIX)) return false;
   const parts = interaction.customId.slice(RELATION_PREFIX.length).split(":");
@@ -420,7 +348,7 @@ export function attachFunCommands(client, { store, fetchImpl = fetch, token, app
   client.on(Events.InteractionCreate, async (interaction) => {
     if (interaction.isButton?.()) {
       try {
-        if (!await handleRelationshipButton(interaction, store)) await handleNsfwButton(interaction, { store, fetchImpl });
+        await handleRelationshipButton(interaction, store);
       } catch (error) {
         console.error("[fun] button action failed: " + error.message);
         if (!interaction.replied && !interaction.deferred) await interaction.reply({ content: "Sugar couldn't process this request ♡", ephemeral: true }).catch(() => {});
@@ -454,9 +382,7 @@ export function attachFunCommands(client, { store, fetchImpl = fetch, token, app
         return;
       }
       if (name === "nsfw-on" || name === "nsfw-off") {
-        if (!isVerifiedAdult(message.member)) { await safeReply(message, { content: "NSFW preferences are available to verified Member accounts ♡" }); return; }
-        store.setNsfwAutoAccept(message.guild.id, message.author.id, name === "nsfw-on");
-        await safeReply(message, { content: name === "nsfw-on" ? "NSFW requests will now be accepted automatically ♡" : "Automatic NSFW acceptance is off. Approve each request individually ♡" });
+        await safeReply(message, { content: "All two-person fun interactions are automatic now. No approval settings are needed ♡" });
         return;
       }
       if (name === "stats" || name === "vip") {
@@ -467,42 +393,6 @@ export function attachFunCommands(client, { store, fetchImpl = fetch, token, app
       if (!isVerifiedAdult(message.member)) {
         await safeReply(message, { content: "Fun commands are available after completing Kittisugar's 18+ verification ♡" });
         return;
-      }
-      if (NSFW_COMMANDS.has(name) || CONSENT_COMMANDS.has(name)) {
-        const targetUser = message.mentions.users.first();
-        if (!targetUser || targetUser.bot || targetUser.id === message.author.id) {
-          await safeReply(message, { content: "Usage: !" + name + " @member" });
-          return;
-        }
-        const targetMember = await message.guild.members.fetch(targetUser.id).catch(() => null);
-        if (!targetMember || !isVerifiedAdult(targetMember)) {
-          await safeReply(message, { content: "That member must have the Member role ♡" });
-          return;
-        }
-        const rememberedConsent = CONSENT_COMMANDS.has(name) &&
-          store.hasInteractionConsent(message.guild.id, message.author.id, targetUser.id, name);
-        const automaticAcceptance = NSFW_COMMANDS.has(name) &&
-          store.getNsfwAutoAccept(message.guild.id, targetUser.id);
-        if (!rememberedConsent && !automaticAcceptance) {
-          try {
-            const requestTitle = name === "kiss" ? "Kiss request ♡" : "NSFW interaction request ♡";
-            const requestDetails = name === "kiss"
-              ? "<@" + message.author.id + "> wants to kiss you in Kittisugar. If you accept, Sugar will remember your approval for future kisses between you two."
-              : name === "fuck"
-                ? "<@" + message.author.id + "> wants to use !fuck with you in Kittisugar. If you accept, Sugar will remember your approval for future !fuck requests from this member. You can turn on automatic acceptance for everyone with !nsfw-on or turn it off with !nsfw-off."
-                : "<@" + message.author.id + "> wants to use !" + name + " with you in Kittisugar. Accept only if you're comfortable. You can turn on automatic acceptance with !nsfw-on or turn it off with !nsfw-off.";
-            await targetUser.send({
-              embeds: [new EmbedBuilder().setColor(COLOR).setTitle(requestTitle)
-                .setDescription(requestDetails)],
-              components: [nsfwRequestRow(message.guild.id, message.channel.id, message.author.id, targetUser.id, name)],
-              allowedMentions: { parse: [] },
-            });
-            await safeReply(message, { content: "I've sent " + targetUser.username + " a private request. Nothing will happen unless they accept ♡" });
-          } catch {
-            await safeReply(message, { content: "I couldn't DM that member. Ask them to enable DMs from server members; no action was posted ♡" });
-          }
-          return;
-        }
       }
       await handleFunAction(message, store, name, args, fetchImpl);
     } catch (error) {
