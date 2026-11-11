@@ -66,6 +66,20 @@ async function ensureCommandsChannel(guild, client) {
     CreatePublicThreads: true,
     SendMessagesInThreads: true,
   });
+  for (const role of guild.roles.cache.values()) {
+    if (role.id === guild.id) continue;
+    const isStaff = role.permissions.has("ManageMessages") ||
+      role.permissions.has("ManageChannels") ||
+      /admin|moderator|mod(?:erator)?/i.test(role.name);
+    if (!isStaff) continue;
+    await channel.permissionOverwrites.edit(role, {
+      ViewChannel: true,
+      SendMessages: true,
+      ReadMessageHistory: true,
+      SendMessagesInThreads: true,
+      CreatePublicThreads: false,
+    });
+  }
 
   let thread = null;
   const active = await channel.threads.fetchActive();
@@ -98,7 +112,6 @@ async function ensureCommandsChannel(guild, client) {
     panel = await channel.send(buildCommandsPanelPayload());
     if (previous) await previous.delete().catch(() => {});
   }
-  await panel.pin().catch((error) => console.error("[commands] could not pin command board: " + error.message));
   console.info(`[commands] channel ready in #${channel.name}; thread #${thread.name}`);
   return { channel, thread, panel };
 }
@@ -138,7 +151,6 @@ export function attachCommandsChannel(client) {
         item.author?.id === client.user.id && item.embeds.some((embed) => embed.title === PANEL_TITLE),
       );
       const next = await channel.send(buildCommandsPanelPayload());
-      await next.pin().catch(() => {});
       if (previous) await previous.delete().catch(() => {});
     }).catch((error) => console.error(`[commands] sticky panel failed: ${error.message}`));
     queues.set(message.guild.id, state);
