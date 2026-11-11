@@ -79,6 +79,13 @@ async function ensurePetsChannel(guild, client) {
       reason: "Create the Kittisugar virtual pets channel",
     });
   }
+  await channel.permissionOverwrites.edit(guild.roles.everyone, {
+    ViewChannel: true, SendMessages: false, ReadMessageHistory: true,
+  }, "Keep the virtual pets channel panel read-only");
+  await channel.permissionOverwrites.edit(client.user.id, {
+    ViewChannel: true, SendMessages: true, EmbedLinks: true, ReadMessageHistory: true,
+    ManageMessages: true, CreatePublicThreads: true, SendMessagesInThreads: true, ManageThreads: true,
+  }, "Allow Sugar to maintain the pet panel and create pet threads");
   const recent = await channel.messages.fetch({ limit: 50 });
   const old = recent.find((message) => message.author?.id === client.user.id &&
     message.embeds.some((embed) => embed.title === "୨୧ 𝓥𝓲𝓻𝓽𝓾𝓪𝓵 𝓟𝓮𝓽𝓼 ♡"));
