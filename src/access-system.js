@@ -141,7 +141,7 @@ No harassment, hate, threats, bullying, spam, or sharing private information.`,
       `## ${toRoyalBold("02 · Content")}
 Keep NSFW content in NSFW channels. VIP members may post it elsewhere. No illegal or non-consensual intimate content. Fun interaction commands run automatically for verified Member accounts; follow Kittisugar's server rules.`,
       `## ${toRoyalBold("03 · Promotions & Selling")}
-VIP members may promote or sell in ${promotionChannel}. VIP is **$5 USD once, for life** and includes VIP access and a custom role. The **Seller role is optional** and is not required to use VIP benefits. VIP unlocks exclusive commands and features, including virtual-pet extras, anonymous reputation posts, and bulk deletion of your own messages. No unsolicited ads in chats, profiles, or DMs.`,
+VIP members may promote or sell in ${promotionChannel}. VIP is **$5 USD once, for life** and includes VIP access and a custom role. The Seller role is **optional** and is not required to use VIP benefits. VIP unlocks exclusive commands and features, including virtual-pet extras, anonymous reputation posts, and bulk deletion of your own messages. No unsolicited ads in chats, profiles, or DMs.`,
       `## ${toRoyalBold("04 · Warnings")}
 Repeated rule-breaking may result in warnings, timeouts, or a ban from Kittisugar.`,
       `## ${toRoyalBold("05 · Support Kittisugar")}
