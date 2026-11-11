@@ -305,7 +305,11 @@ async function handleFunAction(message, store, name, args, fetchImpl) {
   const actionText = buildFunActionText(message.author.id, targetUser?.id ?? null, definition);
 
   let gif = null;
-  try { gif = name === "fuck"\n    ? await fetchNsfwGif({ fetchImpl })\n    : await fetchAnimeGif(definition.gif, { fetchImpl, actorRole: normalizeFunRole(message.member), targetRole }); }
+  try {
+    gif = name === "fuck"
+      ? await fetchNsfwGif({ fetchImpl })
+      : await fetchAnimeGif(definition.gif, { fetchImpl, actorRole: normalizeFunRole(message.member), targetRole });
+  }
   catch (error) { console.warn(`[fun] GIF lookup failed for !${name}: ${error.message}`); }
 
   const embed = new EmbedBuilder().setColor(COLOR);
