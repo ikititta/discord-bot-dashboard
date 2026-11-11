@@ -26,23 +26,23 @@ const LEGACY_PANEL_TITLE = formatEmbedTitle("Kittisugar Support");
 const PANEL_COLOR = 0xffd9ff;
 const TICKET_CATEGORIES = new Map([
   ["general", "General"],
-  ["report", "Report"],
-  ["appeal", "Appeal"],
+  ["buy-vip", "Buy VIP"],
   ["partnership", "Partnership"],
   ["apply", "Apply"],
+  ["report", "Report"],
+  ["appeal", "Appeal"],
   ["error", "Error"],
   ["other", "Others"],
-  ["buy-vip", "Buy VIP"],
 ]);
 const TICKET_BUTTON_STYLES = new Map([
   ["general", ButtonStyle.Primary],
-  ["report", ButtonStyle.Danger],
-  ["appeal", ButtonStyle.Danger],
+  ["buy-vip", ButtonStyle.Primary],
   ["partnership", ButtonStyle.Success],
   ["apply", ButtonStyle.Success],
+  ["report", ButtonStyle.Danger],
+  ["appeal", ButtonStyle.Danger],
   ["error", ButtonStyle.Danger],
   ["other", ButtonStyle.Secondary],
-  ["buy-vip", ButtonStyle.Primary],
 ]);
 const MEMBER_PERMISSIONS = [
   PermissionFlagsBits.ViewChannel,
@@ -58,14 +58,15 @@ export function buildTicketPanelPayload() {
     .setTitle(PANEL_TITLE)
     .setDescription(
       "Need help with something? Choose the option that best matches your request to open a private ticket with our team.\n\n" +
-      "**General** — Questions or general assistance.\n" +
-      "**Report** — Report a user, message, or rule violation.\n" +
-      "**Appeal** — Appeal a warning, punishment, or restriction.\n" +
-      "**Partnership** — Collaboration and server partnership inquiries.\n" +
-      "**Apply** — Apply to become a member of our staff team.\n" +
-      "**Error** — Report bugs, errors, or technical problems.\n" +
-      "**Others** — Requests that don't fit the other categories.\n" +
-      "**Buy VIP** — Questions about purchasing VIP or getting VIP access.\n\n" +
+      "**General** — Questions or general assistance.\\n" +
+      "**Buy VIP** — Questions about purchasing VIP or getting VIP access.\\n" +
+      "**Partnership** — Collaboration and server partnership inquiries.\\n" +
+      "**Apply** — Apply to become a member of our staff team.\\n" +
+      "**Get Verified** — Complete the verification steps to unlock member access to the server.\\n" +
+      "**Report** — Report a user, message, or rule violation.\\n" +
+      "**Appeal** — Appeal a warning, punishment, or restriction.\\n" +
+      "**Error** — Report bugs, errors, or technical problems.\\n" +
+      "**Others** — Requests that don't fit the other categories.\\n\\n" +
       `Have a suggestion? Share it in <#${SUGGESTIONS_CHANNEL_ID}>!`,
     );
 
@@ -75,7 +76,7 @@ export function buildTicketPanelPayload() {
       .setLabel(`${label} ♡`)
       .setStyle(TICKET_BUTTON_STYLES.get(value)),
   );
-  buttons.push(
+  buttons.splice(4, 0,
     new ButtonBuilder()
       .setCustomId(`${PREFIX}get-verified`)
       .setLabel("Get Verified ♡")
