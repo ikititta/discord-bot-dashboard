@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { buildRoleOrganizationPlan, KITTISUGAR_GUILD_ID, ROLE_ORGANIZATION_CONFIG } from "../src/roles-organize.js";
+import { buildRoleOrganizationPlan, groupContiguousRolePositionBatches, KITTISUGAR_GUILD_ID, ROLE_ORGANIZATION_CONFIG } from "../src/roles-organize.js";
 
 const makeRole = (id, name, { managed = false } = {}) => ({
   id, name, managed, editable: !managed,
@@ -150,3 +150,19 @@ test("role organizer reads its complete role catalog from config/roles.json", ()
   assert.equal(ROLE_ORGANIZATION_CONFIG.protectedRoles.sugarAi, "1567669697061724263");
   assert.equal(ROLE_ORGANIZATION_CONFIG.protectedRoles.serverBooster, "1569802495792914593");
 });
+
+
+test("position updates are split at protected-role gaps", () => {
+  const positions = [
+    { role: { id: "a" }, position: 1 },
+    { role: { id: "b" }, position: 2 },
+    { role: { id: "c" }, position: 4 },
+    { role: { id: "d" }, position: 5 },
+    { role: { id: "e" }, position: 8 },
+  ];
+  const batches = groupContiguousRolePositionBatches(positions);
+  assert.deepEqual(batches.map((batch) => batch.map(({ position }) => position)), [
+    [1, 2], [4, 5], [8],
+  ]);
+});
+

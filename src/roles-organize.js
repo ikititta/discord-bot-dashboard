@@ -242,6 +242,20 @@ export async function handleRoleOrganization(interaction) {
   });
 }
 
+export function groupContiguousRolePositionBatches(positions) {
+  const sorted = [...positions].sort((a, b) => a.position - b.position);
+  const batches = [];
+  for (const entry of sorted) {
+    const current = batches.at(-1);
+    if (!current || entry.position !== current.at(-1).position + 1) {
+      batches.push([entry]);
+    } else {
+      current.push(entry);
+    }
+  }
+  return batches;
+}
+
 export function buildSafeRolePositions(orderedRoles, botHighestPosition) {
   if (!Number.isInteger(botHighestPosition) || botHighestPosition < 2) {
     throw new Error("Sugar's highest role position is not valid for role organization.");
@@ -318,7 +332,14 @@ export async function applyRoleOrganization(guild, plan) {
     }
 
     const positions = buildSafeRolePositions(orderedRoles, me.roles.highest.position);
-    await guild.roles.setPositions(positions);
+    // Discord-managed roles (for example Server Booster) are protected gaps.
+    // Keep each bulk reorder inside one contiguous editable position range.
+    for (const batch of groupContiguousRolePositionBatches(positions)) {
+      const first = batch[0].position;
+      const last = batch[batch.length - 1].position;
+      stage = `actualizar posiciones ${first}-${last}`;
+      await guild.roles.setPositions(batch);
+    }
 
     let renamed = 0;
     for (const { role, name } of plan.renames) {
