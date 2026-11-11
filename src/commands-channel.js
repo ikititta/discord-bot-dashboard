@@ -26,7 +26,7 @@ function normalize(value) {
   return String(value ?? "").normalize("NFKD").toLowerCase().replace(/\p{M}/gu, "").replace(/[^a-z0-9]/g, "");
 }
 
-async function ensureCommandsBoard(guild, client) {
+export async function ensureCommandsBoard(guild, client) {
   let channel = guild.channels.cache.find((item) =>
     item.type === ChannelType.GuildText && normalize(item.name) === "reputation",
   );
