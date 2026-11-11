@@ -80,7 +80,7 @@ async function ensurePetsChannel(guild, client) {
     });
   }
   await channel.permissionOverwrites.edit(guild.roles.everyone, {
-    ViewChannel: true, SendMessages: false, ReadMessageHistory: true,
+    ViewChannel: true, SendMessages: false, SendMessagesInThreads: true, ReadMessageHistory: true,
   }, "Keep the virtual pets channel panel read-only");
   await channel.permissionOverwrites.edit(client.user.id, {
     ViewChannel: true, SendMessages: true, EmbedLinks: true, ReadMessageHistory: true,
