@@ -2,6 +2,7 @@ import {
   ChannelType,
   EmbedBuilder,
   Events,
+  PermissionFlagsBits,
 } from "discord.js";
 
 export const COMMANDS_CHANNEL_NAME = "💬｜୨୧•𝓬𝓸𝓶𝓶𝓪𝓷𝓭𝓼";
@@ -68,8 +69,9 @@ async function ensureCommandsChannel(guild, client) {
   });
   for (const role of guild.roles.cache.values()) {
     if (role.id === guild.id) continue;
-    const isStaff = role.permissions.has("ManageMessages") ||
-      role.permissions.has("ManageChannels") ||
+    const isStaff = role.permissions.has(PermissionFlagsBits.ManageMessages) ||
+      role.permissions.has(PermissionFlagsBits.ManageChannels) ||
+      role.permissions.has(PermissionFlagsBits.Administrator) ||
       /admin|moderator|mod(?:erator)?/i.test(role.name);
     if (!isStaff) continue;
     await channel.permissionOverwrites.edit(role, {
