@@ -170,6 +170,7 @@ export function buildGuidePayload(guild) {
       "A little guide of Kittisugar ♡ Tap any channel mention to open it.\n" +
       `## ୨୧ ${guideSectionTitle("Start")}\n\n` +
       `• ${channelMention(guild, ["getaccess", "get-access"])}\nRead the welcome message and press Enter Server when you are ready to access the community.\n` +
+      `• ${channelMention(guild, ["welcomes"])}\nSee the coquette welcome cards for new members.\n` +
       `• ${channelMention(guild, ["rules"])}\nCheck the server rules before chatting. They explain our 18+, SFW, safety, and promotion policies.\n` +
       `• ${channelMention(guild, ["guide"])}\nFind what each channel is for and how to use the server.\n` +
       `## ୨୧ ${guideSectionTitle("Community")}\n\n` +
