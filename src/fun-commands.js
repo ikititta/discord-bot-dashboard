@@ -119,6 +119,16 @@ export function resolveGifPairing(actorRole, targetRole = null) {
   })[`${actorRole}:${targetRole}`] ?? null;
 }
 
+function validatedGifUrl(rawUrl, expectedHost) {
+  let url;
+  try { url = new URL(rawUrl ?? ""); }
+  catch { throw new Error("Anime GIF service returned an invalid GIF URL."); }
+  if (url.protocol !== "https:" || url.hostname !== expectedHost || !url.pathname.endsWith(".gif")) {
+    throw new Error("Anime GIF service returned an invalid GIF URL.");
+  }
+  return url;
+}
+
 export async function fetchAnimeGif(category, {
   fetchImpl = fetch,
   actorRole = "neutral",
@@ -137,10 +147,7 @@ export async function fetchAnimeGif(category, {
       });
       if (!response.ok) throw new Error(`Gifukai returned HTTP ${response.status}.`);
       const payload = await response.json();
-      const gifUrl = new URL(payload?.url ?? "");
-      if (gifUrl.protocol !== "https:" || gifUrl.hostname !== "cdn.gifukai.com" || !gifUrl.pathname.endsWith(".gif")) {
-        throw new Error("Gifukai returned an invalid GIF URL.");
-      }
+      const gifUrl = validatedGifUrl(payload?.url, "cdn.gifukai.com");
       return { url: gifUrl.toString(), anime: String(payload.anime ?? "").slice(0, 80), pairing, source: "Gifukai" };
     } catch (error) {
       console.warn(`[fun] paired GIF lookup failed for ${category}; trying the generic anime GIF source: ${error.message}`);
@@ -154,10 +161,7 @@ export async function fetchAnimeGif(category, {
   if (!response.ok) throw new Error(`Anime GIF service returned HTTP ${response.status}.`);
   const payload = await response.json();
   const result = payload?.results?.[0];
-  const gifUrl = new URL(result?.url ?? "");
-  if (gifUrl.protocol !== "https:" || gifUrl.hostname !== "nekos.best" || !gifUrl.pathname.endsWith(".gif")) {
-    throw new Error("Anime GIF service returned an invalid GIF URL.");
-  }
+  const gifUrl = validatedGifUrl(result?.url, "nekos.best");
   return { url: gifUrl.toString(), anime: String(result.anime_name ?? "").slice(0, 80), pairing: null, source: "Nekos.best" };
 }
 
