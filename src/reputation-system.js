@@ -74,6 +74,17 @@ export class ReputationStore {
     try { votes = JSON.parse(fs.readFileSync(file, "utf8")).guilds[guildId] ?? []; } catch (error) { if (error?.code !== "ENOENT") throw error; }
     return comments + votes.filter((item) => item.targetId === userId).reduce((sum, item) => sum + item.value, 0);
   }
+  getVoteBreakdown(guildId, userId) {
+    const file = path.join(path.dirname(this.file), "reputation-votes.json");
+    let votes = [];
+    try { votes = JSON.parse(fs.readFileSync(file, "utf8")).guilds[guildId] ?? []; }
+    catch (error) { if (error?.code !== "ENOENT") throw error; }
+    const userVotes = votes.filter((item) => item.targetId === userId);
+    return {
+      positive: userVotes.filter((item) => item.value > 0).length,
+      negative: userVotes.filter((item) => item.value < 0).length,
+    };
+  }
   getTop(guildId, limit = 10) {
     const ids = new Set((this.data.guilds[guildId] ?? []).map((item) => item.targetId));
     const file = path.join(path.dirname(this.file), "reputation-votes.json");
@@ -399,22 +410,22 @@ export function attachReputationSystem(client, store) {
           ].join("\n") : "No reputation votes yet ♡");
         return message.reply({ embeds: [embed], allowedMentions: { parse: [] } });
       }
-      if (args[0]?.toLowerCase() === "comments" && !mentioned) {
-        return message.reply("Please mention a member. Usage: `!rep comments @member` ♡");
-      }
       if (args[0]?.startsWith("@") && !mentioned) {
         return message.reply("Please select a member mention from Discord's suggestions. Usage: `!rep @member` ♡");
       }
-      if (args[0]?.toLowerCase() === "comments" && mentioned) {
-        const entries = store.getCommentsForUser(message.guild.id, mentioned.id).slice(-5).reverse();
-        const embed = new EmbedBuilder().setColor(COLOR).setTitle("୨୧ Reputation Comments ♡")
-          .setDescription(entries.length ? entries.map((x) => `**${x.anonymous ? "Anonymous VIP" : "<@" + x.authorId + ">"}** · <t:${Math.floor(Date.parse(x.createdAt) / 1000)}:R>\n${x.text}`).join("\n\n").slice(0, 4000) : "No comments for this member yet ♡");
-        return message.reply({ embeds: [embed], allowedMentions: { parse: [] } });
-      }
       const target = mentioned ?? message.author;
       const count = store.getScore(message.guild.id, target.id);
+      const votes = store.getVoteBreakdown(message.guild.id, target.id);
+      const entries = store.getCommentsForUser(message.guild.id, target.id).slice(-5).reverse();
+      const comments = entries.length
+        ? entries.map((x) => `**${x.anonymous ? "Anonymous VIP" : "<@" + x.authorId + ">"}** · <t:${Math.floor(Date.parse(x.createdAt) / 1000)}:R>\n${x.text}`).join("\n\n").slice(0, 2500)
+        : "No comments yet ♡";
       const embed = new EmbedBuilder().setColor(COLOR).setTitle("୨୧ Reputation ♡")
-        .setDescription(`<@${target.id}> has **${count}** reputation point(s).\nUse ` + "`!rep comments @member`" + ` to read their latest comments.`);
+        .setDescription(
+          `**Member:** <@${target.id}>\n**Total reputation:** ${count}\n\n` +
+          `**♡ Positive votes:** ${votes.positive}\n**♡ Negative votes:** ${votes.negative}\n\n` +
+          `**Comments**\n${comments}`
+        );
       return message.reply({ embeds: [embed], allowedMentions: { parse: [] } });
     } catch (error) { console.error("[reputation] command failed: " + error.message); }
   });
