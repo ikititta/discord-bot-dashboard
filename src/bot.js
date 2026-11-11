@@ -161,7 +161,7 @@ export function createBot({
   attachGeneralQuoteStickyTip(client, { store: stickyPanels });
   attachAccessSystem(client, { settings });
   attachForumVisibilitySystem(client);
-  attachFunCommands(client, { store: funCommands });
+  attachFunCommands(client, { store: funCommands, token, applicationId });
   if (reputationStore) attachReputationSystem(client, reputationStore);
   attachRetiredRoleCommandCleanup(client, { token, applicationId });
   if (autoModeration) attachModerationSystem(client, { settings, store: autoModeration });
