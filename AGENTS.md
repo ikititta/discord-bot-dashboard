@@ -60,6 +60,8 @@ Do not move production hosting to Replit. Do not change deployment settings, env
 - src/oauth.js — Discord OAuth URLs and callback helpers, signed state, token exchange, and guild authorization filtering.
 - src/session.js — in-memory login sessions, signed cookies, CSRF tokens, and cookie helpers.
 - src/settings.js — settings validation, data-directory selection, and JSON persistence.
+- src/fun-commands.js — Kittisugar prefix fun commands, verified-member checks, anime reaction GIF adapter, and VIP statistics commands.
+- src/fun-command-store.js — bounded, atomic persistence for fun-command usage and received-action statistics.
 - src/views.js — server-rendered HTML for the current login, server-list, settings, and error pages.
 - src/web.js — Express routes for login, OAuth callback, server settings, logout, and health status.
 - test/dashboard.test.js — unit tests for OAuth helpers, authorization, sessions, settings, and HTML rendering.
@@ -88,7 +90,7 @@ For documentation-only changes, verify the diff and ensure no unrelated file cha
 
 The existing settings store writes per-server configuration to settings.json under the selected data directory. On FadeHost, use its persistent data volume (currently expected at /data); do not rely on an ephemeral deployment filesystem for data that must survive restarts or redeploys. Preserve the existing settings unless a separately approved migration is necessary.
 
-Write durable data atomically, validate it when loading, and keep formats backward-compatible where practical. For any schema change, document migration and recovery behavior and avoid destructive rewrites. Keep credentials, OAuth tokens, and session cookies out of persistent application data. The current login sessions are intentionally in memory and expire; do not treat them as durable configuration.
+Write durable data atomically, validate it when loading, and keep formats backward-compatible where practical. For any schema change, document migration and recovery behavior and avoid destructive rewrites. Keep credentials, OAuth tokens, and session cookies out of persistent application data. Fun-command counters are stored in `fun-command-state.json` under the existing data directory. The current login sessions are intentionally in memory and expire; do not treat them as durable configuration.
 
 ## Change control
 
