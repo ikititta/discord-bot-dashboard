@@ -99,6 +99,7 @@ const client = createBot({
   stickyPanels,
   funCommands,
   reputationStore,
+  petStore,
 });
 
 const { app, redirectUri } = createWeb({
