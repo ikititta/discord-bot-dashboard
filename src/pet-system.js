@@ -102,10 +102,10 @@ function makePet() {
   };
 }
 function status(pet) {
-  return \`**\${pet.name}** the \${pet.species} · Level \${pet.level}
-♡ Hunger: \${pet.hunger}/100 · Happiness: \${pet.happiness}/100
-♡ Coins: \${pet.coins} · XP: \${pet.xp}
-♡ Room: \${pet.room} · Outfit: \${pet.outfit}\`;
+  return `**${pet.name}** the ${pet.species} · Level ${pet.level}
+♡ Hunger: ${pet.hunger}/100 · Happiness: ${pet.happiness}/100
+♡ Coins: ${pet.coins} · XP: ${pet.xp}
+♡ Room: ${pet.room} · Outfit: ${pet.outfit}`;
 }
 async function runPetCommand(message, store) {
   const match = /^!pet(?:\s+([a-z]+)(?:\s+([\s\S]+))?)?$/i.exec(message.content.trim());
@@ -122,33 +122,30 @@ async function runPetCommand(message, store) {
     if (pet) {
       if (!vip) return reply("You already have a pet ♡ VIP members can unlock more pet slots.");
       const count = 1 + (profile.additionalPets?.length ?? 0);
-      if (count >= profile.slots) return reply("All your pet slots are full. Use \`!pet slots\` to unlock another VIP slot ♡");
+      if (count >= profile.slots) return reply("All your pet slots are full. Use `!pet slots` to unlock another VIP slot ♡");
       const companion = makePet();
       companion.name = "Mochi " + (count + 1);
       profile.additionalPets ??= [];
       profile.additionalPets.push(companion);
       profile.activePetIndex = count;
       store.save(guildId, userId, profile);
-      return reply(\`You adopted **\${companion.name}** the \${companion.species}! Welcome home ♡
-\${status(companion)}\`);
+      return reply(`You adopted **${companion.name}** the ${companion.species}! Welcome home ♡\\n${status(companion)}`);
     }
     pet = makePet();
     profile = pet;
     store.save(guildId, userId, profile);
-    return reply(\`You adopted **\${pet.name}** the \${pet.species}! Welcome home ♡
-\${status(pet)}\`);
+    return reply(`You adopted **${pet.name}** the ${pet.species}! Welcome home ♡\\n${status(pet)}`);
   }
-  if (!pet) return reply("You don't have a pet yet. Use \`!pet adopt\` to meet your new friend ♡");
+  if (!pet) return reply("You don't have a pet yet. Use `!pet adopt` to meet your new friend ♡");
 
   if (action === "select") {
     const index = Number(argument);
     const count = 1 + (profile.additionalPets?.length ?? 0);
-    if (!Number.isInteger(index) || index < 1 || index > count) return reply(\`Choose a pet number from 1 to \${count} ♡\`);
+    if (!Number.isInteger(index) || index < 1 || index > count) return reply(`Choose a pet number from 1 to ${count} ♡`);
     profile.activePetIndex = index - 1;
     store.save(guildId, userId, profile);
     pet = index === 1 ? profile : profile.additionalPets[index - 2];
-    return reply("Now caring for " + pet.name + " ♡
-" + status(pet));
+    return reply("Now caring for " + pet.name + " ♡\\n" + status(pet));
   }
   if (action === "view" || action === "status") return reply(status(pet));
 
@@ -161,24 +158,22 @@ async function runPetCommand(message, store) {
   } else if (action === "cuddle") {
     pet.happiness = Math.min(100, pet.happiness + 12); pet.xp += 3;
   } else if (action === "shop") {
-    return reply("**Pet shop ♡**
-\`!pet buy treat\` — 10 coins
-\`!pet buy toy\` — 25 coins");
+    return reply("**Pet shop ♡**\\n`!pet buy treat` — 10 coins\\n`!pet buy toy` — 25 coins");
   } else if (action === "buy") {
     const price = SHOP[argument.toLowerCase()];
-    if (!price) return reply("Choose \`treat\` or \`toy\` ♡");
+    if (!price) return reply("Choose `treat` or `toy` ♡");
     if (pet.coins < price) return reply("You don't have enough coins yet ♡");
     pet.coins -= price; pet.inventory.push(argument.toLowerCase());
   } else if (action === "inventory") {
     return reply(pet.inventory.length ? "Your inventory: " + pet.inventory.join(", ") : "Your inventory is empty ♡");
   } else if (action === "rename") {
-    if (!argument || argument.length > 24) return reply("Use \`!pet rename <name>\` (up to 24 characters).");
+    if (!argument || argument.length > 24) return reply("Use `!pet rename <name>` (up to 24 characters).");
     pet.name = argument;
   } else if (["room", "outfit", "rare", "slots", "minigame"].includes(action)) {
     if (!vip) return reply("That pet feature is VIP-only ♡ Your pet and progress are still yours.");
     if (action === "room") pet.room = "VIP dream room";
     if (action === "outfit") {
-      if (!argument) return reply("Use \`!pet outfit <name>\` to choose an outfit.");
+      if (!argument) return reply("Use `!pet outfit <name>` to choose an outfit.");
       pet.outfit = argument.slice(0, 30);
     }
     if (action === "rare") {
@@ -188,7 +183,7 @@ async function runPetCommand(message, store) {
     if (action === "slots") {
       profile.slots = Math.min(3, profile.slots + 1);
       store.save(guildId, userId, profile);
-      return reply(\`VIP pet slots: \${profile.slots}/3 ♡ Use !pet adopt to fill your new slot.\`);
+      return reply(`VIP pet slots: ${profile.slots}/3 ♡ Use !pet adopt to fill your new slot.`);
     }
     if (action === "minigame") {
       const today = new Date().toISOString().slice(0, 10);
@@ -196,13 +191,12 @@ async function runPetCommand(message, store) {
       pet.lastMinigame = today; pet.coins += 30; pet.xp += 10;
     }
   } else {
-    return reply("Try \`!pet\`, \`adopt\`, \`feed\`, \`play\`, \`cuddle\`, \`shop\`, \`inventory\`, \`rename\`, or \`select\` ♡");
+    return reply("Try `!pet`, `adopt`, `feed`, `play`, `cuddle`, `shop`, `inventory`, `rename`, or `select` ♡");
   }
 
   while (pet.xp >= pet.level * 25) { pet.xp -= pet.level * 25; pet.level += 1; }
   store.save(guildId, userId, profile);
-  return reply("Done ♡
-" + status(pet));
+  return reply("Done ♡\\n" + status(pet));
 }
 export function attachPetSystem(client, store) {
   if (!store) throw new Error("The virtual-pet store is required.");
