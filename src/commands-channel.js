@@ -17,8 +17,9 @@ export function buildCommandsThreadGuidePayload() {
         "**Reputation commands**\n\n" +
         "`!rep` — view your reputation, positive and negative votes, and comments.\n" +
         "`!rep @member` — view another member's reputation, positive and negative votes, and comments.\n" +
-        "`!rep top` — see the positive and negative reputation rankings.\n\n" +
-        "♡ You can use these commands in any Kittisugar channel."
+        "`!rep top` — see the positive and negative reputation rankings.\n" +
+        "`!rep comments @member` — read reputation comments.\n\n" +
+        "♡ Use these commands in this thread."
       )
       .setFooter({ text: "Kittisugar · Reputation help ♡" })],
   };
