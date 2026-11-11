@@ -53,7 +53,7 @@ Solo commands: `!cry`, `!laugh`, `!dance`, `!sleep`, `!happy`, `!blush`, `!smug`
 - `!vip stats` shows the caller's full statistics for VIP members.
 - `!vip stats @member` lets VIP members view another member's full statistics. Non-VIP callers receive: `Get VIP to see everyone's stats.`
 - `!rape` and `!fuck` are intentionally unavailable; Sugar responds with a consent reminder.
-- The initial GIF adapter uses Nekos.best's no-key anime reaction GIF endpoints. That service is SFW-only and does not offer gender-pair filtering or NSFW GIFs. `!spank` currently uses its non-explicit slap reaction as a playful substitute. Gender role IDs are recognized by the module, but role-specific GIF curation is not part of this initial adapter.
+- The initial GIF adapter uses Nekos.best's no-key anime reaction GIF endpoints. That service is SFW-only and does not offer gender-pair filtering or NSFW GIFs. `!spank` currently uses its non-explicit slap reaction as a playful substitute. The existing gender role IDs are mapped and tested, but the returned GIFs are generic until a gender-pair GIF catalogue is supplied.
 
 Fun-command statistics are stored atomically in `fun-command-state.json` under the existing persistent data directory. The store validates its schema and bounds retained guild/member/partner records.
 
