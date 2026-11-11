@@ -140,23 +140,25 @@ export function buildTicketPermissionOverwrites({ guild, openerId, moderatorRole
 /** Attach the support-ticket panel and private ticket interactions to Sugar. */
 export function attachTicketSystem(client, { settings, stickyPanels, panelChannelId = TICKET_PANEL_CHANNEL_ID }) {
   if (!settings) throw new Error("The ticket system requires the server settings store.");
+  let activePanelChannelId = panelChannelId;
 
-  // The Help panel is a regular, static message: it is created or updated
-  // once on startup and never moved, reposted, or recreated after member messages.
-  client.once(Events.ClientReady, () => {
-    void ensureTicketPanel(client, panelChannelId).catch((error) => {
+  client.once(Events.ClientReady, async () => {
+    try {
+      const channel = await ensureTicketPanel(client, activePanelChannelId);
+      activePanelChannelId = channel.id;
+    } catch (error) {
       console.error(`[tickets] panel setup failed: ${error.message}`);
-    });
+    }
   });
 
   client.on(Events.InteractionCreate, (interaction) => {
     if (interaction.isButton() && interaction.customId.startsWith(PREFIX)) {
-      void handleTicketButton(interaction, { client, settings, panelChannelId }).catch(async (error) => {
+      void handleTicketButton(interaction, { client, settings, panelChannelId: activePanelChannelId }).catch(async (error) => {
         console.error(`[tickets] interaction failed: ${error.message}`);
         await replyEphemeral(interaction, error.message || "The ticket action failed. Please try again.");
       });
     } else if (interaction.isModalSubmit() && interaction.customId.startsWith(`${PREFIX}reason:`)) {
-      void createTicketFromModal(interaction, { client, settings, panelChannelId }).catch(async (error) => {
+      void createTicketFromModal(interaction, { client, settings, panelChannelId: activePanelChannelId }).catch(async (error) => {
         console.error(`[tickets] creation failed: ${error.message}`);
         await replyEphemeral(interaction, error.message || "The ticket could not be created. Please try again.");
       });
@@ -170,10 +172,34 @@ export function attachTicketSystem(client, { settings, stickyPanels, panelChanne
 }
 
 export async function ensureTicketPanel(client, panelChannelId = TICKET_PANEL_CHANNEL_ID) {
-  const channel = await client.channels.fetch(panelChannelId);
-  if (!channel || channel.type !== ChannelType.GuildText) {
-    throw new Error(`Ticket panel channel ${panelChannelId} is not an accessible text channel.`);
+  let channel = await client.channels.fetch(panelChannelId).catch(() => null);
+  const guild = channel?.guild ?? client.guilds.cache.first();
+  if (!channel && guild) {
+    channel = guild.channels.cache.find((item) =>
+      item.type === ChannelType.GuildText && /support/i.test(item.name.replace(/[^a-z]/gi, "")),
+    ) ?? null;
   }
+  if (!channel && guild) {
+    channel = await guild.channels.create({
+      name: "💗｜୨୧•𝓼𝓾𝓹𝓹𝓸𝓻𝓽",
+      type: ChannelType.GuildText,
+      reason: "Create the Kittisugar Support channel because it was missing",
+    });
+  }
+  if (!channel || channel.type !== ChannelType.GuildText) {
+    throw new Error("The Support panel channel could not be found or created.");
+  }
+  await channel.permissionOverwrites.edit(channel.guild.roles.everyone, {
+    ViewChannel: true, SendMessages: false, ReadMessageHistory: true,
+  });
+  const newRole = channel.guild.roles.cache.find((role) => role.name.toLowerCase() === "new");
+  if (newRole) await channel.permissionOverwrites.edit(newRole, {
+    ViewChannel: true, SendMessages: false, ReadMessageHistory: true,
+  });
+  await channel.permissionOverwrites.edit(client.user.id, {
+    ViewChannel: true, SendMessages: true, EmbedLinks: true, ReadMessageHistory: true,
+    ManageMessages: true, ManageChannels: true,
+  });
 
   const recent = await channel.messages.fetch({ limit: 50 });
   const existing = recent.find((message) =>
