@@ -439,10 +439,12 @@ function nextOnboardingStep(category) {
 }
 
 async function completeOnboarding(interaction) {
+  const member = await interaction.guild.members.fetch(interaction.user.id);
+  const ageReviewRole = findRoleByName(interaction.guild, AGE_REVIEW_ROLE_NAME);
+  if (ageReviewRole && member.roles.cache.has(ageReviewRole.id)) throw new Error("Manual age verification is still pending.");
   const newRole = findRoleByName(interaction.guild, "new");
   const memberRole = findRoleByName(interaction.guild, "member");
   if (!newRole || !memberRole) throw new Error("Sugar couldn't find the New or Member role. Please contact a moderator.");
-  const member = await interaction.guild.members.fetch(interaction.user.id);
   const changed = await assignMemberAccess(member, { newRole, memberRole });
   return changed
     ? "You're all set! Welcome to Kittisugar ♡ Your Member access is ready."
@@ -456,6 +458,10 @@ export async function startRoleOnboarding(interaction) {
   const member = await interaction.guild.members.fetch(interaction.user.id).catch(() => null);
   if (!member || !newRole || !memberRole) {
     return interaction.editReply("Sugar couldn't verify your server access. Please contact a moderator.");
+  }
+  const ageReviewRole = findRoleByName(interaction.guild, AGE_REVIEW_ROLE_NAME);
+  if (ageReviewRole && member.roles.cache.has(ageReviewRole.id)) {
+    return interaction.editReply("Your manual age verification is pending in your private Support ticket. Please wait for staff approval ♡");
   }
   if (member.roles.cache.has(memberRole.id) && !member.roles.cache.has(newRole.id)) {
     return interaction.editReply("You're already verified and have access to Kittisugar ♡");
