@@ -8,10 +8,10 @@ import {
   isCommandsThread,
 } from "../src/commands-channel.js";
 
-test("commands board explains that commands belong in the dedicated thread", () => {
+test("commands board lists fun commands without mentioning the commands thread or reputation", () => {
   const payload = buildCommandsPanelPayload();
   assert.equal(payload.embeds.length, 1);
-  assert.match(payload.embeds[0].data.description, /use the \*\*💬 𝗰𝗼𝗺𝗺𝗮𝗻𝗱𝘀\*\* thread/i);
+  assert.doesNotMatch(payload.embeds[0].data.description, /𝗰𝗼𝗺𝗺𝗮𝗻𝗱𝘀|thread/i);
   assert.match(payload.embeds[0].data.description, /!funhelp/);
   assert.doesNotMatch(payload.embeds[0].data.description, /!rep/i);
   assert.equal(COMMANDS_CHANNEL_NAME, "💬｜୨୧•𝓬𝓸𝓶𝓶𝓪𝓷𝓭𝓼");
