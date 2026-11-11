@@ -178,7 +178,7 @@ export function buildGuidePayload(guild) {
       `• ${channelMention(guild, ["confessions"])}\nShare an anonymous confession or create a poll with the channel buttons.\n` +
       `• ${channelMention(guild, ["loveletters", "love-letters"])}\nLeave a sweet message or appreciation for someone in the community.\n` +
       `• ${channelMention(guild, ["suggestions"])}\nShare ideas and suggestions to help make Kittisugar better.\n` +
-      `• ${channelMention(guild, ["reputation"])}\nLeave kind comments, check member reputation, read feedback, and see the top members with !rep commands. VIP can publish anonymously.\n` +
+      `• ${channelMention(guild, ["reputation"])}\nLeave kind comments, check member reputation, read feedback, and see the top members with !rep commands. VIP members can choose anonymous publishing when leaving a reputation comment.\n` +
       `• ${channelMention(guild, ["quotes"])}\nPost memorable, funny, or meaningful quotes from the community.\n` +
       `• ${channelMention(guild, ["selfies", "selfie"])}\nShare your selfies with the community.\n` +
       `• ${channelMention(guild, ["introductions", "introduction", "introduce-yourself", "introduceyourself"])}\nIntroduce yourself and let everyone get to know you.\n` +
@@ -201,7 +201,6 @@ export function buildGuidePayload(guild) {
       "`!vip stats @member` — VIP members can view another member's statistics.\n" +
       "`!rep` — see your reputation. `!rep @member` — view someone else.\n" +
       "`!rep top` — view the reputation ranking. `!rep comments @member` — read recent comments.\n" +
-      "`!rep anonymous` — VIP members can publish reputation comments anonymously.\n" +
       "`/vip-delete amount:` — VIP members can bulk-delete their own recent messages.\n" +
       "`!pet` — view your pet. `!pet adopt` — adopt one. `!pet feed|play|cuddle` — care for it.\n" +
       "`!pet shop|inventory|rename` — use the pet shop, check items, or rename your pet.\n" +
