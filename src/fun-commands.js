@@ -328,7 +328,7 @@ async function sendNsfwResult({ guild, channel, actorId, targetId, command, fetc
   const target = await guild.members.fetch(targetId).catch(() => null);
   if (!actor || !target || !isVerifiedAdult(actor) || !isVerifiedAdult(target)) {
     await channel.send({ content: "The request expired because both members must still have the Member role ♡", allowedMentions: { parse: [] } });
-    return;
+    return false;
   }
   const definition = getFunCommandDefinition(command);
   store.record({ guildId: guild.id, actorId, targetId, command });
@@ -354,6 +354,7 @@ async function sendNsfwResult({ guild, channel, actorId, targetId, command, fetc
     embeds: [embed],
     allowedMentions: { parse: [], users: [actorId, targetId] },
   });
+  return true;
 }
 
 async function handleNsfwButton(interaction, { store, fetchImpl }) {
@@ -376,8 +377,8 @@ async function handleNsfwButton(interaction, { store, fetchImpl }) {
     return true;
   }
   await interaction.update({ content: "You accepted the request ♡", components: [] });
-  if (CONSENT_COMMANDS.has(command)) store.setInteractionConsent(guildId, actorId, targetId, command);
-  await sendNsfwResult({ guild, channel, actorId, targetId, command, fetchImpl, store });
+  const posted = await sendNsfwResult({ guild, channel, actorId, targetId, command, fetchImpl, store });
+  if (posted && CONSENT_COMMANDS.has(command)) store.setInteractionConsent(guildId, actorId, targetId, command);
   return true;
 }
 
@@ -484,9 +485,15 @@ export function attachFunCommands(client, { store, fetchImpl = fetch, token, app
           store.getNsfwAutoAccept(message.guild.id, targetUser.id);
         if (!rememberedConsent && !automaticAcceptance) {
           try {
+            const requestTitle = name === "kiss" ? "Kiss request ♡" : "NSFW interaction request ♡";
+            const requestDetails = name === "kiss"
+              ? "<@" + message.author.id + "> wants to kiss you in Kittisugar. If you accept, Sugar will remember your approval for future kisses between you two."
+              : name === "fuck"
+                ? "<@" + message.author.id + "> wants to use !fuck with you in Kittisugar. If you accept, Sugar will remember your approval for future !fuck requests from this member. You can turn on automatic acceptance for everyone with !nsfw-on or turn it off with !nsfw-off."
+                : "<@" + message.author.id + "> wants to use !" + name + " with you in Kittisugar. Accept only if you're comfortable. You can turn on automatic acceptance with !nsfw-on or turn it off with !nsfw-off.";
             await targetUser.send({
-              embeds: [new EmbedBuilder().setColor(COLOR).setTitle("NSFW interaction request ♡")
-                .setDescription("<@" + message.author.id + "> wants to use !" + name + " with you in Kittisugar. Accept only if you're comfortable. You can turn on automatic acceptance with !nsfw-on or turn it off with !nsfw-off.")],
+              embeds: [new EmbedBuilder().setColor(COLOR).setTitle(requestTitle)
+                .setDescription(requestDetails)],
               components: [nsfwRequestRow(message.guild.id, message.channel.id, message.author.id, targetUser.id, name)],
               allowedMentions: { parse: [] },
             });
