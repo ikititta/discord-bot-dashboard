@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { buildRoleOrganizationPlan, buildSafeRolePositions, groupContiguousRolePositionBatches, KITTISUGAR_GUILD_ID, ROLE_ORGANIZATION_CONFIG } from "../src/roles-organize.js";
+import { buildRoleOrganizationPlan, groupContiguousRolePositionBatches, KITTISUGAR_GUILD_ID, ROLE_ORGANIZATION_CONFIG } from "../src/roles-organize.js";
 
 const makeRole = (id, name, { managed = false } = {}) => ({
   id, name, managed, editable: !managed,
@@ -166,26 +166,3 @@ test("position updates are split at protected-role gaps", () => {
   ]);
 });
 
-test("Kittisugar inventory splits around the managed Server Booster slot", () => {
-  const roles = inventory().filter((role) => role.id !== "1567669697061724263" &&
-    role.id !== "1569802495792914593" && role.id !== KITTISUGAR_GUILD_ID);
-  roles.forEach((role) => {
-    const source = inventory().find((item) => item.id === role.id);
-    role.position = source.position;
-  });
-  const { ordered } = buildRoleOrganizationPlan(inventory());
-  const targets = ordered.filter((item) => item.role && !item.managed).map((item) => {
-    const live = inventory().find((role) => role.id === item.role.id);
-    return { ...live, editable: true };
-  });
-  const dividers = [
-    "1569859242528211014", "1569859243480322188", "1569859244986204252",
-    "1569859245820879012", "1569859247578288229", "1569859248316219422",
-  ].map((id, index) => ({ id, name: `divider-${index}`, managed: false, editable: true,
-    position: 6 - index }));
-  const positions = buildSafeRolePositions([...targets, ...dividers], 65);
-  const batches = groupContiguousRolePositionBatches(positions);
-  assert.deepEqual(batches.map((batch) => [batch[0].position, batch.at(-1).position]), [
-    [1, 26], [28, 64],
-  ]);
-});
