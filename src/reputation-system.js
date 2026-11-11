@@ -130,7 +130,7 @@ export function makePanelPayload() {
       "♡ Each member has one active vote per person and may change it later.\n" +
       "♡ Vote honestly and respectfully. Harassment, threats, private information, and vote manipulation are not allowed.\n\n" +
       "**Commands**\n" +
-      "`!rep` — your reputation.\n`!rep @member` — view a member.\n`!rep top` — show the ranking.\n`!rep comments @member` — read their comments.")
+      "`!rep` — your reputation.\n`!rep @member` — view a member.\n`!rep stats` — your reputation statistics.\n`!rep stats @member` — a member's reputation statistics.\n`!rep top` — show the ranking.\n`!rep comments [@member]` — read reputation comments.")
     .setFooter({ text: "Kindness looks good on everyone ♡" });
   return { embeds: [embed], components: [
     new ActionRowBuilder().addComponents(
@@ -352,6 +352,15 @@ export function attachReputationSystem(client, store) {
     const args = message.content.trim().split(/\s+/).slice(1);
     const mentioned = message.mentions.users.first();
     try {
+      if (args[0]?.toLowerCase() === "stats") {
+        const target = mentioned ?? message.author;
+        const score = store.getScore(message.guild.id, target.id);
+        const votes = store.getVoteBreakdown(message.guild.id, target.id);
+        const comments = store.getCommentsForUser(message.guild.id, target.id).length;
+        const embed = new EmbedBuilder().setColor(COLOR).setTitle("୨୧ Reputation Stats ♡")
+          .setDescription(`**Member:** <@${target.id}>\n**Total reputation:** ${score}\n**Positive votes:** ${votes.positive}\n**Negative votes:** ${votes.negative}\n**Comments received:** ${comments}`);
+        return message.reply({ embeds: [embed], allowedMentions: { parse: [] } });
+      }
       if (args[0]?.toLowerCase() === "comments") {
         if (args.length > 1 && !mentioned) return message.reply("Select a member mention. Usage: !rep comments @member ♡");
         const target = mentioned ?? message.author;
