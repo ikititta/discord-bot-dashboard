@@ -34,7 +34,7 @@ export class FunCommandStore {
     this.data = this.#read();
   }
 
-  record({ guildId, actorId, targetId = null, command, actorRole = "unknown", targetRole = null }) {
+  record({ guildId, actorId, targetId = null, command }) {
     if (!/^\d{17,20}$/.test(guildId ?? "") || !/^\d{17,20}$/.test(actorId ?? "") ||
         (targetId !== null && !/^\d{17,20}$/.test(targetId)) ||
         !/^[a-z][a-z0-9-]{0,30}$/.test(command ?? "")) {
@@ -57,8 +57,6 @@ export class FunCommandStore {
       target.lastUsed = now;
       trimMap(target.receivedFrom, MAX_PARTNERS_PER_USER);
     }
-    actor.lastRole = actorRole;
-    if (targetRole) actor.lastTargetRole = targetRole;
     this.#trimGuilds();
     this.#write();
     return this.getStats(guildId, actorId);
