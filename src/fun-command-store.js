@@ -62,6 +62,93 @@ export class FunCommandStore {
     return this.getStats(guildId, actorId);
   }
 
+  setNsfwAutoAccept(guildId, userId, enabled) {
+    const guild = this.#guild(guildId);
+    guild.nsfwAutoAccept ??= {};
+    guild.nsfwAutoAccept[userId] = Boolean(enabled);
+    this.#write();
+    return guild.nsfwAutoAccept[userId];
+  }
+
+  getNsfwAutoAccept(guildId, userId) {
+    return this.data.guilds[guildId]?.nsfwAutoAccept?.[userId] === true;
+  }
+
+  createRelationshipProposal({ guildId, proposerId, targetId, type }) {
+    if (!/^\\d{17,20}$/.test(guildId ?? "") || !/^\\d{17,20}$/.test(proposerId ?? "") ||
+        !/^\\d{17,20}$/.test(targetId ?? "") || proposerId === targetId ||
+        !["couple", "marriage"].includes(type)) throw new Error("Invalid relationship proposal.");
+    const guild = this.#guild(guildId);
+    guild.relationships ??= {};
+    guild.proposals ??= [];
+    this.#expireProposals(guild);
+    if (guild.relationships[proposerId] || guild.relationships[targetId]) return { error: "already_in_relationship" };
+    if (guild.proposals.some((p) => p.status === "pending" && (p.proposerId === proposerId || p.targetId === proposerId || p.proposerId === targetId || p.targetId === targetId))) return { error: "pending_proposal" };
+    const proposal = { id: `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`, proposerId, targetId, type, status: "pending", createdAt: new Date().toISOString(), expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000 };
+    guild.proposals.push(proposal);
+    guild.proposals = guild.proposals.slice(-500);
+    this.#write();
+    return structuredClone(proposal);
+  }
+
+  resolveRelationshipProposal(guildId, proposalId, userId, accept) {
+    const guild = this.#guild(guildId);
+    guild.relationships ??= {};
+    guild.proposals ??= [];
+    this.#expireProposals(guild);
+    const proposal = guild.proposals.find((p) => p.id === proposalId && p.status === "pending");
+    if (!proposal) return { error: "not_pending" };
+    if (proposal.targetId !== userId) return { error: "not_target" };
+    if (accept && (guild.relationships[proposal.proposerId] || guild.relationships[proposal.targetId])) return { error: "already_in_relationship" };
+    proposal.status = accept ? "accepted" : "declined";
+    proposal.resolvedAt = new Date().toISOString();
+    if (accept) {
+      const relation = { partnerId: proposal.targetId, type: proposal.type, proposerId: proposal.proposerId, since: proposal.resolvedAt };
+      guild.relationships[proposal.proposerId] = relation;
+      guild.relationships[proposal.targetId] = { ...relation, partnerId: proposal.proposerId };
+    }
+    this.#write();
+    return structuredClone(proposal);
+  }
+
+  endRelationship(guildId, userId, expectedType) {
+    const guild = this.#guild(guildId);
+    guild.relationships ??= {};
+    const relation = guild.relationships[userId];
+    if (!relation) return { error: "no_relationship" };
+    if (expectedType && relation.type !== expectedType) return { error: "wrong_type" };
+    delete guild.relationships[userId];
+    delete guild.relationships[relation.partnerId];
+    this.#write();
+    return structuredClone(relation);
+  }
+
+  getRelationship(guildId, userId) {
+    const guild = this.data.guilds[guildId];
+    const relation = guild?.relationships?.[userId];
+    return relation ? structuredClone(relation) : null;
+  }
+
+  getRelationshipHistory(guildId, userId) {
+    const proposals = this.data.guilds[guildId]?.proposals ?? [];
+    return proposals.filter((p) => p.proposerId === userId || p.targetId === userId).map((p) => structuredClone(p));
+  }
+
+  #guild(guildId) {
+    if (!/^\\d{17,20}$/.test(guildId ?? "")) throw new Error("Invalid guild ID.");
+    return this.data.guilds[guildId] ??= { users: {}, nsfwAutoAccept: {}, relationships: {}, proposals: [] };
+  }
+
+  #expireProposals(guild) {
+    const now = Date.now();
+    for (const proposal of guild.proposals ?? []) {
+      if (proposal.status === "pending" && proposal.expiresAt <= now) {
+        proposal.status = "expired";
+        proposal.resolvedAt = new Date(now).toISOString();
+      }
+    }
+  }
+
   getStats(guildId, userId) {
     const stats = this.data.guilds[guildId]?.users?.[userId];
     return stats ? structuredClone(stats) : emptyUserStats();
