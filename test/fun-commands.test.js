@@ -161,12 +161,12 @@ test("!fuck selects NSFW GIF categories from both members' gender roles", async 
       assert.equal(url, "https://api.purrbot.site/v2/img/nsfw/yuri/gif");
       return {
         ok: true,
-        json: async () => ({ link: "https://cdn.purrbot.site/nsfw/fuck/gif/fuck_001.gif", error: false }),
+        json: async () => ({ link: "https://cdn.purrbot.site/nsfw/yuri/gif/yuri_001.gif", error: false }),
       };
     },
   });
   assert.deepEqual(gif, {
-    url: "https://cdn.purrbot.site/nsfw/fuck/gif/fuck_001.gif",
+    url: "https://cdn.purrbot.site/nsfw/yuri/gif/yuri_001.gif",
     anime: "",
     pairing: "yuri",
     source: "PurrBot NSFW",
@@ -193,5 +193,5 @@ test("!fuck rejects SFW or wrong-gender GIF results instead of falling back", as
       ok: true,
       json: async () => ({ link: "https://cdn.purrbot.site/sfw/kiss/gif/kiss_001.gif", error: false }),
     }),
-  }), /outside the explicit fuck category/);
+  }), /outside the selected fuck category/);
 });
