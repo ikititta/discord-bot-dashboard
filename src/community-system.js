@@ -298,15 +298,6 @@ async function renameSuggestionsChannel(client) {
   const channel = await client.channels.fetch(SUGGESTIONS_CHANNEL_ID).catch(() => null);
   if (!channel || channel.type !== ChannelType.GuildText) return;
 
-  if (channel.name !== "🗳️｜୨୧•𝓼𝓾𝓰𝓰𝓮𝓼𝓽𝓲𝓸𝓷𝓼") {
-    const botMember = channel.guild.members.me;
-    if (!botMember?.permissions.has(PermissionFlagsBits.ManageChannels)) {
-      console.warn("[community] Sugar needs Manage Channels permission to rename the suggestions channel.");
-    } else {
-      await channel.setName("🗳️｜୨୧•𝓼𝓾𝓰𝓰𝓮𝓼𝓽𝓲𝓸𝓷𝓼", "Set the requested Kittisugar Suggestions channel name");
-    }
-  }
-
   // Migrate older suggestion posts from buttons to native Discord reactions.
   await migrateSuggestionReactions(channel, client.user?.id);
 }
@@ -317,12 +308,6 @@ export async function ensureCommunityPanels(client) {
   const suggestionsChannel = await client.channels.fetch(SUGGESTIONS_CHANNEL_ID).catch(() => null);
   if (suggestionsChannel?.type === ChannelType.GuildText) {
     await migrateSuggestionReactions(suggestionsChannel, client.user?.id);
-  }
-  if (suggestionsChannel?.type === ChannelType.GuildText && suggestionsChannel.name !== "🗳️｜୨୧•𝓼𝓾𝓰𝓰𝓮𝓼𝓽𝓲𝓸𝓷𝓼") {
-    const botMember = suggestionsChannel.guild.members.me;
-    if (botMember?.permissions.has(PermissionFlagsBits.ManageChannels)) {
-      await suggestionsChannel.setName("🗳️｜୨୧•𝓼𝓾𝓰𝓰𝓮𝓼𝓽𝓲𝓸𝓷𝓼", "Set the requested Kittisugar Suggestions channel name");
-    }
   }
   const suggestions = await upsertPanel(client, SUGGESTIONS_CHANNEL_ID, SUGGESTIONS_PANEL_TITLE, buildSuggestionsPanelPayload(), {
     pinOnCreate: false,
