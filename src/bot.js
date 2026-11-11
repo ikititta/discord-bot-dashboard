@@ -51,6 +51,7 @@ export function createBot({
   stickyPanels,
   funCommands,
   reputationStore,
+  petStore,
   autoModeration,
 }) {
   const client = new Client({
