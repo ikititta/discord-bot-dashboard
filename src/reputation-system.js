@@ -35,10 +35,34 @@ export class ReputationStore {
   getForUser(guildId, userId) {
     return (this.data.guilds[guildId] ?? []).filter((item) => item.targetId === userId).map((item) => ({ ...item }));
   }
+  vote({ guildId, authorId, targetId, value }) {
+    if (![guildId, authorId, targetId].every((id) => /^\\d{17,20}$/.test(id ?? "")) || authorId === targetId || ![-1, 1].includes(value)) throw new Error("Invalid reputation vote.");
+    const file = path.join(path.dirname(this.file), "reputation-votes.json");
+    let data = { version: 1, guilds: {} };
+    try { data = JSON.parse(fs.readFileSync(file, "utf8")); } catch (error) { if (error?.code !== "ENOENT") throw error; }
+    const votes = data.guilds[guildId] ??= [];
+    const existing = votes.find((item) => item.authorId === authorId && item.targetId === targetId);
+    if (existing) { existing.value = value; existing.createdAt = new Date().toISOString(); }
+    else votes.push({ authorId, targetId, value, createdAt: new Date().toISOString() });
+    const temp = file + ".tmp";
+    fs.writeFileSync(temp, JSON.stringify(data, null, 2), { mode: 0o600 });
+    fs.chmodSync(temp, 0o600);
+    fs.renameSync(temp, file);
+    return this.getScore(guildId, targetId);
+  }
+  getScore(guildId, userId) {
+    const comments = this.getForUser(guildId, userId).length;
+    const file = path.join(path.dirname(this.file), "reputation-votes.json");
+    let votes = [];
+    try { votes = JSON.parse(fs.readFileSync(file, "utf8")).guilds[guildId] ?? []; } catch (error) { if (error?.code !== "ENOENT") throw error; }
+    return comments + votes.filter((item) => item.targetId === userId).reduce((sum, item) => sum + item.value, 0);
+  }
   getTop(guildId, limit = 10) {
-    const totals = new Map();
-    for (const item of this.data.guilds[guildId] ?? []) totals.set(item.targetId, (totals.get(item.targetId) ?? 0) + 1);
-    return [...totals].map(([userId, reputation]) => ({ userId, reputation }))
+    const ids = new Set((this.data.guilds[guildId] ?? []).map((item) => item.targetId));
+    const file = path.join(path.dirname(this.file), "reputation-votes.json");
+    try { for (const item of JSON.parse(fs.readFileSync(file, "utf8")).guilds[guildId] ?? []) ids.add(item.targetId); }
+    catch (error) { if (error?.code !== "ENOENT") throw error; }
+    return [...ids].map((userId) => ({ userId, reputation: this.getScore(guildId, userId) }))
       .sort((a, b) => b.reputation - a.reputation || a.userId.localeCompare(b.userId)).slice(0, limit);
   }
   #write() {
@@ -81,9 +105,15 @@ function makePanelPayload() {
       "**Commands**\n" +
       "`!rep` — your reputation.\n`!rep @member` — view a member.\n`!rep top` — show the ranking.\n`!rep comments @member` — read their comments.")
     .setFooter({ text: "Kindness looks good on everyone ♡" });
-  return { embeds: [embed], components: [new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId(PREFIX + "start").setLabel("Leave a Comment ♡").setStyle(ButtonStyle.Primary),
-  )] };
+  return { embeds: [embed], components: [
+    new ActionRowBuilder().addComponents(
+      new ButtonBuilder().setCustomId(PREFIX + "vote-positive").setLabel("Dar positiva").setStyle(ButtonStyle.Success),
+      new ButtonBuilder().setCustomId(PREFIX + "vote-negative").setLabel("Dar negativa").setStyle(ButtonStyle.Danger),
+    ),
+    new ActionRowBuilder().addComponents(
+      new ButtonBuilder().setCustomId(PREFIX + "start").setLabel("Leave a Comment ♡").setStyle(ButtonStyle.Primary),
+    ),
+  ] };
 }
 function buildTopEmbed(store, guild) {
   const top = store.getTop(guild.id, 10);
@@ -169,6 +199,12 @@ export function attachReputationSystem(client, store) {
       const [action, value, targetId] = parts;
       try {
         if (!interaction.inGuild()) return ephemeral(interaction, "This only works inside Kittisugar.");
+        if (action === "vote-positive" || action === "vote-negative") {
+          if (!member(interaction.member)) return ephemeral(interaction, "Complete Kittisugar verification first to use reputation.");
+          const value = action === "vote-positive" ? 1 : -1;
+          const picker = new UserSelectMenuBuilder().setCustomId(PREFIX + "vote-target:" + value).setPlaceholder("Choose a member...").setMinValues(1).setMaxValues(1);
+          return interaction.reply({ content: value > 0 ? "Who should receive positive reputation?" : "Who should receive negative reputation?", ephemeral: true, components: [new ActionRowBuilder().addComponents(picker)] });
+        }
         if (action === "start") {
           if (!member(interaction.member)) return ephemeral(interaction, "Complete Kittisugar verification first to use reputation.");
           const picker = new UserSelectMenuBuilder().setCustomId(PREFIX + "target").setPlaceholder("Choose a member...")
@@ -190,6 +226,19 @@ export function attachReputationSystem(client, store) {
           return interaction.showModal(commentModal(target.id, anonymous));
         }
       } catch (error) { console.error("[reputation] button failed: " + error.message); return ephemeral(interaction, "Something went wrong. Please try again."); }
+    }
+    if (interaction.isUserSelectMenu() && interaction.customId.startsWith(PREFIX + "vote-target:")) {
+      try {
+        if (!interaction.inGuild() || !member(interaction.member)) return ephemeral(interaction, "Complete verification first.");
+        const value = Number(interaction.customId.slice((PREFIX + "vote-target:").length));
+        const targetId = interaction.values[0];
+        const target = await interaction.guild.members.fetch(targetId).catch(() => null);
+        if (!target || target.id === interaction.user.id || target.user.bot) return ephemeral(interaction, "Choose another server member.");
+        const score = store.vote({ guildId: interaction.guildId, authorId: interaction.user.id, targetId, value });
+        const channel = interaction.guild.channels.cache.find((c) => c.type === ChannelType.GuildText && c.name === "reputation");
+        if (channel) await upsert(channel, client, "୨୧ 𝓣𝓸𝓹 𝓡𝓮𝓹𝓾𝓽𝓪𝓽𝓲𝓸𝓷 ♡", buildTopEmbed(store, interaction.guild));
+        return interaction.reply({ content: `${value > 0 ? "Positive" : "Negative"} reputation recorded for <@${targetId}>. Their score is now **${score}** ♡`, ephemeral: true, allowedMentions: { users: [targetId] } });
+      } catch (error) { console.error("[reputation] vote failed: " + error.message); return ephemeral(interaction, "I couldn't record that vote. Please try again."); }
     }
     if (interaction.isUserSelectMenu() && interaction.customId === PREFIX + "target") {
       if (!interaction.inGuild() || !member(interaction.member)) return ephemeral(interaction, "Complete verification first.");
@@ -242,7 +291,7 @@ export function attachReputationSystem(client, store) {
         return message.reply({ embeds: [embed], allowedMentions: { parse: [] } });
       }
       const target = mentioned ?? message.author;
-      const count = store.getForUser(message.guild.id, target.id).length;
+      const count = store.getScore(message.guild.id, target.id);
       const embed = new EmbedBuilder().setColor(COLOR).setTitle("୨୧ Reputation ♡")
         .setDescription(`<@${target.id}> has **${count}** reputation point(s).\nUse ` + "`!rep comments @member`" + ` to read their latest comments.`);
       return message.reply({ embeds: [embed], allowedMentions: { parse: [] } });
