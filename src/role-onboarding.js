@@ -355,7 +355,7 @@ export function attachRoleOnboarding(client) {
 
   const syncNsfwChannel = (channel) => {
     if (!channel.guild || !channel.permissionOverwrites?.edit) return;
-    const role = findRoleByName(channel.guild, NSFW_HIDDEN_ROLE);
+    const role = findNsfwHiddenRole(channel.guild);
     if (!role) return;
     const update = channel.nsfw
       ? channel.permissionOverwrites.edit(role, { ViewChannel: false }, "Apply NSFW opt-out visibility")
