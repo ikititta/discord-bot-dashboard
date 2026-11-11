@@ -311,6 +311,74 @@ function relationshipRow(id) {
     new ButtonBuilder().setCustomId(RELATION_PREFIX + id + ":no").setLabel("Decline").setStyle(ButtonStyle.Secondary),
   );
 }
+const NSFW_PREFIX = "sugar-nsfw:";
+const NSFW_COMMANDS = new Set(["fuck", "spank"]);
+
+function nsfwRequestRow(guildId, channelId, actorId, targetId, command) {
+  const id = [guildId, channelId, actorId, targetId, command].join(".");
+  return new ActionRowBuilder().addComponents(
+    new ButtonBuilder().setCustomId(NSFW_PREFIX + id + ".yes").setLabel("Accept ♡").setStyle(ButtonStyle.Success),
+    new ButtonBuilder().setCustomId(NSFW_PREFIX + id + ".no").setLabel("Decline").setStyle(ButtonStyle.Secondary),
+  );
+}
+
+async function sendNsfwResult({ guild, channel, actorId, targetId, command, fetchImpl, store }) {
+  const actor = await guild.members.fetch(actorId).catch(() => null);
+  const target = await guild.members.fetch(targetId).catch(() => null);
+  if (!actor || !target || !isVerifiedAdult(actor) || !isVerifiedAdult(target)) {
+    await channel.send({ content: "The request expired because both members must still have the Member role ♡", allowedMentions: { parse: [] } });
+    return;
+  }
+  const definition = getFunCommandDefinition(command);
+  store.record({ guildId: guild.id, actorId, targetId, command });
+  let gif = null;
+  try {
+    gif = await fetchAnimeGif(definition.gif, {
+      fetchImpl,
+      actorRole: normalizeFunRole(actor),
+      targetRole: normalizeFunRole(target),
+    });
+  } catch (error) {
+    console.warn("[fun] approved NSFW GIF lookup failed: " + error.message);
+  }
+  const embed = new EmbedBuilder().setColor(COLOR);
+  if (gif) {
+    embed.setImage(gif.url);
+    if (gif.anime) embed.setFooter({ text: "Anime: " + gif.anime + " · " + gif.source });
+  } else {
+    embed.setFooter({ text: "Anime GIF unavailable right now ♡" });
+  }
+  await channel.send({
+    content: buildFunActionText(actorId, targetId, definition),
+    embeds: [embed],
+    allowedMentions: { parse: [], users: [actorId, targetId] },
+  });
+}
+
+async function handleNsfwButton(interaction, { store, fetchImpl }) {
+  if (!interaction.customId.startsWith(NSFW_PREFIX)) return false;
+  const [guildId, channelId, actorId, targetId, command, decision] =
+    interaction.customId.slice(NSFW_PREFIX.length).split(".");
+  if (interaction.user.id !== targetId || !["fuck", "spank"].includes(command) ||
+      !["yes", "no"].includes(decision)) {
+    await interaction.reply({ content: "Only the person who received this request can answer ♡", ephemeral: true });
+    return true;
+  }
+  if (decision === "no") {
+    await interaction.update({ content: "You declined the NSFW request. No action was posted ♡", components: [] });
+    return true;
+  }
+  const guild = await interaction.client.guilds.fetch(guildId).catch(() => null);
+  const channel = guild ? await guild.channels.fetch(channelId).catch(() => null) : null;
+  if (!guild || !channel?.isTextBased()) {
+    await interaction.update({ content: "The original channel is no longer available. The request was not posted.", components: [] });
+    return true;
+  }
+  await interaction.update({ content: "You accepted the request ♡", components: [] });
+  await sendNsfwResult({ guild, channel, actorId, targetId, command, fetchImpl, store });
+  return true;
+}
+
 async function handleRelationshipButton(interaction, store) {
   if (!interaction.customId.startsWith(RELATION_PREFIX)) return false;
   const parts = interaction.customId.slice(RELATION_PREFIX.length).split(":");
@@ -347,7 +415,14 @@ export function attachFunCommands(client, { store, fetchImpl = fetch, token, app
   if (!store) throw new Error("The fun-command statistics store is required.");
 
   client.on(Events.InteractionCreate, async (interaction) => {
-    if (interaction.isButton?.()) { try { await handleRelationshipButton(interaction, store); } catch (error) { console.error("[fun] relationship button failed: " + error.message); } }
+    if (interaction.isButton?.()) {
+      try {
+        if (!await handleRelationshipButton(interaction, store)) await handleNsfwButton(interaction, { store, fetchImpl });
+      } catch (error) {
+        console.error("[fun] button action failed: " + error.message);
+        if (!interaction.replied && !interaction.deferred) await interaction.reply({ content: "Sugar couldn't process this request ♡", ephemeral: true }).catch(() => {});
+      }
+    }
 
     if (interaction.isChatInputCommand?.() && interaction.commandName === "fun" && interaction.options.getSubcommand() === "help") {
       await interaction.reply({ embeds: [buildFunHelpEmbed()], ephemeral: true }).catch(() => {});
@@ -388,6 +463,32 @@ export function attachFunCommands(client, { store, fetchImpl = fetch, token, app
       if (!isVerifiedAdult(message.member)) {
         await safeReply(message, { content: "Fun commands are available after completing Kittisugar's 18+ verification ♡" });
         return;
+      }
+      if (NSFW_COMMANDS.has(name)) {
+        const targetUser = message.mentions.users.first();
+        if (!targetUser || targetUser.bot || targetUser.id === message.author.id) {
+          await safeReply(message, { content: "Usage: !" + name + " @member" });
+          return;
+        }
+        const targetMember = await message.guild.members.fetch(targetUser.id).catch(() => null);
+        if (!targetMember || !isVerifiedAdult(targetMember)) {
+          await safeReply(message, { content: "That member must have the Member role ♡" });
+          return;
+        }
+        if (!store.getNsfwAutoAccept(message.guild.id, targetUser.id)) {
+          try {
+            await targetUser.send({
+              embeds: [new EmbedBuilder().setColor(COLOR).setTitle("NSFW interaction request ♡")
+                .setDescription("<@" + message.author.id + "> wants to use !" + name + " with you in Kittisugar. Accept only if you're comfortable. You can turn on automatic acceptance with !nsfw-on or turn it off with !nsfw-off.")],
+              components: [nsfwRequestRow(message.guild.id, message.channel.id, message.author.id, targetUser.id, name)],
+              allowedMentions: { parse: [] },
+            });
+            await safeReply(message, { content: "I've sent " + targetUser.username + " a private request. Nothing will happen unless they accept ♡" });
+          } catch {
+            await safeReply(message, { content: "I couldn't DM that member. Ask them to enable DMs from server members; no action was posted ♡" });
+          }
+          return;
+        }
       }
       await handleFunAction(message, store, name, args, fetchImpl);
     } catch (error) {
