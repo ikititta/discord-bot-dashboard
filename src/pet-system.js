@@ -61,6 +61,12 @@ function buildPetEmbed() {
       "Everyone can adopt a pet; VIP members get extra perks and exclusive features.")
     .setFooter({ text: "Your pet progress is saved ♡" });
 }
+function buildPetCommandsEmbed() {
+  return new EmbedBuilder().setColor(COLOR).setTitle("୨୧ 𝓟𝓮𝓽 𝓡𝓸𝓸𝓶 · 𝓒𝓸𝓶𝓶𝓪𝓷𝓭𝓼 ♡")
+    .setDescription("**Everyone**\n`!pet adopt` · `!pet` · `!pet feed` · `!pet play` · `!pet cuddle`\n`!pet shop` · `!pet buy treat/toy` · `!pet inventory`\n`!pet rename <name>` · `!pet select <number>`\n\n**VIP extras**\n`!pet room` · `!pet outfit <name>` · `!pet rare` · `!pet slots` · `!pet minigame")
+    .setFooter({ text: "Use these commands in your private pet room ♡" });
+}
+
 function buildGlobalPetLeaderboard(store, guildId) {
   const entries = [];
   for (const [userId, profile] of Object.entries(store.data.guilds[guildId] ?? {})) {
