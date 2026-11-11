@@ -30,7 +30,7 @@ test("age options include the 18- manual-review route followed by ages 18 throug
   assert.deepEqual(AGE_OPTIONS[0], ["18-", "18-"]);
   assert.equal(AGE_OPTIONS[1][0], "18");
   assert.equal(AGE_OPTIONS.at(-1)[0], "40");
-  assert.ok(AGE_OPTIONS.every(([value, label]) => value === label && /^\d+$/.test(label)));
+  assert.ok(AGE_OPTIONS.slice(1).every(([value, label]) => value === label && /^\d+$/.test(label)));
 });
 
 test("chat colors are a fixed set of basic named colors", () => {
