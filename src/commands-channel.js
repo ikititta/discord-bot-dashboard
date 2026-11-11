@@ -39,13 +39,7 @@ export function buildCommandsPanelPayload() {
     embeds: [new EmbedBuilder()
       .setColor(COLOR)
       .setTitle(PANEL_TITLE)
-      .setDescription(
-        "**Reputation commands**\n\n" +
-        "`!rep` — your reputation, positive and negative votes, and comments.\n" +
-        "`!rep @member` — another member's reputation, positive and negative votes, and comments.\n" +
-        "`!rep top` — positive and negative rankings.\n\n" +
-        "**Fun commands**\n`!funhelp` — view the available fun interaction commands."
-      )
+      .setDescription("All reputation commands are listed inside the thread below ♡")
       .setFooter({ text: "Kittisugar commands ♡" })],
   };
 }
@@ -106,6 +100,8 @@ export function isCommandsThread(message) {
     channel.parentId === COMMANDS_CHANNEL_ID;
 }
 
+const stickyRefreshes = new Map();
+
 export function attachCommandsChannel(client) {
   const setup = (guild) => ensureCommandsBoard(guild, client).catch((error) =>
     console.error(`[commands] setup failed in ${guild.id}: ${error.message}`),
@@ -114,4 +110,22 @@ export function attachCommandsChannel(client) {
     for (const guild of client.guilds.cache.values()) void setup(guild);
   });
   client.on(Events.GuildCreate, (guild) => void setup(guild));
+  client.on(Events.MessageCreate, (message) => {
+    if (!isCommandsThread(message) || message.author?.bot || message.webhookId) return;
+    const threadId = message.channel.id;
+    const previous = stickyRefreshes.get(threadId) ?? Promise.resolve();
+    const next = previous.catch(() => {}).then(async () => {
+      const recent = await message.channel.messages.fetch({ limit: 100 });
+      const sticky = [...recent.values()].find((item) =>
+        item.author?.id === client.user.id &&
+        item.embeds.some((embed) => embed.title === COMMANDS_GUIDE_TITLE),
+      );
+      if (sticky) await sticky.delete().catch((error) => {
+        if (error?.code !== 10008) throw error;
+      });
+      await message.channel.send(buildCommandsThreadGuidePayload());
+    }).catch((error) => console.error("[commands] sticky guide refresh failed: " + error.message));
+    stickyRefreshes.set(threadId, next);
+    void next.finally(() => { if (stickyRefreshes.get(threadId) === next) stickyRefreshes.delete(threadId); });
+  });
 }
