@@ -11,6 +11,7 @@ import {
   fetchNsfwGif,
   getFunCommandDefinition,
   isVerifiedAdult,
+  isVip,
   normalizeFunRole,
   resolveGifPairing,
   resolveNsfwGifCategory,
@@ -35,6 +36,9 @@ test("fun commands use the existing Kittisugar gender role IDs only", () => {
   assert.equal(normalizeFunRole(memberWithRoles([])), "neutral");
   assert.equal(normalizeFunRole(memberWithRoles([FUN_ROLE_IDS.female, FUN_ROLE_IDS.male])), "neutral");
   assert.equal(FUN_VIP_ROLE_ID, "1568188640113463437");
+  assert.equal(isVip(memberWithRoles([FUN_VIP_ROLE_ID])), true);
+  assert.equal(isVip(memberWithRoles([])), false);
+  assert.equal(isVip(memberWithRoles(["1568188534836428812"])), false);
   assert.equal(resolveGifPairing("female", "female"), "ff");
   assert.equal(resolveGifPairing("male", "male"), "mm");
   assert.equal(resolveGifPairing("female", "male"), "fm");
@@ -63,6 +67,8 @@ test("fun help explains command types, stats, and VIP access", () => {
   const fields = embed.data.fields.map((field) => field.name + " " + field.value).join("\\n");
   assert.match(fields, /!stats/);
   assert.match(fields, /!vip stats @member/);
+  assert.match(fields, /VIP is required to access statistics and VIP benefits/);
+  assert.doesNotMatch(fields, /Everyone can view their own basic stats/);
   assert.match(fields, /Two-person commands/);
   assert.match(fields, /Solo commands/);
   assert.doesNotMatch(embed.data.footer.text, /consent/i);
