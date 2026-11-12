@@ -20,12 +20,13 @@ test("self-role categories use the agreed gender and sexuality options", () => {
     "Bisexual",
     "Pansexual",
     "Asexual",
+    "Queer",
     "Prefer not to say",
   ]);
-  assert.equal(SEXUALITY_OPTIONS.some(([value]) => value === "queer"), false);
+  assert.equal(SEXUALITY_OPTIONS.some(([value]) => value === "queer"), true);
 });
 
-test("age options include the 18- manual-review route followed by ages 18 through 40", () => {
+test("age options include the 18- restricted-access route followed by ages 18 through 40", () => {
   assert.equal(AGE_OPTIONS.length, 24);
   assert.deepEqual(AGE_OPTIONS[0], ["18-", "18-"]);
   assert.equal(AGE_OPTIONS[1][0], "18");
@@ -47,7 +48,7 @@ test("creates stable role names and rejects options outside the configured categ
   assert.equal(roleNameForSelection("gender", "non-binary"), "gender-non-binary");
   assert.equal(roleNameForSelection("age", "40"), "age-40");
   assert.equal(roleNameForSelection("sexuality", "gay-lesbian"), "sexuality-gay-lesbian");
-  assert.throws(() => roleNameForSelection("sexuality", "queer"), /not available/);
+  assert.equal(roleNameForSelection("sexuality", "queer"), "sexuality-queer");
   assert.throws(() => roleNameForSelection("interests", "music"), /Unknown role category/);
 });
 
