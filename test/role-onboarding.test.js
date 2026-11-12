@@ -184,6 +184,7 @@ test("self-role creation is serialized and reuses a suffixed legacy duplicate", 
   assert.equal(creates, 1);
   assert.equal(refreshes, 1);
 
+  roleMap.delete(first.id);
   roleMap.set("legacy", { id: "legacy", name: "color-red 1" });
   const reused = await getOrCreateRole(guild, "color-red", 0xe74c3c);
   assert.equal(reused.id, "legacy");
