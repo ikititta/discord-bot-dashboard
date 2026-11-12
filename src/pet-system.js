@@ -76,7 +76,7 @@ function buildPetEmbed() {
     .setDescription("Adopt your own little companion and watch them grow ♡\n\n" +
       "Open your private pet room, then type `!pet adopt` to start the interactive adoption. " +
       "Choose a species from the selector. Everyone gets a unique, randomly designed pet; VIP members can customise its name, colour, breed, appearance and personality before adopting.\n\n" +
-      "Care for your pet, earn XP and coins, unlock stories, and collect more companions with VIP slots.")
+      "Care for your pet, earn XP and coins, unlock stories and reaction GIFs through bonding, and collect more companions with VIP slots. Earn coins with daily rewards and meaningful server activity.")
     .setFooter({ text: "Your pet and progress are saved ♡ · Adoption starts with !pet adopt" });
 }
 function buildPetCommandsEmbed() {
@@ -490,7 +490,9 @@ async function runPetCommand(message, store, client) {
       pet.xp += 15;
     }
     if (action === "slots") {
-      profile.slots = Math.min(3, Math.max(1, Number(profile.slots) || 1) + 1);
+      const currentSlots = Math.max(1, Number(profile.slots) || 1);
+      if (currentSlots >= 3) return reply("You already have the maximum of 3 VIP pet slots ♡");
+      profile.slots = currentSlots + 1;
       store.save(guildId, userId, profile);
       return reply(`VIP pet slots: ${profile.slots}/3 ♡ Use !pet adopt to fill your new slot.`);
     }
