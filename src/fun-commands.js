@@ -10,6 +10,8 @@ export const FUN_MEMBER_ROLE_ID = "1568188534836428812";
 const GIFUKAI_API_BASE = "https://api.gifukai.com/v1";
 const NEKOS_BEST_API_BASE = "https://nekos.best/api/v2";
 const PURRBOT_API_BASE = "https://api.purrbot.site/v2";
+const MRS_MAID_API_BASE = "https://mrs-maid.cc/api/v1";
+const VIOLENT_GIF_CATEGORIES = Object.freeze({ slap: "slap", bonk: "punch", spank: "slap", kick: "punch", kill: "kill" });
 const GIFUKAI_PAIRING_CATEGORIES = new Set(["hug", "kiss", "pat", "cry", "sleep", "pout", "smile", "shrug", "laugh", "dance", "happy", "blush", "smug", "wave", "facepalm", "wink"]);
 const REQUEST_TIMEOUT_MS = 8_000;
 const COLOR = 0xffd9ff;
@@ -154,12 +156,46 @@ export async function fetchNsfwGif({ fetchImpl = fetch, actorRole = "neutral", t
   return { url: gifUrl.toString(), anime: "", pairing: category, source: "PurrBot NSFW" };
 }
 
+export async function fetchViolentAnimeGif(category, {
+  fetchImpl = fetch,
+  apiKey = process.env.MRS_MAID_GIF_KEY,
+} = {}) {
+  if (!["slap", "punch", "kill", "dead"].includes(category)) throw new Error("Invalid violent GIF category.");
+  if (!apiKey) throw new Error("MRS_MAID_GIF_KEY is not configured.");
+  const response = await fetchImpl(`${MRS_MAID_API_BASE}/sfw/${category}`, {
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "User-Agent": "SugarDiscordBot/1.0 (https://github.com/ikititta/discord-bot-dashboard)",
+    },
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+  });
+  if (!response.ok) throw new Error(`Violent anime GIF service returned HTTP ${response.status}.`);
+  const payload = await response.json();
+  const gifUrl = validatedGifUrl(payload?.url, "mrs-maid.cc");
+  if (payload?.rating !== "sfw" || payload?.category !== category ||
+      !gifUrl.pathname.startsWith(`/uploads/gifs/sfw/${category}/`)) {
+    throw new Error("Violent GIF service returned content outside the selected category.");
+  }
+  return { url: gifUrl.toString(), anime: "", pairing: null, source: "Mrs. Maid" };
+}
+
 export async function fetchAnimeGif(category, {
   fetchImpl = fetch,
   actorRole = "neutral",
   targetRole = null,
+  commandName = null,
+  violentApiKey = process.env.MRS_MAID_GIF_KEY,
 } = {}) {
   if (!GIF_CATEGORIES.has(category)) throw new Error("Invalid anime GIF category.");
+
+  const violentCategory = VIOLENT_GIF_CATEGORIES[commandName];
+  if (violentCategory && violentApiKey) {
+    try {
+      return await fetchViolentAnimeGif(violentCategory, { fetchImpl, apiKey: violentApiKey });
+    } catch (error) {
+      console.warn(`[fun] violent GIF lookup failed for !${commandName}; trying the regular anime GIF source: ${error.message}`);
+    }
+  }
 
   if (GIFUKAI_PAIRING_CATEGORIES.has(category)) {
     const pairing = resolveGifPairing(actorRole, targetRole);
@@ -336,7 +372,7 @@ async function handleFunAction(message, store, name, args, fetchImpl) {
   try {
     gif = name === "fuck"
       ? await fetchNsfwGif({ fetchImpl, actorRole: normalizeFunRole(message.member), targetRole })
-      : await fetchAnimeGif(definition.gif, { fetchImpl, actorRole: normalizeFunRole(message.member), targetRole });
+      : await fetchAnimeGif(definition.gif, { fetchImpl, actorRole: normalizeFunRole(message.member), targetRole, commandName: name });
   }
   catch (error) { console.warn(`[fun] GIF lookup failed for !${name}: ${error.message}`); }
 
