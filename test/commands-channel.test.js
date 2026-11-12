@@ -3,38 +3,43 @@ import assert from "node:assert/strict";
 
 import {
   buildCommandsPanelPayload,
-  buildCommandsThreadGuidePayload,
-  COMMANDS_CHANNEL_ID,
+  buildCommandsCategoryEmbed,
+  COMMANDS_CATEGORY_ID,
   COMMANDS_CHANNEL_NAME,
-  COMMANDS_THREAD_NAME,
-  isCommandsThread,
+  COMMANDS_CHANNEL_TOPIC,
 } from "../src/commands-channel.js";
 
-test("commands board is designed to live in Reputation and creates a thread from its embed", () => {
-  const payload = buildCommandsPanelPayload();
-  assert.equal(payload.embeds.length, 1);
-  assert.match(payload.embeds[0].data.description, /All reputation commands are listed inside the thread/);
-  assert.doesNotMatch(payload.embeds[0].data.description, /!fun|!rep/);
-  const guide = buildCommandsThreadGuidePayload();
-  const guideText = guide.embeds[0].data.description;
-  for (const command of ["!rep", "!rep @member", "!rep stats", "!rep stats @member", "!rep top", "!rep comments [@member]"]) {
-    assert.ok(guideText.includes(command), `missing reputation command: ${command}`);
-  }
-  assert.doesNotMatch(guideText, /!fun|!pet/);
-  assert.equal(COMMANDS_CHANNEL_NAME, "reputation");
-  assert.equal(COMMANDS_THREAD_NAME, "💬 𝗰𝗼𝗺𝗺𝗮𝗻𝗱𝘀");
+test("commands guide is configured in the supplied Fun category", () => {
+  assert.equal(COMMANDS_CATEGORY_ID, "1568179038625857576");
+  assert.equal(COMMANDS_CHANNEL_NAME, "📖｜୨୧・commands");
+  assert.ok(COMMANDS_CHANNEL_TOPIC.includes("sticky"));
 });
 
-test("only the commands thread under Reputation is accepted for rep commands", () => {
-  const message = {
-    guild: {},
-    channel: {
-      name: COMMANDS_THREAD_NAME,
-      parentId: COMMANDS_CHANNEL_ID,
-      isThread: () => true,
-    },
+test("commands panel contains interactive category buttons and is explicitly not pinned", () => {
+  const payload = buildCommandsPanelPayload();
+  assert.equal(payload.embeds.length, 1);
+  assert.match(payload.embeds[0].data.title, /Commands/);
+  assert.match(payload.embeds[0].data.description, /Choose a category/);
+  assert.match(payload.embeds[0].data.footer.text, /Not pinned/);
+  const ids = payload.components.flatMap((row) => row.components.map((button) => button.data.custom_id));
+  assert.deepEqual(ids, [
+    "sugar-commands:fun", "sugar-commands:pets", "sugar-commands:community",
+    "sugar-commands:private", "sugar-commands:profile", "sugar-commands:moderation",
+  ]);
+});
+
+test("each category exposes current command syntax and access requirements", () => {
+  const cases = {
+    fun: ["!fuck @member", "VIP-only", "!funhelp", "!vip stats"],
+    pets: ["!pet adopt", "!pet buy <treat|toy|potion>", "!pet gif", "one pet per member"],
+    community: ["!rep", "one active vote per person", "one conversation thread"],
+    private: ["/priv-chat create", "/priv-chat rename", "/priv-chat delete"],
+    profile: ["!profile", "!quote", "/fun help"],
+    moderation: ["/mod-delete", "moderator permissions"],
   };
-  assert.equal(isCommandsThread(message), true);
-  assert.equal(isCommandsThread({ ...message, channel: { ...message.channel, parentId: "different-channel-id" } }), false);
-  assert.equal(isCommandsThread({ ...message, channel: { ...message.channel, isThread: () => false } }), false);
+  for (const [category, phrases] of Object.entries(cases)) {
+    const embed = buildCommandsCategoryEmbed(category);
+    for (const phrase of phrases) assert.ok(embed.data.description.includes(phrase), category + " missing " + phrase);
+  }
+  assert.throws(() => buildCommandsCategoryEmbed("unknown"), /Unknown commands category/);
 });
