@@ -209,6 +209,7 @@ export function attachCommandsChannel(client) {
   client.on(Events.InteractionCreate, async (interaction) => {
     if (!interaction.isButton?.()) return;
     if (interaction.customId === MODERATION_PREFIX) {
+      if (interaction.channelId !== MODERATION_COMMANDS_CHANNEL_ID) return;
       await interaction.reply({ embeds: [buildModerationCommandsEmbed()], ephemeral: true }).catch((error) => {
         console.error("[commands] moderation response failed: " + error.message);
       });
