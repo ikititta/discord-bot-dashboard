@@ -194,7 +194,7 @@ export function buildGuidePayload(guild) {
       "`/priv-chat create|add|remove|rename|leave|delete|commands` — manage your private chat.\n" +
       "`!profile [@member]` — view a complete member profile and saved stats.\n" +
       "`!rep [@member]` · `!rep stats [@member]` · `!rep top` · `!rep comments [@member]` — reputation tools.\n" +
-      "`!pet adopt <species>` — adopt a cat, dog, hamster, rabbit, fish, bird, guinea pig, turtle, fox, or ferret.\n" +
+      "`!pet adopt` — open the interactive adoption embed, choose a species, then adopt. Non-VIP members receive a unique random design; VIP members can customise name, colour, breed, appearance and personality before adopting.\n" +
       "`!pet stats` · `!pet feed` · `!pet play` · `!pet cuddle` · `!pet talk` · `!pet story` — care for and bond with your pet.\n" +
       "`!pet shop` · `!pet buy <treat|toy>` · `!pet inventory` · `!pet select <number>` — items and pet slots.\n" +
       "VIP pet customisation: `!pet name`, `!pet color`, `!pet breed`, `!pet appearance`, `!pet personality`. VIP extras: `!pet room`, `!pet outfit`, `!pet rare`, `!pet slots`, `!pet minigame`.\n" +
