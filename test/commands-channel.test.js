@@ -18,7 +18,7 @@ test("commands guide is configured in the supplied Fun category", () => {
 test("commands panel contains interactive category buttons and is explicitly not pinned", () => {
   const payload = buildCommandsPanelPayload();
   assert.equal(payload.embeds.length, 1);
-  assert.match(payload.embeds[0].data.title, /Commands/);
+  assert.match(payload.embeds[0].data.title, /𝓒𝓸𝓶𝓶𝓪𝓷𝓭𝓼/);
   assert.match(payload.embeds[0].data.description, /Choose a category/);
   assert.match(payload.embeds[0].data.footer.text, /Not pinned/);
   const ids = payload.components.flatMap((row) => row.components.map((button) => button.data.custom_id));
@@ -31,7 +31,7 @@ test("commands panel contains interactive category buttons and is explicitly not
 test("each category exposes current command syntax and access requirements", () => {
   const cases = {
     fun: ["!fuck @member", "VIP-only", "!funhelp", "!vip stats"],
-    pets: ["!pet adopt", "!pet buy <treat|toy|potion>", "!pet gif", "one pet per member"],
+    pets: ["!pet adopt", "!pet buy <treat|toy|potion>", "!pet gif", "One pet per member"],
     community: ["!rep", "one active vote per person", "one conversation thread"],
     private: ["/priv-chat create", "/priv-chat rename", "/priv-chat delete"],
     profile: ["!profile", "!quote", "/fun help"],
