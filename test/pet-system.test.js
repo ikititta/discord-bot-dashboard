@@ -4,7 +4,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { ChannelType } from "discord.js";
-import { PetStore, formatPetChannelName, isUsersPetRoom, PET_ADOPTION_CHANNEL_IDS, ensurePetCategoryPosition, PET_ROOMS_CATEGORY_ID, PET_CATEGORY_BELOW_ID, applyNeedsDecay, chileDateKey, canAdoptPet, refreshPetUnlocks, migratePetWallet, removePetFromProfile, canDeletePet } from "../src/pet-system.js";
+import { PetStore, formatPetChannelName, isUsersPetRoom, PET_ADOPTION_CHANNEL_IDS, ensurePetCategoryPosition, PET_ROOMS_CATEGORY_ID, PET_CATEGORY_BELOW_ID, applyNeedsDecay, chileDateKey, canAdoptPet, refreshPetUnlocks, migratePetWallet, removePetFromProfile, canDeletePet, canAdoptSpecies, VIP_ONLY_PET_SPECIES } from "../src/pet-system.js";
 import { petSummary } from "../src/member-profile-system.js";
 
 test("virtual pet data persists across store restarts", () => {
@@ -202,4 +202,18 @@ test("pet deletion is restricted to VIP members", () => {
   assert.equal(canDeletePet(true), true);
   assert.equal(canDeletePet(false), false);
   assert.equal(canDeletePet(undefined), false);
+});
+
+
+test("rare pet species are reserved for VIP adoption", () => {
+  assert.deepEqual([...VIP_ONLY_PET_SPECIES], ["fox", "ferret", "turtle"]);
+  for (const species of VIP_ONLY_PET_SPECIES) {
+    assert.equal(canAdoptSpecies(species, false), false);
+    assert.equal(canAdoptSpecies(species, true), true);
+  }
+  for (const species of ["cat", "dog", "hamster", "rabbit", "fish", "bird", "guinea pig"]) {
+    assert.equal(canAdoptSpecies(species, false), true);
+    assert.equal(canAdoptSpecies(species, true), true);
+  }
+  assert.equal(canAdoptSpecies("dragon", true), false);
 });
