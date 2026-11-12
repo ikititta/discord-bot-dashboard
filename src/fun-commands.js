@@ -10,7 +10,7 @@ export const FUN_MEMBER_ROLE_ID = "1568188534836428812";
 const GIFUKAI_API_BASE = "https://api.gifukai.com/v1";
 const NEKOS_BEST_API_BASE = "https://nekos.best/api/v2";
 const PURRBOT_API_BASE = "https://api.purrbot.site/v2";
-const GIFUKAI_PAIRING_CATEGORIES = new Set(["hug", "kiss", "pat", "cry", "sleep", "pout"]);
+const GIFUKAI_PAIRING_CATEGORIES = new Set(["hug", "kiss", "pat", "cry", "sleep", "pout", "smile", "shrug", "laugh", "dance", "happy", "blush", "smug", "wave", "facepalm", "wink"]);
 const REQUEST_TIMEOUT_MS = 8_000;
 const COLOR = 0xffd9ff;
 const VIP_STATS_MESSAGE = "This is a VIP-only benefit. Get the VIP role to use !stats, view your complete report, and look up another member with !vip stats @member. ♡";
@@ -205,8 +205,10 @@ export function isVip(member) {
   return Boolean(member?.roles?.cache?.has(FUN_VIP_ROLE_ID));
 }
 
+export const KILL_TIMEOUT_MS = 30_000;
+
 export function isVipOnlyFunCommand(name) {
-  return name === "fuck";
+  return name === "fuck" || name === "kill";
 }
 
 function displayName(member, user) {
@@ -237,10 +239,10 @@ export function buildFunHelpEmbed() {
     .setDescription("Use these commands in Kittisugar. Every fun command requires the Member role (18+ verification). Two-person commands need a member mention; solo commands do not.")
     .addFields(
       { name: "Relationships", value: "!couple @member · !propose @member · !marry @member · !breakup · !divorce. The other member must accept proposals." },
-      { name: "Two-person commands", value: "!hug @member · !slap @member · !bonk @member · !spank @member · !kiss @member · !fuck @member · !cuddle @member · !pat @member · !poke @member · !bite @member · !kick @member · !kill @member · !highfive @member · !handhold @member" },
+      { name: "Two-person commands", value: "!hug @member · !slap @member · !bonk @member · !spank @member · !kiss @member · !fuck @member · !cuddle @member · !pat @member · !poke @member · !bite @member · !kick @member · !kill @member (VIP; 30-second timeout) · !highfive @member · !handhold @member" },
       { name: "Solo commands", value: "!cry · !laugh · !dance · !sleep · !happy · !blush · !smug · !wave · !facepalm · !wink · !shrug · !smile · !pout" },
       { name: "Statistics", value: "!stats — VIP members can see their complete stats.\n!vip stats — same complete report.\n!vip stats @member — view another member’s complete stats.\nStats count commands used, interactions received, and interaction partners." },
-      { name: "VIP", value: "VIP unlocks !fuck, statistics, and other exclusive benefits. Members without the VIP role cannot use !fuck, !stats, or !vip stats." },
+      { name: "VIP", value: "VIP unlocks !fuck, !kill (30-second timeout), complete statistics, and other exclusive benefits. Members without the VIP role cannot use !fuck, !stats, or !vip stats." },
     )
     .setFooter({ text: "Have fun in Kittisugar ♡" });
 }
@@ -283,7 +285,7 @@ async function handleFunAction(message, store, name, args, fetchImpl) {
   const definition = getFunCommandDefinition(name);
   if (!definition) return false;
   if (isVipOnlyFunCommand(name) && !isVip(message.member)) {
-    await safeReply(message, { content: "The !fuck command is a VIP-only benefit ♡" });
+    await safeReply(message, { content: `The !${name} command is a VIP-only benefit ♡` });
     return true;
   }
 
@@ -309,6 +311,16 @@ async function handleFunAction(message, store, name, args, fetchImpl) {
   } else if (message.mentions.users.size) {
     await safeReply(message, { content: `!${name} is a solo command and doesn't need a mention.` });
     return true;
+  }
+
+  if (name === "kill") {
+    try {
+      await targetMember.timeout(KILL_TIMEOUT_MS, `VIP !kill interaction by ${message.author.id}`);
+    } catch (error) {
+      console.warn(`[fun] !kill could not timeout ${targetMember.id}: ${error.message}`);
+      await safeReply(message, { content: "I couldn't apply the 30-second timeout. The target may have higher permissions than Sugar or the bot may need Moderate Members permission ♡" });
+      return true;
+    }
   }
 
   store.record({
