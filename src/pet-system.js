@@ -227,10 +227,10 @@ function buildGlobalPetLeaderboard(store, guildId) {
 }
 function panelPayload() {
   return { embeds: [buildPetEmbed()], components: [new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId(BUTTON_ID).setLabel("Create your pet room ♡").setStyle(ButtonStyle.Primary),
-    new ButtonBuilder().setCustomId("sugar-pets:create-pet").setLabel("Adopt another pet ♡").setStyle(ButtonStyle.Success),
-    new ButtonBuilder().setCustomId("sugar-pets:delete-pet").setLabel("Delete a pet").setStyle(ButtonStyle.Danger),
-    new ButtonBuilder().setCustomId("sugar-pets:global-top").setLabel("Global top ♡").setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder().setCustomId(BUTTON_ID).setLabel("Create A Pet Room ♡").setStyle(ButtonStyle.Primary),
+    new ButtonBuilder().setCustomId("sugar-pets:global-top").setLabel("Top Pets ♡").setStyle(ButtonStyle.Success),
+    new ButtonBuilder().setCustomId("sugar-pets:create-pet").setLabel("Adopt A Pet ♡").setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder().setCustomId("sugar-pets:delete-pet").setLabel("Delete A Pet ♡").setStyle(ButtonStyle.Danger),
   )] };
 }
 
