@@ -119,7 +119,8 @@ export function canDeletePet(vip) {
 }
 function buildPetEmbed() {
   return new EmbedBuilder().setColor(COLOR).setTitle("୨୧ 𝓥𝓲𝓻𝓽𝓾𝓪𝓵 𝓟𝓮𝓽𝓼 ♡")
-    .setDescription("Adopt a companion and care for them ♡");
+    .setDescription("Adopt your own virtual companion, create a private pet room and take care of your little friend ♡\\n\\n" +
+      "All pet commands and activities are available inside your private room. Create your room below to get started!");
 }
 function buildPetRoomWelcomeEmbed(profile, pet, vip = false) {
   const description = pet
@@ -224,7 +225,7 @@ function buildGlobalPetLeaderboard(store, guildId) {
 function panelPayload() {
   return { embeds: [buildPetEmbed()], components: [new ActionRowBuilder().addComponents(
     new ButtonBuilder().setCustomId(BUTTON_ID).setLabel("Create A Pet Room ♡").setStyle(ButtonStyle.Primary),
-    new ButtonBuilder().setCustomId("sugar-pets:global-top").setLabel("Top Pets ♡").setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder().setCustomId("sugar-pets:global-top").setLabel("Top Pets ♡").setStyle(ButtonStyle.Success),
     new ButtonBuilder().setCustomId("sugar-pets:create-pet").setLabel("Adopt A Pet ♡").setStyle(ButtonStyle.Success),
     new ButtonBuilder().setCustomId("sugar-pets:delete-pet").setLabel("Delete A Pet ♡").setStyle(ButtonStyle.Danger),
   )] };
