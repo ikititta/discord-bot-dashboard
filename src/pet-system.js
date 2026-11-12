@@ -456,7 +456,7 @@ export function attachPetSystem(client, store) {
           return interaction.reply({ embeds: [buildGlobalPetLeaderboard(store, interaction.guild.id)], ephemeral: true });
         } catch (error) { console.error("[pets] leaderboard failed: " + error.message); return interaction.reply({ content: "Could not load the global pet top. Please try again ♡", ephemeral: true }); }
       }
-      const [, , action, ownerId, encodedSpecies] = interaction.customId.split(":");
+      const [, action, ownerId, encodedSpecies] = interaction.customId.split(":");
       if (!owned(ownerId)) return interaction.reply({ content: "This adoption belongs to someone else ♡", ephemeral: true });
       const species = decodeURIComponent(encodedSpecies || "");
       if (action === "customize") {
