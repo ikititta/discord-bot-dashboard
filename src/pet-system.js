@@ -200,7 +200,7 @@ function buildAdoptionActions(userId, species, vip) {
 }
 function buildAdoptionModal(userId, species) {
   const modal = new ModalBuilder().setCustomId("sugar-pets:customize-submit:" + userId + ":" + encodeURIComponent(species)).setTitle("Customise your companion ♡");
-  const fields = [["pet_name", "Name", "Choose a name", true, 24], ["pet_gender", "Gender", "female or male", true, 6], ["pet_color", "Colour", "e.g. strawberry pink", false, 60], ["pet_appearance", "Appearance", "Markings, eyes, accessories...", false, 100], ["pet_personality", "Personality", "e.g. gentle, curious, playful", false, 100]];
+  const fields = [["pet_name", "Name", "Choose a name", true, 24], ["pet_gender", "Gender", "female or male", true, 6], ["pet_color", "Colour", "e.g. strawberry pink", false, 60], ["pet_appearance", "Appearance", "Describe face, body, ears, paws, markings...", false, 180], ["pet_personality", "Personality", "e.g. gentle, curious, playful", false, 100]];
   for (const [id, label, placeholder, required, maxLength] of fields) modal.addComponents(new ActionRowBuilder().addComponents(
     new TextInputBuilder().setCustomId(id).setLabel(label).setPlaceholder(placeholder).setStyle(id === "pet_appearance" || id === "pet_personality" ? TextInputStyle.Paragraph : TextInputStyle.Short).setRequired(required).setMaxLength(maxLength),
   ));
@@ -507,6 +507,17 @@ async function runPetCommand(message, store, client) {
     pet = index === 1 ? profile : profile.additionalPets[index - 2];
     return reply("Now caring for " + pet.name + (vip ? " VIP" : "") + " ♡\n" + status(pet, profile.coins, vip));
   }
+  if (action === "redraw") {
+    pet.id ??= randomUUID();
+    pet.visualIdentity ??= createPetVisualIdentity();
+    pet.visualIdentity.artStatus = "not_generated";
+    pet.visualIdentity.artPath = null;
+    pet.visualIdentity.artCreatedAt = null;
+    store.save(guildId, userId, profile);
+    const artworkStatus = queuePetArtwork(message, store, profile, pet);
+    return reply(artworkStatus === "generating" ? "I'm redesigning your companion in the new kawaii chibi style, keeping their saved physical traits ♡" : artworkStatus === "missing-key" ? "Pet illustrations aren't configured. Please ask an admin to check the Cloudflare Workers AI settings in FadeHost." : "I couldn't start the new illustration right now. Please try again ♡");
+  }
+
   if (action === "view" || action === "status") {
     pet.id ??= randomUUID();
     pet.visualIdentity ??= createPetVisualIdentity();
@@ -579,12 +590,13 @@ async function runPetCommand(message, store, client) {
   }
   if (["name", "color", "breed", "appearance", "personality"].includes(action)) {
     if (!vip) return reply("Pet customization is a VIP feature ♡");
-    if (!argument || argument.length > 60) return reply("Please provide a customization value (1–60 characters).");
+    const maxLength = action === "appearance" ? 180 : 60;
+    if (!argument || argument.length > maxLength) return reply("Please provide a customization value (1–" + maxLength + " characters).");
     pet.visualIdentity ??= createPetVisualIdentity();
     if (action === "name") pet.name = argument.slice(0, 24);
     if (action === "color") pet.visualIdentity.palette = argument.slice(0, 40);
     if (action === "breed") pet.visualIdentity.breed = argument.slice(0, 40);
-    if (action === "appearance") pet.visualIdentity.appearance = argument.slice(0, 60);
+    if (action === "appearance") pet.visualIdentity.appearance = argument.slice(0, 180);
     if (action === "personality") pet.visualIdentity.personality = argument.slice(0, 60);
     if (pet.visualIdentity.artPath && fs.existsSync(pet.visualIdentity.artPath)) {
       fs.unlinkSync(pet.visualIdentity.artPath);
