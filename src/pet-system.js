@@ -21,6 +21,10 @@ const PET_SPECIES = {
   guinea: "guinea pig", "guinea pig": "guinea pig", "guinea-pig": "guinea pig", turtle: "turtle", fox: "fox", ferret: "ferret",
 };
 const PET_SPECIES_OPTIONS = [...new Set(Object.values(PET_SPECIES))];
+export const VIP_ONLY_PET_SPECIES = new Set(["fox", "ferret", "turtle"]);
+export function canAdoptSpecies(species, vip) {
+  return PET_SPECIES_OPTIONS.includes(species) && (vip === true || !VIP_ONLY_PET_SPECIES.has(species));
+}
 const SHOP = { treat: 10, toy: 25, potion: 60 };
 const MEMBER_ROLE_ID = "1568188534836428812";
 
@@ -135,17 +139,17 @@ function buildAdoptionEmbed(selectedSpecies = null, vip = false) {
     .setDescription(speciesLine + "\n\n" + designLine + "\n\nPick a species below to continue.")
     .setFooter({ text: "Every companion gets its own unique identity ♡" });
 }
-function buildSpeciesSelect(userId) {
+function buildSpeciesSelect(userId, vip = false) {
   return new ActionRowBuilder().addComponents(new StringSelectMenuBuilder()
     .setCustomId("sugar-pets:species:" + userId)
     .setPlaceholder("Choose your pet’s species ♡")
-    .addOptions(
+    .addOptions([
       { label: "Cat", value: "cat", emoji: "🐱" }, { label: "Dog", value: "dog", emoji: "🐶" },
       { label: "Hamster", value: "hamster", emoji: "🐹" }, { label: "Rabbit", value: "rabbit", emoji: "🐰" },
       { label: "Fish", value: "fish", emoji: "🐠" }, { label: "Bird", value: "bird", emoji: "🐦" },
       { label: "Guinea pig", value: "guinea pig", emoji: "🐾" }, { label: "Turtle", value: "turtle", emoji: "🐢" },
       { label: "Fox", value: "fox", emoji: "🦊" }, { label: "Ferret", value: "ferret", emoji: "🤎" },
-    ));
+    ].filter((option) => vip || !VIP_ONLY_PET_SPECIES.has(option.value))));
 }
 function buildAdoptionActions(userId, species, vip) {
   const row = new ActionRowBuilder().addComponents(
@@ -417,7 +421,7 @@ async function runPetCommand(message, store, client) {
   if (action === "adopt") {
     if (profile && !vip) return reply("You already have a pet ♡ VIP members can unlock more pet slots.");
     if (profile && !canAdoptPet(profile, vip)) return reply("All your pet slots are full. Use `!pet slots` to unlock another VIP slot ♡");
-    return message.reply({ embeds: [buildAdoptionEmbed(null, vip)], components: [buildSpeciesSelect(userId)], allowedMentions: { repliedUser: false } });
+    return message.reply({ embeds: [buildAdoptionEmbed(null, vip)], components: [buildSpeciesSelect(userId, vip)], allowedMentions: { repliedUser: false } });
   }
   if (action === "delete") {
     if (!canDeletePet(vip)) return reply("Deleting pets is a VIP-only feature ♡");
@@ -616,7 +620,10 @@ export function attachPetSystem(client, store) {
     const owned = (ownerId) => interaction.user.id === ownerId;
     const createAdoptedPet = async (species, customization = {}) => {
       const guild = interaction.guild, user = interaction.user, vip = isVip(interaction.member);
-      if (!guild || !PET_SPECIES_OPTIONS.includes(species)) throw new Error("Invalid pet adoption request.");
+      if (!guild || !canAdoptSpecies(species, vip)) {
+        if (VIP_ONLY_PET_SPECIES.has(species)) throw new Error("That rare companion is VIP-only ♡");
+        throw new Error("Invalid pet adoption request.");
+      }
       let profile = store.get(guild.id, user.id);
       if (profile) migratePetWallet(profile);
       const count = profile ? 1 + (profile.additionalPets?.length ?? 0) : 0;
@@ -688,8 +695,8 @@ export function attachPetSystem(client, store) {
       const ownerId = interaction.customId.split(":")[2];
       if (!owned(ownerId)) return interaction.reply({ content: "This adoption menu belongs to someone else ♡", ephemeral: true });
       const species = interaction.values?.[0];
-      if (!PET_SPECIES_OPTIONS.includes(species)) return interaction.reply({ content: "Please choose a valid species ♡", ephemeral: true });
       const vip = isVip(interaction.member);
+      if (!canAdoptSpecies(species, vip)) return interaction.reply({ content: VIP_ONLY_PET_SPECIES.has(species) ? "That rare companion is VIP-only ♡" : "Please choose a valid species ♡", ephemeral: true });
       return interaction.update({ embeds: [buildAdoptionEmbed(species, vip)], components: [buildAdoptionActions(ownerId, species, vip)] });
     }
 
