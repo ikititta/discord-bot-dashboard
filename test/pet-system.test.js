@@ -4,7 +4,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { ChannelType } from "discord.js";
-import { PetStore, formatPetChannelName, ensurePetCategoryPosition, PET_ROOMS_CATEGORY_ID, PET_CATEGORY_BELOW_ID, applyNeedsDecay, chileDateKey, canAdoptPet, refreshPetUnlocks, migratePetWallet, removePetFromProfile } from "../src/pet-system.js";
+import { PetStore, formatPetChannelName, isUsersPetRoom, ensurePetCategoryPosition, PET_ROOMS_CATEGORY_ID, PET_CATEGORY_BELOW_ID, applyNeedsDecay, chileDateKey, canAdoptPet, refreshPetUnlocks, migratePetWallet, removePetFromProfile } from "../src/pet-system.js";
 import { petSummary } from "../src/member-profile-system.js";
 
 test("virtual pet data persists across store restarts", () => {
@@ -44,6 +44,26 @@ test("personal pet rooms use private text-channel title format", () => {
   assert.ok(name.length < 100);
 });
 
+
+
+test("personal pet room ownership recovers from a missing topic using private overwrites", () => {
+  const channel = {
+    type: ChannelType.GuildText, name: "🐾｜୨୧・kitti’s 𝓹𝓮𝓽", topic: null, guild: { id: "guild-1" },
+    permissionOverwrites: { cache: new Map([
+      ["user-1", { allow: { has: (p) => p === 2048n } }],
+      ["guild-1", { deny: { has: (p) => p === 1024n } }],
+    ]) },
+  };
+  assert.equal(isUsersPetRoom(channel, "user-1"), true);
+  assert.equal(isUsersPetRoom(channel, "user-2"), false);
+  assert.equal(isUsersPetRoom({ ...channel, name: "general" }, "user-1"), false);
+});
+
+test("personal pet room topic remains the authoritative owner check", () => {
+  const channel = { type: ChannelType.GuildText, topic: "Sugar personal pet room for 123456789012345678" };
+  assert.equal(isUsersPetRoom(channel, "123456789012345678"), true);
+  assert.equal(isUsersPetRoom(channel, "987654321098765432"), false);
+});
 
 test("pet rooms category is positioned below the configured reference category", async () => {
   const events = [];
