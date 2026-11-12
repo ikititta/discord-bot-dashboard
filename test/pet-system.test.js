@@ -4,7 +4,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { ChannelType } from "discord.js";
-import { PetStore, formatPetChannelName, isUsersPetRoom, PET_ADOPTION_CHANNEL_IDS, ensurePetCategoryPosition, PET_ROOMS_CATEGORY_ID, PET_CATEGORY_BELOW_ID, applyNeedsDecay, chileDateKey, canAdoptPet, refreshPetUnlocks, migratePetWallet, removePetFromProfile, canDeletePet, canAdoptSpecies, VIP_ONLY_PET_SPECIES } from "../src/pet-system.js";
+import { PetStore, formatPetChannelName, isUsersPetRoom, PET_ADOPTION_CHANNEL_IDS, ensurePetCategoryPosition, PET_ROOMS_CATEGORY_ID, PET_CATEGORY_BELOW_ID, applyNeedsDecay, chileDateKey, canAdoptPet, refreshPetUnlocks, migratePetWallet, removePetFromProfile, parsePetDeleteConfirmationId, canDeletePet, canAdoptSpecies, VIP_ONLY_PET_SPECIES } from "../src/pet-system.js";
 import { petSummary } from "../src/member-profile-system.js";
 
 test("virtual pet data persists across store restarts", () => {
@@ -197,6 +197,14 @@ test("deleting the only pet marks the profile empty", () => {
   assert.equal(result.remaining, 0);
 });
 
+
+test("pet deletion confirmation parses the actual owner and pet IDs", () => {
+  assert.deepEqual(parsePetDeleteConfirmationId("sugar-pets:delete-confirm:user-123:pet-456"), {
+    ownerId: "user-123", petId: "pet-456",
+  });
+  assert.equal(parsePetDeleteConfirmationId("sugar-pets:delete-confirm:user-123"), null);
+  assert.equal(parsePetDeleteConfirmationId("other:delete-confirm:user-123:pet-456"), null);
+});
 
 test("pet deletion is restricted to VIP members", () => {
   assert.equal(canDeletePet(true), true);
