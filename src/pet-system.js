@@ -227,7 +227,9 @@ function buildGlobalPetLeaderboard(store, guildId) {
 function panelPayload() {
   return { embeds: [buildPetEmbed()], components: [new ActionRowBuilder().addComponents(
     new ButtonBuilder().setCustomId(BUTTON_ID).setLabel("Create your pet room ♡").setStyle(ButtonStyle.Primary),
-    new ButtonBuilder().setCustomId("sugar-pets:global-top").setLabel("Global top ♡").setStyle(ButtonStyle.Success),
+    new ButtonBuilder().setCustomId("sugar-pets:create-pet").setLabel("Adopt another pet ♡").setStyle(ButtonStyle.Success),
+    new ButtonBuilder().setCustomId("sugar-pets:delete-pet").setLabel("Delete a pet").setStyle(ButtonStyle.Danger),
+    new ButtonBuilder().setCustomId("sugar-pets:global-top").setLabel("Global top ♡").setStyle(ButtonStyle.Secondary),
   )] };
 }
 
@@ -698,6 +700,23 @@ export function attachPetSystem(client, store) {
       await refreshPetsPanel(guild, store, client);
       return companion;
     };
+
+    if (interaction.isButton?.() && interaction.customId === "sugar-pets:create-pet") {
+      const profile = store.get(interaction.guildId, interaction.user.id);
+      const vip = isVip(interaction.member);
+      if (profile && !vip) return interaction.reply({ content: "You already have a pet ♡ VIP members can unlock more pet slots.", ephemeral: true });
+      if (profile && !canAdoptPet(profile, vip)) return interaction.reply({ content: "All your pet slots are full. Use !pet slots in your pet room to unlock another slot ♡", ephemeral: true });
+      return interaction.reply({ embeds: [buildAdoptionEmbed(null, vip)], components: [buildSpeciesSelect(interaction.user.id, vip)], ephemeral: true });
+    }
+
+    if (interaction.isButton?.() && interaction.customId === "sugar-pets:delete-pet") {
+      const profile = store.get(interaction.guildId, interaction.user.id);
+      if (!canDeletePet(isVip(interaction.member))) return interaction.reply({ content: "Deleting pets is a VIP-only feature ♡", ephemeral: true });
+      if (!profile) return interaction.reply({ content: "You have no pets to delete ♡", ephemeral: true });
+      for (const item of [profile, ...(profile.additionalPets ?? [])]) item.id ??= randomUUID();
+      store.save(interaction.guildId, interaction.user.id, profile);
+      return interaction.reply({ content: "Choose which companion you want to delete. Sugar will ask you to confirm ♡", components: [buildPetDeleteMenu(interaction.user.id, profile)], ephemeral: true });
+    }
 
     if (interaction.isButton?.() && interaction.customId.startsWith("sugar-pets:help:")) {
       const [, , ownerId, category] = interaction.customId.split(":");
