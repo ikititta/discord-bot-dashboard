@@ -86,6 +86,8 @@ export function protectNewChannel(channel, onBlocked = console.warn) {
 
 /** The only approved rename path is the existing private-chat owner command. */
 export async function renamePrivateChatChannel(channel, name, reason) {
+  const edit = originalEdit.get(channel);
+  if (edit) return edit({ name }, reason);
   const original = originalSetName.get(channel);
   return original ? original(name, reason) : channel.setName(name, reason);
 }
