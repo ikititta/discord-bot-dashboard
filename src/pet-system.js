@@ -3,6 +3,7 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 import {
   ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, EmbedBuilder, Events, PermissionFlagsBits,
+  StringSelectMenuBuilder, ModalBuilder, TextInputBuilder, TextInputStyle,
 } from "discord.js";
 import { toRoyalBold } from "./embed-format.js";
 import { generatePetArtwork } from "./pet-art.js";
@@ -16,7 +17,8 @@ const PET_SPECIES = {
   rabbit: "rabbit", bunny: "rabbit", fish: "fish", bird: "bird",
   guinea: "guinea pig", "guinea pig": "guinea pig", "guinea-pig": "guinea pig", turtle: "turtle", fox: "fox", ferret: "ferret",
 };
-const PET_SPECIES_LABELS = Object.keys(PET_SPECIES).join(", ");
+const PET_SPECIES_OPTIONS = [...new Set(Object.values(PET_SPECIES))];
+const PET_SPECIES_LABELS = PET_SPECIES_OPTIONS.join(", ");
 const SHOP = { treat: 10, toy: 25 };
 
 export class PetStore {
@@ -63,17 +65,59 @@ function isVip(member) {
 }
 function buildPetEmbed() {
   return new EmbedBuilder().setColor(COLOR).setTitle("୨୧ 𝓥𝓲𝓻𝓽𝓾𝓪𝓵 𝓟𝓮𝓽𝓼 ♡")
-    .setDescription("Adopt a little companion, take care of them, and watch them grow ♡\n\n" +
-      "Create your private pet room to see the commands and care for your pet. Choose your species when adopting. " +
-      "Everyone can adopt a pet; VIP members get extra perks and exclusive features.")
-    .setFooter({ text: "Your pet progress is saved ♡" });
+    .setDescription("Adopt your own little companion and watch them grow ♡\\n\\n" +
+      "Open your private pet room, then type `!pet adopt` to start the interactive adoption. " +
+      "Choose a species from the selector. Everyone gets a unique, randomly designed pet; VIP members can customise its name, colour, breed, appearance and personality before adopting.\\n\\n" +
+      "Care for your pet, earn XP and coins, unlock stories, and collect more companions with VIP slots.")
+    .setFooter({ text: "Your pet and progress are saved ♡ · Adoption starts with !pet adopt" });
 }
 function buildPetCommandsEmbed() {
   return new EmbedBuilder().setColor(COLOR).setTitle("୨୧ 𝓟𝓮𝓽 𝓡𝓸𝓸𝓶 · 𝓒𝓸𝓶𝓶𝓪𝓷𝓭𝓼 ♡")
-    .setDescription("**Everyone**\n`!pet adopt <species>` · `!pet` · `!pet stats`\nSpecies: cat, dog, hamster, rabbit, fish, bird, guinea pig, turtle, fox, ferret.\n`!pet feed` · `!pet play` · `!pet cuddle` · `!pet talk` · `!pet story`\n`!pet shop` · `!pet buy <treat|toy>` · `!pet inventory` · `!pet select <number>`\n\n**VIP customization**\n`!pet name <name>` · `!pet color <color>` · `!pet breed <breed>`\n`!pet appearance <details>` · `!pet personality <traits>`\n\n**VIP extras**\n`!pet room` · `!pet outfit <name>` · `!pet rare` · `!pet slots` · `!pet minigame`")
+    .setDescription("**Adoption · Everyone**\\n`!pet adopt` — open the adoption embed and choose a species: cat, dog, hamster, rabbit, fish, bird, guinea pig, turtle, fox or ferret.\\nNon-VIP pets receive a unique random design. VIP members can customise before adopting.\\n\\n" +
+      "**Care & play · Everyone**\\n`!pet` · `!pet stats` · `!pet feed` · `!pet play` · `!pet cuddle` · `!pet talk` · `!pet story`\\n`!pet shop` · `!pet buy <treat|toy>` · `!pet inventory` · `!pet select <number>`\\n\\n" +
+      "**VIP customisation**\\nChoose your pet’s name, colour, breed, appearance and personality in the adoption form. Existing pets can also be edited with `!pet name <name>`, `!pet color <color>`, `!pet breed <breed>`, `!pet appearance <details>` and `!pet personality <traits>`.\\n\\n" +
+      "**VIP extras**\\n`!pet room` · `!pet outfit <name>` · `!pet rare` · `!pet slots` · `!pet minigame`")
     .setFooter({ text: "Use these commands in your private pet room ♡" });
 }
-
+function buildAdoptionEmbed(selectedSpecies = null, vip = false) {
+  const speciesLine = selectedSpecies ? "Selected companion: **" + selectedSpecies + "** ♡" : "Choose the species you’d love to meet ♡";
+  const designLine = vip
+    ? "As a VIP member, you can customise your companion’s name, colour, breed, appearance and personality before adopting."
+    : "Your companion will receive a one-of-a-kind random name and design. Want to choose every detail yourself? VIP unlocks full pet customisation ♡";
+  return new EmbedBuilder().setColor(COLOR).setTitle("୨୧ 𝓐 𝓛𝓲𝓽𝓽𝓵𝓮 𝓐𝓭𝓸𝓹𝓽𝓲𝓸𝓷 ♡")
+    .setDescription(speciesLine + "\\n\\n" + designLine + "\\n\\nPick a species below to continue.")
+    .setFooter({ text: "Every companion gets its own unique identity ♡" });
+}
+function buildSpeciesSelect(userId) {
+  return new ActionRowBuilder().addComponents(new StringSelectMenuBuilder()
+    .setCustomId("sugar-pets:species:" + userId)
+    .setPlaceholder("Choose your pet’s species ♡")
+    .addOptions(
+      { label: "Cat", value: "cat", emoji: "🐱" }, { label: "Dog", value: "dog", emoji: "🐶" },
+      { label: "Hamster", value: "hamster", emoji: "🐹" }, { label: "Rabbit", value: "rabbit", emoji: "🐰" },
+      { label: "Fish", value: "fish", emoji: "🐠" }, { label: "Bird", value: "bird", emoji: "🐦" },
+      { label: "Guinea pig", value: "guinea pig", emoji: "🐾" }, { label: "Turtle", value: "turtle", emoji: "🐢" },
+      { label: "Fox", value: "fox", emoji: "🦊" }, { label: "Ferret", value: "ferret", emoji: "🤎" },
+    ));
+}
+function buildAdoptionActions(userId, species, vip) {
+  const row = new ActionRowBuilder().addComponents(
+    new ButtonBuilder().setCustomId("sugar-pets:adopt:" + userId + ":" + encodeURIComponent(species))
+      .setLabel(vip ? "Adopt this pet ♡" : "Adopt your random companion ♡").setStyle(ButtonStyle.Primary),
+  );
+  if (vip) row.addComponents(new ButtonBuilder()
+    .setCustomId("sugar-pets:customize:" + userId + ":" + encodeURIComponent(species))
+    .setLabel("Customise before adopting ♡").setStyle(ButtonStyle.Success));
+  return row;
+}
+function buildAdoptionModal(userId, species) {
+  const modal = new ModalBuilder().setCustomId("sugar-pets:customize-submit:" + userId + ":" + encodeURIComponent(species)).setTitle("Customise your companion ♡");
+  const fields = [["pet_name", "Name", "Choose a name", true, 24], ["pet_color", "Colour", "e.g. strawberry pink", false, 60], ["pet_breed", "Breed", "Optional breed", false, 60], ["pet_appearance", "Appearance", "Markings, eyes, accessories...", false, 60], ["pet_personality", "Personality", "e.g. gentle, curious, playful", false, 60]];
+  for (const [id, label, placeholder, required, maxLength] of fields) modal.addComponents(new ActionRowBuilder().addComponents(
+    new TextInputBuilder().setCustomId(id).setLabel(label).setPlaceholder(placeholder).setStyle(TextInputStyle.Short).setRequired(required).setMaxLength(maxLength),
+  ));
+  return modal;
+}
 function buildGlobalPetLeaderboard(store, guildId) {
   const entries = [];
   for (const [userId, profile] of Object.entries(store.data.guilds[guildId] ?? {})) {
@@ -209,32 +253,9 @@ async function runPetCommand(message, store, client) {
   const reply = (content) => message.reply({ content, allowedMentions: { repliedUser: false } });
 
   if (action === "adopt") {
-    if (pet) {
-      if (!vip) return reply("You already have a pet ♡ VIP members can unlock more pet slots.");
-      const count = 1 + (profile.additionalPets?.length ?? 0);
-      if (count >= profile.slots) return reply("All your pet slots are full. Use `!pet slots` to unlock another VIP slot ♡");
-      const requestedSpecies = String(argument || "").toLowerCase();
-      const species = PET_SPECIES[requestedSpecies];
-      if (!species) return reply("Choose a species: " + PET_SPECIES_LABELS + " ♡");
-      const companion = makePet(species);
-      companion.name = "Mochi " + (count + 1);
-      profile.additionalPets ??= [];
-      profile.additionalPets.push(companion);
-      profile.activePetIndex = count;
-      store.save(guildId, userId, profile);
-      queuePetArtwork(message, store, profile, companion);
-      await refreshPetsPanel(message.guild, store, client);
-      return reply(`You adopted **${companion.name}** the ${companion.species}! Welcome home ♡\n${status(companion)}`);
-    }
-    const requestedSpecies = String(argument || "").toLowerCase();
-    const species = PET_SPECIES[requestedSpecies];
-    if (!species) return reply("Choose a species: " + PET_SPECIES_LABELS + " ♡\nExample: `!pet adopt hamster`");
-    pet = makePet(species);
-    profile = pet;
-    store.save(guildId, userId, profile);
-    queuePetArtwork(message, store, profile, pet);
-    await refreshPetsPanel(message.guild, store, client);
-    return reply(`You adopted **${pet.name}** the ${pet.species}! Welcome home ♡\n${status(pet)}`);
+    if (profile && !vip) return reply("You already have a pet ♡ VIP members can unlock more pet slots.");
+    if (profile && 1 + (profile.additionalPets?.length ?? 0) >= (profile.slots ?? 1)) return reply("All your pet slots are full. Use `!pet slots` to unlock another VIP slot ♡");
+    return message.reply({ embeds: [buildAdoptionEmbed(null, vip)], components: [buildSpeciesSelect(userId)], allowedMentions: { repliedUser: false } });
   }
   if (!pet) return reply("You don't have a pet yet. Choose a species with `!pet adopt <species>` ♡");
 
@@ -377,80 +398,112 @@ export function attachPetSystem(client, store) {
     void ensurePetsChannel(guild, client, store).catch((error) => console.error("[pets] channel setup failed: " + error.message));
   });
   client.on(Events.InteractionCreate, async (interaction) => {
-    if (!interaction.isButton?.() || ![BUTTON_ID, "sugar-pets:global-top"].includes(interaction.customId)) return;
-    if (interaction.customId === "sugar-pets:global-top") {
+    const owned = (ownerId) => interaction.user.id === ownerId;
+    const createAdoptedPet = async (species, customization = {}) => {
+      const guild = interaction.guild, user = interaction.user, vip = isVip(interaction.member);
+      if (!guild || !PET_SPECIES_OPTIONS.includes(species)) throw new Error("Invalid pet adoption request.");
+      let profile = store.get(guild.id, user.id);
+      const activePet = profile ? (profile.activePetIndex > 0 ? profile.additionalPets?.[profile.activePetIndex - 1] : profile) : null;
+      if (activePet && !vip) throw new Error("You already have a pet ♡ VIP members can unlock more pet slots.");
+      const count = profile ? 1 + (profile.additionalPets?.length ?? 0) : 0;
+      if (profile && count >= (profile.slots ?? 1)) throw new Error("All your pet slots are full. Use `!pet slots` to unlock another VIP slot ♡");
+      const companion = makePet(species);
+      if (vip) {
+        if (customization.name) companion.name = customization.name.slice(0, 24);
+        if (customization.color) companion.visualIdentity.palette = customization.color.slice(0, 40);
+        if (customization.breed) companion.visualIdentity.breed = customization.breed.slice(0, 40);
+        if (customization.appearance) companion.visualIdentity.appearance = customization.appearance.slice(0, 60);
+        if (customization.personality) companion.visualIdentity.personality = customization.personality.slice(0, 60);
+      } else companion.name = choose(["Mochi", "Mimi", "Mallow", "Peaches", "Pudding", "Boba", "Cookie", "Tofu"]);
+      if (!profile) profile = companion;
+      else {
+        if (!customization.name) companion.name = "Mochi " + (count + 1);
+        profile.additionalPets ??= []; profile.additionalPets.push(companion); profile.activePetIndex = count;
+      }
+      store.save(guild.id, user.id, profile);
+      queuePetArtwork({ guild, author: user, channel: interaction.channel }, store, profile, companion);
+      await refreshPetsPanel(guild, store, client);
+      return companion;
+    };
+
+    if (interaction.isStringSelectMenu?.() && interaction.customId.startsWith("sugar-pets:species:")) {
+      const ownerId = interaction.customId.split(":")[2];
+      if (!owned(ownerId)) return interaction.reply({ content: "This adoption menu belongs to someone else ♡", ephemeral: true });
+      const species = interaction.values?.[0];
+      if (!PET_SPECIES_OPTIONS.includes(species)) return interaction.reply({ content: "Please choose a valid species ♡", ephemeral: true });
+      const vip = isVip(interaction.member);
+      return interaction.update({ embeds: [buildAdoptionEmbed(species, vip)], components: [buildAdoptionActions(ownerId, species, vip)] });
+    }
+
+    if (interaction.isModalSubmit?.() && interaction.customId.startsWith("sugar-pets:customize-submit:")) {
+      const [, , ownerId, encodedSpecies] = interaction.customId.split(":");
+      if (!owned(ownerId)) return interaction.reply({ content: "This customisation form belongs to someone else ♡", ephemeral: true });
+      if (!isVip(interaction.member)) return interaction.reply({ content: "Full pet customisation is a VIP feature ♡ Your pet can still receive a random design.", ephemeral: true });
       try {
-        if (!interaction.guild) return interaction.reply({ content: "The global pet top is only available inside a server ♡", ephemeral: true });
-        return interaction.reply({ embeds: [buildGlobalPetLeaderboard(store, interaction.guild.id)], ephemeral: true });
-      } catch (error) {
-        console.error("[pets] leaderboard failed: " + error.message);
-        return interaction.reply({ content: "Could not load the global pet top. Please try again ♡", ephemeral: true });
+        const companion = await createAdoptedPet(decodeURIComponent(encodedSpecies || ""), {
+          name: interaction.fields.getTextInputValue("pet_name").trim(), color: interaction.fields.getTextInputValue("pet_color").trim(),
+          breed: interaction.fields.getTextInputValue("pet_breed").trim(), appearance: interaction.fields.getTextInputValue("pet_appearance").trim(),
+          personality: interaction.fields.getTextInputValue("pet_personality").trim(),
+        });
+        return interaction.reply({ content: "Welcome home, **" + companion.name + "** the " + companion.species + "! Your custom companion is being created ♡\\n" + status(companion), ephemeral: true });
+      } catch (error) { return interaction.reply({ content: error.message, ephemeral: true }); }
+    }
+
+    if (interaction.isButton?.() && interaction.customId.startsWith("sugar-pets:")) {
+      if (interaction.customId === "sugar-pets:global-top") {
+        try {
+          if (!interaction.guild) return interaction.reply({ content: "The global pet top is only available inside a server ♡", ephemeral: true });
+          return interaction.reply({ embeds: [buildGlobalPetLeaderboard(store, interaction.guild.id)], ephemeral: true });
+        } catch (error) { console.error("[pets] leaderboard failed: " + error.message); return interaction.reply({ content: "Could not load the global pet top. Please try again ♡", ephemeral: true }); }
+      }
+      const [, , action, ownerId, encodedSpecies] = interaction.customId.split(":");
+      if (!owned(ownerId)) return interaction.reply({ content: "This adoption belongs to someone else ♡", ephemeral: true });
+      const species = decodeURIComponent(encodedSpecies || "");
+      if (action === "customize") {
+        if (!isVip(interaction.member)) return interaction.reply({ content: "Full pet customisation is a VIP feature ♡", ephemeral: true });
+        return interaction.showModal(buildAdoptionModal(ownerId, species));
+      }
+      if (action === "adopt") {
+        try {
+          const companion = await createAdoptedPet(species);
+          const vip = isVip(interaction.member);
+          return interaction.update({ embeds: [buildAdoptionEmbed(species, vip).setDescription("You adopted **" + companion.name + "** the " + companion.species + "!\\n\\n" + (vip ? "Your companion is ready to meet you." : "Sugar chose a unique random design for you. VIP members can customise every detail of future companions.") + " ♡\\n\\n" + status(companion))], components: [] });
+        } catch (error) { return interaction.reply({ content: error.message, ephemeral: true }); }
       }
     }
+
+    if (!interaction.isButton?.() || interaction.customId !== BUTTON_ID) return;
     try {
       const guild = interaction.guild;
       if (!guild) return interaction.reply({ content: "Pet rooms are only available inside a server ♡", ephemeral: true });
       const topic = `Sugar personal pet room for ${interaction.user.id}`;
-      let petChannel = guild.channels.cache.find((item) =>
-        item.type === ChannelType.GuildText && item.topic === topic,
-      );
+      let petChannel = guild.channels.cache.find((item) => item.type === ChannelType.GuildText && item.topic === topic);
       if (!petChannel) {
         await guild.channels.fetch();
-        petChannel = guild.channels.cache.find((item) =>
-          item.type === ChannelType.GuildText && item.topic === topic,
-        );
+        petChannel = guild.channels.cache.find((item) => item.type === ChannelType.GuildText && item.topic === topic);
       }
       if (!petChannel) {
+        const petsChannel = guild.channels.cache.find((item) => item.name === CHANNEL_NAME);
         petChannel = await guild.channels.create({
-          name: formatPetChannelName(interaction.user.username),
-          type: ChannelType.GuildText,
-          ...(guild.channels.cache.find((item) => item.name === CHANNEL_NAME)?.parentId ? { parent: guild.channels.cache.find((item) => item.name === CHANNEL_NAME).parentId } : {}),
-          topic,
+          name: formatPetChannelName(interaction.user.username), type: ChannelType.GuildText,
+          ...(petsChannel?.parentId ? { parent: petsChannel.parentId } : {}), topic,
           permissionOverwrites: [
             { id: guild.roles.everyone.id, deny: [PermissionFlagsBits.ViewChannel] },
-            {
-              id: interaction.user.id,
-              allow: [
-                PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages,
-                PermissionFlagsBits.ReadMessageHistory, PermissionFlagsBits.AttachFiles,
-                PermissionFlagsBits.EmbedLinks,
-              ],
-              deny: [PermissionFlagsBits.AddReactions],
-            },
-            {
-              id: client.user.id,
-              allow: [
-                PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages,
-                PermissionFlagsBits.ReadMessageHistory, PermissionFlagsBits.EmbedLinks,
-                PermissionFlagsBits.ManageMessages,
-              ],
-              deny: [PermissionFlagsBits.AddReactions],
-            },
-          ],
-          reason: "Create a private personal pet channel",
+            { id: interaction.user.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory, PermissionFlagsBits.AttachFiles, PermissionFlagsBits.EmbedLinks], deny: [PermissionFlagsBits.AddReactions] },
+            { id: client.user.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory, PermissionFlagsBits.EmbedLinks, PermissionFlagsBits.ManageMessages], deny: [PermissionFlagsBits.AddReactions] },
+          ], reason: "Create a private personal pet channel",
         });
-        await petChannel.send({
-          content: `Welcome <@${interaction.user.id}>! Your little pet corner is ready ♡`,
-          embeds: [buildPetCommandsEmbed()],
-          allowedMentions: { users: [interaction.user.id] },
-        });
+        await petChannel.send({ content: `Welcome <@${interaction.user.id}>! Your little pet corner is ready ♡`, embeds: [buildPetCommandsEmbed()], allowedMentions: { users: [interaction.user.id] } });
       }
       const roomMessages = await petChannel.messages.fetch({ limit: 20 });
-      const commandsEmbed = roomMessages.find((message) =>
-        message.author?.id === client.user.id &&
-        message.embeds.some((embed) => embed.title === "୨୧ 𝓟𝓮𝓽 𝓡𝓸𝓸𝓶 · 𝓒𝓸𝓶𝓶𝓪𝓷𝓭𝓼 ♡"),
-      );
-      if (commandsEmbed) await commandsEmbed.edit({ embeds: [buildPetCommandsEmbed()] });
-      else await petChannel.send({ embeds: [buildPetCommandsEmbed()] });
+      const commandsEmbed = roomMessages.find((message) => message.author?.id === client.user.id && message.embeds.some((embed) => embed.title === "୨୧ 𝓟𝓮𝓽 𝓡𝓸𝓸𝓶 · 𝓒𝓸𝓶𝓶𝓪𝓷𝓭𝓼 ♡"));
+      if (commandsEmbed) await commandsEmbed.edit({ embeds: [buildPetCommandsEmbed()] }); else await petChannel.send({ embeds: [buildPetCommandsEmbed()] });
       await petChannel.permissionOverwrites.edit(interaction.user.id, { AddReactions: false });
       await petChannel.permissionOverwrites.edit(client.user.id, { AddReactions: false });
       await interaction.reply({ content: `Your pet room is ready: <#${petChannel.id}> ♡`, ephemeral: true });
     } catch (error) {
       console.error("[pets] could not open pet channel: " + error.message);
-      if (!interaction.replied) await interaction.reply({
-        content: "I couldn't open your pet room. Please try again ♡",
-        ephemeral: true,
-      }).catch(() => {});
+      if (!interaction.replied) await interaction.reply({ content: "I couldn’t open your pet room. Please try again ♡", ephemeral: true }).catch(() => {});
     }
   });
   client.on(Events.MessageCreate, async (message) => {
