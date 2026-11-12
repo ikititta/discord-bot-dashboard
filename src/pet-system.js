@@ -88,6 +88,18 @@ export function formatPetChannelName(username) {
   return `🐾｜୨୧・${toRoyalBold(normalizePetChannelLabel(username))}’s 𝓹𝓮𝓽`;
 }
 
+
+export function isUsersPetRoom(channel, userId) {
+  if (!channel || !userId || channel.type !== ChannelType.GuildText) return false;
+  const topicOwner = /^Sugar personal pet room for (\\d{17,20})$/.exec(channel.topic ?? "")?.[1];
+  if (topicOwner) return topicOwner === userId;
+  if (!/^🐾｜୨୧・.+’s 𝓹𝓮𝓽$/u.test(channel.name ?? "")) return false;
+  const ownerOverwrite = channel.permissionOverwrites?.cache?.get(userId);
+  const everyoneOverwrite = channel.permissionOverwrites?.cache?.get(channel.guild?.id);
+  return Boolean(ownerOverwrite?.allow?.has(PermissionFlagsBits.SendMessages) &&
+    everyoneOverwrite?.deny?.has(PermissionFlagsBits.ViewChannel));
+}
+
 function isVip(member) {
   return member?.roles?.cache?.has(VIP_ROLE_ID) === true;
 }
@@ -764,13 +776,13 @@ export function attachPetSystem(client, store) {
     store.save(message.guild.id, message.author.id, profile);
   });
   client.on(Events.MessageCreate, async (message) => {
-    if (!message.guild || message.author?.bot || message.channel?.type !== ChannelType.GuildText) return;
-    const ownerId = /^Sugar personal pet room for (\d{17,20})$/.exec(message.channel.topic ?? "")?.[1];
-    if (!ownerId || ownerId !== message.author.id || !/^!pet(?:\s|$)/i.test(message.content.trim())) return;
+    if (!message.guild || message.author?.bot || message.webhookId ||
+        message.channel?.type !== ChannelType.GuildText ||
+        !/^!pet(?:\\s|$)/i.test(String(message.content ?? "").trim())) return;
+    if (!isUsersPetRoom(message.channel, message.author.id)) return;
     try { await runPetCommand(message, store, client); }
     catch (error) {
       console.error("[pets] command failed: " + error.message);
       await message.reply("Something went wrong with your pet command ♡").catch(() => {});
     }
-  });
-}
+  });}
