@@ -92,7 +92,7 @@ async function ensureAgeReviewVisibility(guild, role) {
   return support;
 }
 
-async function restrictUnderageMember(guild, member) {
+export async function restrictUnderageMember(guild, member) {
   const support = findSupportChannel(guild);
   if (!support) {
     throw new Error(`The existing Support channel ${SUPPORT_CHANNEL_ID} could not be found; no access restriction was applied.`);
