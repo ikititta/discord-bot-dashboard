@@ -828,6 +828,12 @@ export function attachPetSystem(client, store) {
         await petChannel.send(buildPetStickyPayload(interaction.user.id));
       }
       const roomMessages = await petChannel.messages.fetch({ limit: 50 });
+      const ownerProfile = store.get(guild.id, interaction.user.id);
+      const activePet = ownerProfile ? (ownerProfile.activePetIndex > 0 ? ownerProfile.additionalPets?.[ownerProfile.activePetIndex - 1] : ownerProfile) : null;
+      const welcome = roomMessages.find((message) => message.author?.id === client.user.id &&
+        message.embeds.some((embed) => embed.title === "୨୧ 𝓦𝓮𝓵𝓬𝓸𝓶𝓮 𝓱𝓸𝓶𝓮 ♡"));
+      if (welcome) await welcome.edit({ embeds: [buildPetRoomWelcomeEmbed(ownerProfile, activePet, isVip(interaction.member))] });
+      else await petChannel.send({ embeds: [buildPetRoomWelcomeEmbed(ownerProfile, activePet, isVip(interaction.member))] });
       const legacyCommands = roomMessages.find((message) => message.author?.id === client.user.id && message.embeds.some((embed) => embed.title === "୨୧ 𝓟𝓮𝓽 𝓡𝓸𝓸𝓶 · 𝓒𝓸𝓶𝓶𝓪𝓷𝓭𝓼 ♡"));
       if (legacyCommands) await legacyCommands.delete().catch(() => {});
       const sticky = roomMessages.find((message) => message.author?.id === client.user.id && message.embeds.some((embed) => embed.title === "୨୧ 𝓟𝓮𝓽 𝓗𝓮𝓵𝓹 ♡"));
