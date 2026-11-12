@@ -231,3 +231,24 @@ test("only cats and dogs are available to everyone; all other species are VIP-on
   assert.equal(canAdoptSpecies("puppy", false), true);
   assert.equal(canAdoptSpecies("dragon", true), false);
 });
+
+
+test("pets hub exposes create-pet and delete-pet actions", () => {
+  const source = fs.readFileSync(new URL("../src/pet-system.js", import.meta.url), "utf8");
+  assert.ok(source.includes("sugar-pets:create-pet"));
+  assert.ok(source.includes("sugar-pets:delete-pet"));
+  assert.ok(source.includes("sugar-pets:global-top"));
+});
+
+test("adoption customisation uses no more than Discord modal five fields", () => {
+  const source = fs.readFileSync(new URL("../src/pet-system.js", import.meta.url), "utf8");
+  assert.ok(source.includes('"pet_details", "Appearance & personality"'));
+  assert.ok(!source.includes('"pet_appearance", "Appearance"'));
+  assert.ok(!source.includes('"pet_personality", "Personality"'));
+});
+
+test("pet room welcome embed is only created once and remains separate from the sticky", () => {
+  const source = fs.readFileSync(new URL("../src/pet-system.js", import.meta.url), "utf8");
+  assert.ok(source.includes("if (!welcome) await petChannel.send"));
+  assert.ok(source.includes("if (!sticky) await petChannel.send(buildPetStickyPayload"));
+});
