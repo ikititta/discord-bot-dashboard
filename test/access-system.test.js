@@ -177,7 +177,9 @@ test("access, rules, and guide panels contain the required confirmations and upd
   assert.ok(guideText.includes("`/mod-delete amount: [member:]` — moderator cleanup."));
   assert.match(guideText, /!profile \[@member\]/);
   assert.match(guideText, /!rep stats \[@member\]/);
-  assert.match(guideText, /!pet adopt <species>/);
+  assert.match(guideText, /!pet adopt` — open the interactive adoption embed/);
+  assert.match(guideText, /Non-VIP members receive a unique random design/);
+  assert.match(guideText, /VIP members can customise name, colour, breed, appearance and personality/);
   assert.match(guideText, /!pet talk/);
   assert.match(guideText, /!pet story/);
   assert.match(guideText, /!pet room/);
