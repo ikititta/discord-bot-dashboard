@@ -18,7 +18,6 @@ const PET_SPECIES = {
   guinea: "guinea pig", "guinea pig": "guinea pig", "guinea-pig": "guinea pig", turtle: "turtle", fox: "fox", ferret: "ferret",
 };
 const PET_SPECIES_OPTIONS = [...new Set(Object.values(PET_SPECIES))];
-const PET_SPECIES_LABELS = PET_SPECIES_OPTIONS.join(", ");
 const SHOP = { treat: 10, toy: 25 };
 
 export class PetStore {
