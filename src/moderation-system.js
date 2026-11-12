@@ -2,6 +2,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { ChannelType, Events, PermissionFlagsBits } from "discord.js";
 
+const VIP_ROLE_ID = "1568188640113463437";
+const REPORTS_CHANNEL_ID = "1569479283133382787";
 const RAID_WINDOW_MS = 10_000;
 const RAID_JOIN_THRESHOLD = 8;
 const RAID_ACCOUNT_AGE_MS = 7 * 24 * 60 * 60 * 1000;
@@ -79,7 +81,7 @@ export function detectMessageViolation(message, recentMessages = []) {
     return "repeated messages";
   }
 
-  const isVip = message?.member?.roles?.cache?.some((role) => ["vip", "seller"].includes(normalize(role.name))) ?? false;
+  const isVip = message?.member?.roles?.cache?.has?.(VIP_ROLE_ID) ?? false;
   const channel = normalize(message?.channel?.name);
   const inPromotionChannel = PROMOTION_CHANNELS.has(channel);
   if ((!isVip || !inPromotionChannel) && (INVITE_LINK.test(content) || PROMOTION_WORDS.test(content))) {
@@ -101,19 +103,36 @@ function hasModeratorAccess(member, settings) {
 }
 
 async function findModerationChannel(guild, settings) {
-  const configured = settings.get(guild.id).reportsChannelId;
-  if (configured) {
-    const channel = await guild.channels.fetch(configured).catch(() => null);
-    if (channel?.isTextBased()) return channel;
+  const candidates = [
+    settings.get(guild.id).reportsChannelId,
+    REPORTS_CHANNEL_ID,
+  ].filter((id, index, all) => /^d{17,20}$/.test(id ?? "") && all.indexOf(id) === index);
+
+  for (const id of candidates) {
+    const channel = await guild.channels.fetch(id).catch(() => null);
+    if (isPrivateModerationChannel(channel, guild)) return channel;
   }
+
   return guild.channels.cache.find((channel) =>
-    channel.type === ChannelType.GuildText && ["modlogs", "moderationlogs", "reports"].includes(normalize(channel.name)),
+    channel.type === ChannelType.GuildText &&
+    ["modlogs", "moderationlogs", "reports"].includes(normalize(channel.name)) &&
+    isPrivateModerationChannel(channel, guild),
   ) ?? null;
+}
+
+function isPrivateModerationChannel(channel, guild) {
+  if (!channel || channel.type !== ChannelType.GuildText) return false;
+  const everyone = channel.permissionsFor(guild.roles.everyone);
+  return Boolean(everyone && !everyone.has(PermissionFlagsBits.ViewChannel));
 }
 
 async function report(guild, settings, content) {
   const channel = await findModerationChannel(guild, settings);
-  if (channel) await channel.send({ content }).catch((error) => {
+  if (!channel) {
+    console.warn(`[automod] no private moderation reports channel is available in guild ${guild.id}`);
+    return;
+  }
+  await channel.send({ content, allowedMentions: { parse: [] } }).catch((error) => {
     console.error(`[automod] could not send moderation notice: ${error.message}`);
   });
 }
@@ -163,7 +182,11 @@ export function attachModerationSystem(client, { settings, store }) {
     if (now - (violationCooldowns.get(cooldownKey) ?? 0) < 5_000) return;
     violationCooldowns.set(cooldownKey, now);
     const strike = store.addStrike(message.guild.id, message.author.id, violation);
+    if (strike.count === 1) {
+      await message.author.send("This is your first Kittisugar moderation warning. Your message was removed for " + violation + ". Please follow the server rules; three infractions result in removal from the server.").catch(() => {});
+    }
     if (strike.count >= STRIKE_LIMIT) {
+      await message.author.send("You reached 3/3 Kittisugar infractions and are being removed from the server.").catch(() => {});
       const kicked = await message.member.kick("Three Kittisugar rule violations (automatic moderation)").then(() => true).catch((error) => {
         console.error(`[automod] could not remove ${message.author.id}: ${error.message}`);
         return false;
@@ -177,6 +200,7 @@ export function attachModerationSystem(client, { settings, store }) {
       await message.member.timeout(10 * 60 * 1000, `Kittisugar strike 2/3: ${violation}`).catch((error) => {
         console.error(`[automod] could not timeout ${message.author.id}: ${error.message}`);
       });
+      await message.author.send("This is your second Kittisugar infraction. You have received a 10-minute timeout. One more infraction will result in removal from the server.").catch(() => {});
     }
     await report(message.guild, settings,
       `⚠️ <@${message.author.id}> received strike **${strike.count}/3** for **${violation}**. ${strike.count === 2 ? "A 10-minute timeout was applied." : "One more violation will result in removal."}`);
