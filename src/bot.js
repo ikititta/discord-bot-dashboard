@@ -24,6 +24,7 @@ import { attachReputationSystem } from "./reputation-system.js";
 import { attachPetSystem } from "./pet-system.js";
 import { attachMemberProfileSystem } from "./member-profile-system.js";
 import { attachCommandsThreadSticky } from "./commands-channel.js";
+import { protectChannelNames } from "./channel-renames.js";
 
 const COLORS = { join: 0x4ade80, leave: 0xf87171, edit: 0xfbbf24, delete: 0xf87171 };
 
@@ -71,6 +72,8 @@ export function createBot({
   });
 
   client.once(Events.ClientReady, () => {
+    const protectedCount = protectChannelNames(client.guilds.cache);
+    console.log(`[bot] protected ${protectedCount} fixed channel name(s)`);
     console.log(`[bot] logged in as ${client.user.tag} in ${client.guilds.cache.size} server(s)`);
   });
   client.on(Events.MessageCreate, (message) => {
