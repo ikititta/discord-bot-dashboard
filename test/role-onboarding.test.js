@@ -10,6 +10,7 @@ import {
   roleNameForSelection,
   findNsfwHiddenRole,
   NSFW_HIDDEN_ROLE_ID,
+  restrictUnderageMember,
 } from "../src/role-onboarding.js";
 
 test("self-role categories use the agreed gender and sexuality options", () => {
@@ -73,4 +74,66 @@ test("NSFW visibility uses the explicitly configured Hide NSFW Channels role ID"
   assert.equal(NSFW_HIDDEN_ROLE_ID, "1569885841180856361");
   assert.equal(findNsfwHiddenRole(guild), role);
   assert.equal(findNsfwHiddenRole({ roles: { cache: new Map() } }), null);
+});
+
+
+test("18- restriction grants Support first, removes Member, and applies a removable access role", async () => {
+  const calls = [];
+  const ageRole = { id: "age-review", name: "age-review" };
+  const memberRole = { id: "1568188534836428812", name: "Member" };
+  const newRole = { id: "1568188492704522330", name: "New" };
+  const roleCache = new Map([[memberRole.id, memberRole], [newRole.id, newRole]]);
+  const support = {
+    id: "1568492748732895313",
+    type: 0,
+    permissionOverwrites: { edit: async (role, permissions) => calls.push(["support", role.id, permissions]) },
+  };
+  const general = {
+    id: "general",
+    type: 0,
+    isThread: () => false,
+    permissionOverwrites: { edit: async (role, permissions) => calls.push(["general", role.id, permissions]) },
+  };
+  const guild = {
+    roles: {
+      cache: roleCache,
+      create: async () => { roleCache.set(ageRole.id, ageRole); return ageRole; },
+    },
+    channels: { cache: new Map([[support.id, support], [general.id, general]]) },
+  };
+  const assigned = new Set([memberRole.id]);
+  const member = {
+    roles: {
+      cache: { has: (id) => assigned.has(id) },
+      add: async (role) => { calls.push(["add", role.id]); assigned.add(role.id); },
+      remove: async (role) => { calls.push(["remove", role.id]); assigned.delete(role.id); },
+    },
+    send: async (payload) => calls.push(["dm", payload.embeds[0].data.description]),
+  };
+
+  const result = await restrictUnderageMember(guild, member);
+
+  assert.equal(result, support);
+  assert.deepEqual(calls[0], ["support", ageRole.id, {
+    ViewChannel: true, ReadMessageHistory: true, SendMessages: false,
+  }]);
+  assert.deepEqual(calls.find((call) => call[0] === "general"), ["general", ageRole.id, { ViewChannel: false }]);
+  assert.equal(assigned.has(memberRole.id), false);
+  assert.equal(assigned.has(ageRole.id), true);
+  assert.match(calls.find((call) => call[0] === "dm")[1], /limited to/);
+  assert.doesNotMatch(calls.find((call) => call[0] === "dm")[1], /manual age verification/i);
+});
+
+test("18- restriction fails safely when Support is missing", async () => {
+  let roleCreated = false;
+  const guild = {
+    roles: { cache: new Map(), create: async () => { roleCreated = true; } },
+    channels: { cache: new Map() },
+  };
+  const member = {
+    roles: { cache: { has: () => false }, add: async () => { throw new Error("must not assign"); }, remove: async () => {} },
+    send: async () => {},
+  };
+  await assert.rejects(restrictUnderageMember(guild, member), /Support channel/);
+  assert.equal(roleCreated, false);
 });
