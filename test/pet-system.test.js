@@ -4,7 +4,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { ChannelType } from "discord.js";
-import { PetStore, formatPetChannelName, isUsersPetRoom, PET_ADOPTION_CHANNEL_IDS, ensurePetCategoryPosition, PET_ROOMS_CATEGORY_ID, PET_CATEGORY_BELOW_ID, applyNeedsDecay, chileDateKey, canAdoptPet, refreshPetUnlocks, migratePetWallet, removePetFromProfile } from "../src/pet-system.js";
+import { PetStore, formatPetChannelName, isUsersPetRoom, PET_ADOPTION_CHANNEL_IDS, ensurePetCategoryPosition, PET_ROOMS_CATEGORY_ID, PET_CATEGORY_BELOW_ID, applyNeedsDecay, chileDateKey, canAdoptPet, refreshPetUnlocks, migratePetWallet, removePetFromProfile, canDeletePet } from "../src/pet-system.js";
 import { petSummary } from "../src/member-profile-system.js";
 
 test("virtual pet data persists across store restarts", () => {
@@ -195,4 +195,11 @@ test("deleting the only pet marks the profile empty", () => {
   assert.equal(result.empty, true);
   assert.equal(result.removed.name, "Mochi");
   assert.equal(result.remaining, 0);
+});
+
+
+test("pet deletion is restricted to VIP members", () => {
+  assert.equal(canDeletePet(true), true);
+  assert.equal(canDeletePet(false), false);
+  assert.equal(canDeletePet(undefined), false);
 });
