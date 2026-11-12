@@ -1,3 +1,4 @@
+import { renamePrivateChatChannel } from "./channel-renames.js";
 import {
   ActionRowBuilder,
   ButtonBuilder,
@@ -1045,7 +1046,7 @@ export async function renamePrivateChat(channel, chat, displayName, store) {
   const nextChannelName = formatPrivateChatChannelName(displayName);
   const updated = store.rename(channel.id, displayName);
   try {
-    await channel.setName(nextChannelName, "Private chat owner renamed the channel");
+    await renamePrivateChatChannel(channel, nextChannelName, "Private chat owner renamed the channel");
   } catch {
     try {
       store.rename(channel.id, chat.displayName);
