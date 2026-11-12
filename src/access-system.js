@@ -19,6 +19,7 @@ const START_CATEGORY_NAME = "start";
 const ACCESS_CHANNEL_NAME = "✅｜୨୧•𝓰𝓮𝓽-𝓪𝓬𝓬𝓮𝓼𝓼";
 const RULES_CHANNEL_NAME = "📃｜୨୧•𝓻𝓾𝓵𝓮𝓼";
 const GUIDE_CHANNEL_NAME = "📖｜୨୧•𝓰𝓾𝓲𝓭𝓮";
+const GUIDE_CHANNEL_REFRESH_IDS = ["1569551049977761853", "1569574031991119882"];
 export const BOOSTER_ROLE_NAME = "୨୧ 𝓑𝓸𝓸𝓼𝓽𝓮𝓻";
 export const BOOSTER_ROLE_COLOR = 0xff9ad5;
 
@@ -194,19 +195,10 @@ export function buildGuidePayload(guild) {
       `• ${channelMention(guild, ["support"])}\nOpen a private ticket for General, Buy VIP, Partnership, Apply, Report, Appeal, Error, or Other requests. Use Get Verified to complete server verification.\n` +
       `• ${channelMention(guild, ["privatechat", "privatechats", "private-chat"])}\nCreate and manage private chat rooms. Use /priv-chat commands to see the available options.\n` +
       `• ${channelMention(guild, ["selfroles", "self-roles"])}\nChoose or update your age, gender, sexuality, and chat color. You can also show or hide channels marked NSFW.\n` +
-      `## ୨୧ ${guideSectionTitle("Commands")}\n\n` +
-      "`/delete amount:` — delete your own recent messages.\n" +
-      "`/vip-delete amount:` — VIP message cleanup. `/mod-delete amount: [member:]` — moderator cleanup.\n" +
-      "`!quote` — reply to a message with !quote to create an image quote.\n" +
-      "`/priv-chat create|add|remove|rename|leave|delete|commands` — manage your private chat.\n" +
-      "`!profile [@member]` — view a complete member profile and saved stats.\n" +
-      "`!rep [@member]` · `!rep stats [@member]` · `!rep top` · `!rep comments [@member]` — reputation tools.\n" +
-      "`!pet adopt` — open the interactive adoption embed and choose a species. Non-VIP members receive a unique random design; VIP members can customise name, colour, breed, appearance and personality, and unlock up to three slots. One pet per member by default.\n" +
-      "`!pet stats` · `!pet feed` · `!pet play` · `!pet cuddle` · `!pet talk` · `!pet story` · `!pet gif [happy|dance|sleep]` — care, bond and unlock reactions.\n" +
-      "`!pet daily` · `!pet shop` · `!pet buy <treat|toy|potion>` · `!pet use <item>` · `!pet inventory` · `!pet select <number>` — shared coins and items. Potions refill hunger completely.\n" +
-      "VIP pet customisation: `!pet name`, `!pet color`, `!pet breed`, `!pet appearance`, `!pet personality`. VIP extras: `!pet room`, `!pet outfit`, `!pet rare`, `!pet slots`, `!pet minigame`.\n" +
-      "`!funhelp` / `/fun help` — fun guide. `!stats` / `!fun stats` and `!vip stats [@member]` — VIP statistics. `!fuck @member` — VIP-only fun command.\n" +
-      "`!couple @member` · `!propose @member` · `!marry @member` · `!breakup` · `!divorce` — relationships.\n" +
+      `## ୨୧ ${guideSectionTitle("Commands & Help")}\n\n` +
+      `See the complete command list and choose a category in <#1570257241511170150>.\n` +
+      "`!profile [@member]` — view a member profile.\n" +
+      "`!pet adopt` — open the pet adoption menu.\n" +
       `## ୨୧ ${guideSectionTitle("Sugar AI")}\n\n` +
       "Mention Sugar or address the bot directly to start a conversation ♡" + buildServerMap(guild)
     )
@@ -304,14 +296,23 @@ export async function ensureStartChannels(guild, client) {
     await upsertPanel(access, client, `୨୧ ${toRoyalBold("Get Access!")} ♡`, buildAccessPanelPayload(guild, { rulesChannel: rules, guideChannel: guide }));
   }
 
-  // Refresh an existing Guide embed in place; never repost it or make it sticky.
-  if (guide) {
-    const recentGuideMessages = await guide.messages.fetch({ limit: 50 });
-    const existingGuide = recentGuideMessages.find((message) =>
+  // Refresh existing Guide embeds in place in both requested guide channels.
+  const guideChannels = new Map();
+  if (guide) guideChannels.set(guide.id, guide);
+  for (const channelId of GUIDE_CHANNEL_REFRESH_IDS) {
+    const channel = guild.channels.cache.get(channelId) ??
+      await guild.channels.fetch(channelId).catch(() => null);
+    if (channel?.type === ChannelType.GuildText) guideChannels.set(channel.id, channel);
+  }
+  for (const guideChannel of guideChannels.values()) {
+    const recentGuideMessages = await guideChannel.messages.fetch({ limit: 50 });
+    const existingGuides = [...recentGuideMessages.values()].filter((message) =>
       message.author?.id === client.user.id &&
       message.embeds.some((embed) => normalizeName(embed.title).includes("guide")),
     );
-    if (existingGuide) await existingGuide.edit(buildGuidePayload(guild));
+    for (const existingGuide of existingGuides) {
+      await existingGuide.edit(buildGuidePayload(guild));
+    }
   }
   const dashboard = guild.channels.cache.find((channel) =>
     channel.type === ChannelType.GuildText && normalizeName(channel.name) === "dashboard",
