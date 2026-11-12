@@ -391,7 +391,7 @@ export function attachAccessSystem(client, { settings } = {}) {
   });
 
   client.on(Events.ChannelCreate, (channel) => {
-    const newRole = findRoleByName(channel.guild, NEW_ROLE_NAME);
+    const newRole = findNewRole(channel.guild);
     if (!newRole) return;
     void applyNewRoleVisibility(channel.guild, newRole).catch((error) => {
       console.error(`[access] could not enforce New-role channel visibility in guild ${channel.guild.id}: ${error.message}`);
