@@ -10,7 +10,29 @@ import { toRoyalBold } from "./embed-format.js";
 import { NEW_ROLE_ID, MEMBER_ROLE_ID } from "./role-ids.js";
 
 function normalizeRoleName(value) {
-  return String(value ?? "").normalize("NFKD").toLowerCase().replace(/\p{M}/gu, "").replace(/[^a-z0-9]/g, "");
+  const plain = [...String(value ?? "")].map((character) => {
+    const point = character.codePointAt(0);
+    if (point >= 0x1d4d0 && point <= 0x1d4e9) return String.fromCharCode(65 + point - 0x1d4d0);
+    if (point >= 0x1d4ea && point <= 0x1d503) return String.fromCharCode(97 + point - 0x1d4ea);
+    return character;
+  }).join("");
+  return plain.normalize("NFKD").toLowerCase().replace(/\p{M}/gu, "").replace(/[^a-z0-9]/g, "");
+}
+
+function roleDisplayName(label) {
+  const value = String(label ?? "");
+  const fancy = [...value].map((character) => {
+    const point = character.codePointAt(0);
+    if (point >= 0x41 && point <= 0x5a) return String.fromCodePoint(0x1d4d0 + point - 0x41);
+    if (point >= 0x61 && point <= 0x7a) return String.fromCodePoint(0x1d4ea + point - 0x61);
+    return character;
+  }).join("");
+  return `꒰ ${fancy} ! ꒱`;
+}
+
+function findDisplayRole(guild, label) {
+  const expected = normalizeRoleName(label);
+  return guild.roles.cache.find((role) => normalizeRoleName(role.name) === expected) ?? null;
 }
 
 function findNewRole(guild) {
@@ -119,7 +141,11 @@ export async function restrictUnderageMember(guild, member) {
 }
 
 export function findNsfwHiddenRole(guild) {
-  return guild.roles.cache.get(NSFW_HIDDEN_ROLE_ID) ?? null;
+  return findDisplayRole(guild, "SFW") ?? guild.roles.cache.get(NSFW_HIDDEN_ROLE_ID) ?? null;
+}
+
+export function findNsfwVisibleRole(guild) {
+  return findDisplayRole(guild, "NSFW");
 }
 
 export const GENDER_ROLE_IDS = Object.freeze({
@@ -286,10 +312,15 @@ export async function getOrCreateRole(guild, name, color, reason = "Create a Kit
 }
 
 async function replaceCategoryRole(member, category, selectedRole, managedRoleIds = []) {
-  const prefix = `${category}-`;
+  const options = category === "color" ? COLOR_OPTIONS : CATEGORY_OPTIONS[category] ?? [];
+  const knownNames = new Set(options.map(([, label]) => normalizeRoleName(label)));
   await member.roles.add(selectedRole, `Set Kittisugar ${category} self-role`);
   const oldRoles = member.roles.cache.filter((role) =>
-    role.id !== selectedRole.id && (managedRoleIds.includes(role.id) || String(role.name).toLowerCase().startsWith(prefix)),
+    role.id !== selectedRole.id && (
+      managedRoleIds.includes(role.id) ||
+      knownNames.has(normalizeRoleName(role.name)) ||
+      normalizeRoleName(role.name).startsWith(`${category}`)
+    ),
   );
   if (oldRoles.size) {
     await member.roles.remove([...oldRoles.values()], `Replace previous Kittisugar ${category} self-role`);
@@ -309,11 +340,16 @@ async function applyChoice(member, category, value) {
 
   if (category === "nsfw") {
     const hiddenRole = findNsfwHiddenRole(member.guild);
-    if (!hiddenRole) throw new Error(`The NSFW visibility role ${NSFW_HIDDEN_ROLE_ID} was not found.`);
+    const visibleRole = findNsfwVisibleRole(member.guild);
+    if (!hiddenRole || !visibleRole) {
+      throw new Error("The formatted SFW and NSFW visibility roles were not both found.");
+    }
     if (value === "hide") {
       await member.roles.add(hiddenRole, "Member chose to hide NSFW channels");
+      if (member.roles.cache.has(visibleRole.id)) await member.roles.remove(visibleRole, "Remove NSFW visibility when opting out");
     } else if (value === "show") {
-      await member.roles.remove(hiddenRole, "Member chose to show NSFW channels");
+      await member.roles.add(visibleRole, "Member chose to show NSFW channels");
+      if (member.roles.cache.has(hiddenRole.id)) await member.roles.remove(hiddenRole, "Remove SFW visibility restriction when opting in");
     } else {
       throw new Error("Choose whether to show or hide NSFW channels.");
     }
@@ -324,13 +360,14 @@ async function applyChoice(member, category, value) {
     const selected = COLOR_OPTIONS.find(([key]) => key === String(value));
     if (!selected) throw new Error("That color is not available.");
     const [key, , discordColor] = selected;
-    const role = await getOrCreateRole(member.guild, `color-${key}`, discordColor);
+    const role = await getOrCreateRole(member.guild, roleDisplayName(selected[1]), discordColor);
     await replaceCategoryRole(member, "color", role);
     return;
   }
 
-  const name = roleNameForSelection(category, value);
-  const role = await getOrCreateRole(member.guild, name);
+  const option = CATEGORY_OPTIONS[category].find(([key]) => key === String(value));
+  const name = roleDisplayName(option?.[1] ?? value);
+  const role = findDisplayRole(member.guild, option?.[1] ?? value) ?? await getOrCreateRole(member.guild, name);
   await replaceCategoryRole(member, category, role);
 }
 
