@@ -202,9 +202,9 @@ function buildAdoptionActions(userId, species, vip) {
 }
 function buildAdoptionModal(userId, species) {
   const modal = new ModalBuilder().setCustomId("sugar-pets:customize-submit:" + userId + ":" + encodeURIComponent(species)).setTitle("Customise your companion ♡");
-  const fields = [["pet_name", "Name", "Choose a name", true, 24], ["pet_gender", "Gender", "female or male", true, 6], ["pet_color", "Colour", "e.g. strawberry pink", false, 60], ["pet_breed", "Breed", "Optional breed", false, 60], ["pet_details", "Appearance & personality", "Describe markings, eyes, accessories and personality", false, 400]];
+  const fields = [["pet_name", "Name", "Choose a name", true, 24], ["pet_gender", "Gender", "female or male", true, 6], ["pet_color", "Colour", "e.g. strawberry pink", false, 60], ["pet_appearance", "Appearance", "Markings, eyes, accessories...", false, 100], ["pet_personality", "Personality", "e.g. gentle, curious, playful", false, 100]];
   for (const [id, label, placeholder, required, maxLength] of fields) modal.addComponents(new ActionRowBuilder().addComponents(
-    new TextInputBuilder().setCustomId(id).setLabel(label).setPlaceholder(placeholder).setStyle(id === "pet_details" ? TextInputStyle.Paragraph : TextInputStyle.Short).setRequired(required).setMaxLength(maxLength),
+    new TextInputBuilder().setCustomId(id).setLabel(label).setPlaceholder(placeholder).setStyle(id === "pet_appearance" || id === "pet_personality" ? TextInputStyle.Paragraph : TextInputStyle.Short).setRequired(required).setMaxLength(maxLength),
   ));
   return modal;
 }
@@ -780,9 +780,9 @@ export function attachPetSystem(client, store) {
       try {
         const companion = await createAdoptedPet(decodeURIComponent(encodedSpecies || ""), {
           name: interaction.fields.getTextInputValue("pet_name").trim(), gender: interaction.fields.getTextInputValue("pet_gender").trim(), color: interaction.fields.getTextInputValue("pet_color").trim(),
-          breed: interaction.fields.getTextInputValue("pet_breed").trim(),
-          appearance: interaction.fields.getTextInputValue("pet_details").trim(),
-          personality: interaction.fields.getTextInputValue("pet_details").trim(),
+          breed: "",
+          appearance: interaction.fields.getTextInputValue("pet_appearance").trim(),
+          personality: interaction.fields.getTextInputValue("pet_personality").trim(),
         });
         return interaction.editReply({ content: "Welcome home, **" + companion.name + "** the " + companion.species + "! Your custom companion is being created ♡\n" + status(companion, store.get(interaction.guild.id, interaction.user.id)?.coins ?? companion.coins) });
       } catch (error) { return interaction.editReply({ content: error.message }); }
