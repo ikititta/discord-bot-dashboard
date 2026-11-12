@@ -4,7 +4,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { ChannelType } from "discord.js";
-import { PetStore, formatPetChannelName, ensurePetCategoryPosition, PET_ROOMS_CATEGORY_ID, PET_CATEGORY_BELOW_ID, applyNeedsDecay, chileDateKey, canAdoptPet, refreshPetUnlocks } from "../src/pet-system.js";
+import { PetStore, formatPetChannelName, ensurePetCategoryPosition, PET_ROOMS_CATEGORY_ID, PET_CATEGORY_BELOW_ID, applyNeedsDecay, chileDateKey, canAdoptPet, refreshPetUnlocks, migratePetWallet } from "../src/pet-system.js";
 
 test("virtual pet data persists across store restarts", () => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), "kittisugar-pets-"));
@@ -106,4 +106,16 @@ test("pet bond unlocks reaction GIF categories progressively", () => {
 
 test("pet daily date keys use Chile local time", () => {
   assert.equal(chileDateKey(new Date("2026-11-12T02:00:00.000Z")), "2026-11-11");
+});
+test("legacy pet balances migrate into one shared wallet without losing coins", () => {
+  const profile = {
+    coins: 100,
+    additionalPets: [{ name: "Mimi", coins: 35 }, { name: "Boba", coins: 20 }],
+  };
+  migratePetWallet(profile);
+  assert.equal(profile.coins, 155);
+  assert.deepEqual(profile.additionalPets.map((pet) => pet.coins), [0, 0]);
+  assert.equal(profile.walletVersion, 1);
+  migratePetWallet(profile);
+  assert.equal(profile.coins, 155);
 });
