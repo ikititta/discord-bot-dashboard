@@ -4,7 +4,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { ChannelType } from "discord.js";
-import { PetStore, formatPetChannelName, ensurePetCategoryPosition, PET_ROOMS_CATEGORY_ID, PET_CATEGORY_BELOW_ID, applyNeedsDecay, chileDateKey, canAdoptPet, refreshPetUnlocks, migratePetWallet } from "../src/pet-system.js";
+import { PetStore, formatPetChannelName, ensurePetCategoryPosition, PET_ROOMS_CATEGORY_ID, PET_CATEGORY_BELOW_ID, applyNeedsDecay, chileDateKey, canAdoptPet, refreshPetUnlocks, migratePetWallet, removePetFromProfile } from "../src/pet-system.js";
 import { petSummary } from "../src/member-profile-system.js";
 
 test("virtual pet data persists across store restarts", () => {
@@ -130,4 +130,43 @@ test("member profiles show the shared wallet and pet bond", () => {
   });
   assert.match(summary, /Bond 25\/100/);
   assert.match(summary, /Coins: 150/);
+});
+
+test("pet deletion removes the selected additional pet and preserves the shared wallet", () => {
+  const profile = {
+    id: "pet-1", name: "Mochi", species: "cat", coins: 120, slots: 3, activePetIndex: 2,
+    additionalPets: [
+      { id: "pet-2", name: "Mimi", species: "dog" },
+      { id: "pet-3", name: "Boba", species: "rabbit" },
+    ],
+  };
+  const result = removePetFromProfile(profile, "pet-2");
+  assert.equal(result.removed.name, "Mimi");
+  assert.equal(result.remaining, 2);
+  assert.equal(profile.coins, 120);
+  assert.equal(profile.additionalPets[0].id, "pet-3");
+  assert.equal(profile.activePetIndex, 1);
+});
+
+test("deleting the primary pet promotes the next pet without losing wallet or slots", () => {
+  const profile = {
+    id: "pet-1", name: "Mochi", species: "cat", coins: 175, slots: 3, activePetIndex: 0,
+    additionalPets: [{ id: "pet-2", name: "Mimi", species: "dog" }],
+  };
+  const result = removePetFromProfile(profile, "pet-1");
+  assert.equal(result.removed.name, "Mochi");
+  assert.equal(profile.id, "pet-2");
+  assert.equal(profile.name, "Mimi");
+  assert.equal(profile.coins, 175);
+  assert.equal(profile.slots, 3);
+  assert.equal(profile.activePetIndex, 0);
+  assert.equal(result.remaining, 1);
+});
+
+test("deleting the only pet marks the profile empty", () => {
+  const profile = { id: "pet-1", name: "Mochi", additionalPets: [] };
+  const result = removePetFromProfile(profile, "pet-1");
+  assert.equal(result.empty, true);
+  assert.equal(result.removed.name, "Mochi");
+  assert.equal(result.remaining, 0);
 });
