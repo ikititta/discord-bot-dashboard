@@ -172,13 +172,7 @@ export function attachTicketSystem(client, { settings, stickyPanels, panelChanne
 }
 
 export async function ensureTicketPanel(client, panelChannelId = TICKET_PANEL_CHANNEL_ID) {
-  let channel = await client.channels.fetch(panelChannelId).catch(() => null);
-  const guild = channel?.guild ?? client.guilds.cache.first();
-  if (!channel && guild) {
-    channel = guild.channels.cache.find((item) =>
-      item.type === ChannelType.GuildText && item.name.normalize("NFKD").toLowerCase().replace(/\p{M}/gu, "").replace(/[^a-z]/g, "") === "support",
-    ) ?? null;
-  }
+  const channel = await client.channels.fetch(panelChannelId).catch(() => null);
   if (!channel || channel.type !== ChannelType.GuildText) {
     throw new Error("The existing Support panel channel could not be found; no channel was created.");
   }
