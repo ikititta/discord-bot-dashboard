@@ -1,6 +1,5 @@
 import {
   ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, EmbedBuilder, Events,
-  PermissionFlagsBits,
 } from "discord.js";
 
 export const COMMANDS_CATEGORY_ID = "1568179038625857576";
