@@ -41,6 +41,16 @@ export class PetStore {
     fs.renameSync(temp, this.file);
     return structuredClone(pet);
   }
+  delete(guildId, userId) {
+    const guild = this.data.guilds[guildId];
+    if (!guild || !Object.hasOwn(guild, userId)) return false;
+    delete guild[userId];
+    const temp = this.file + ".tmp";
+    fs.writeFileSync(temp, JSON.stringify(this.data, null, 2), { mode: 0o600 });
+    fs.chmodSync(temp, 0o600);
+    fs.renameSync(temp, this.file);
+    return true;
+  }
   read() {
     let raw;
     try { raw = fs.readFileSync(this.file, "utf8"); }
