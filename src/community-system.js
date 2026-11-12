@@ -709,7 +709,7 @@ async function handleCommunityModal(interaction, { store, settings, suggestionSt
     const serial = String(number).padStart(3, "0");
     const embed = new EmbedBuilder()
       .setColor(COLOR)
-      .setTitle(formatEmbedTitle(`Confession #${serial}`))
+      .setTitle(formatEmbedTitle(anonymous ? `Anonymous Confession #(${serial})` : `Confession #(${serial})`))
       .setDescription(body);
     if (!anonymous) {
       embed.setAuthor({
@@ -794,9 +794,9 @@ async function publishCommunityThreadMessageReply(interaction, kind, mode, targe
   return interaction.editReply("Your reply has been added ♡");
 }
 
-function formatReplyDescription(body, replyName, targetName) {
+export function formatReplyDescription(body, replyName, targetName) {
   if (replyName && targetName) {
-    return `**@${replyName} replied to @${targetName}**\\n\\n${body}`;
+    return `**@${replyName} replied to @${targetName}**\n\n${body}`;
   }
   return body;
 }
@@ -812,7 +812,7 @@ async function publishThreadReply(interaction, channel, kind, mode, parentId) {
     if (parent.author?.id !== interaction.client.user.id || !hasMatchingReplyButton || !parent.embeds.length) {
       return interaction.editReply("This message is not a replyable community post.");
     }
-    const serial = /#(\d{3})/.exec(parent.embeds[0].title ?? "")?.[1];
+    const serial = /#\(?([0-9]{3})\)?/.exec(parent.embeds[0].title ?? "")?.[1];
     if (!serial) return interaction.editReply("The original post number could not be identified.");
     const topic = `sugar-community-replies:${kind}:${parentId}`;
     let repliesChannel = interaction.guild.channels.cache.find((item) =>
