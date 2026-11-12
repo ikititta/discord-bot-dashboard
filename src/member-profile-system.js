@@ -12,6 +12,8 @@ function petSummary(profile) {
     `**${pet.name}** the ${pet.species}`,
     `Level ${Number(pet.level) || 1} · ${Number(pet.xp) || 0} XP`,
     `Hunger ${Number(pet.hunger) || 0}/100 · Happiness ${Number(pet.happiness) || 0}/100`,
+    `Color: ${pet.visualIdentity?.palette ?? "not customized"} · Personality: ${pet.visualIdentity?.personality ?? "not set"}`,
+    `Breed: ${pet.visualIdentity?.breed ?? "not specified"}`,
     `Coins: ${Number(pet.coins) || 0} · Pets owned: ${1 + (profile.additionalPets?.length ?? 0)}`,
   ].join("\n");
 }
