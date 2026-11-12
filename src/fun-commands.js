@@ -205,6 +205,10 @@ export function isVip(member) {
   return Boolean(member?.roles?.cache?.has(FUN_VIP_ROLE_ID));
 }
 
+export function isVipOnlyFunCommand(name) {
+  return name === "fuck";
+}
+
 function displayName(member, user) {
   return member?.displayName ?? user?.globalName ?? user?.username ?? "Someone";
 }
@@ -278,7 +282,7 @@ async function handleStats(message, store, args) {
 async function handleFunAction(message, store, name, args, fetchImpl) {
   const definition = getFunCommandDefinition(name);
   if (!definition) return false;
-  if (name === "fuck" && !isVip(message.member)) {
+  if (isVipOnlyFunCommand(name) && !isVip(message.member)) {
     await safeReply(message, { content: "The !fuck command is a VIP-only benefit ♡" });
     return true;
   }
