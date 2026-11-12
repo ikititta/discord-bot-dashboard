@@ -205,15 +205,21 @@ test("pet deletion is restricted to VIP members", () => {
 });
 
 
-test("rare pet species are reserved for VIP adoption", () => {
-  assert.deepEqual([...VIP_ONLY_PET_SPECIES], ["fox", "ferret", "turtle"]);
+test("only cats and dogs are available to everyone; all other species are VIP-only", () => {
+  assert.deepEqual([...VIP_ONLY_PET_SPECIES], [
+    "hamster", "rabbit", "fish", "bird", "guinea pig", "turtle", "fox", "ferret",
+    "hedgehog", "chinchilla", "mouse", "rat", "squirrel", "raccoon", "deer",
+    "owl", "parrot", "snake", "lizard", "frog", "axolotl",
+  ]);
   for (const species of VIP_ONLY_PET_SPECIES) {
-    assert.equal(canAdoptSpecies(species, false), false);
-    assert.equal(canAdoptSpecies(species, true), true);
+    assert.equal(canAdoptSpecies(species, false), false, species + " must be VIP-only");
+    assert.equal(canAdoptSpecies(species, true), true, species + " should be available to VIP");
   }
-  for (const species of ["cat", "dog", "hamster", "rabbit", "fish", "bird", "guinea pig"]) {
+  for (const species of ["cat", "dog"]) {
     assert.equal(canAdoptSpecies(species, false), true);
     assert.equal(canAdoptSpecies(species, true), true);
   }
+  assert.equal(canAdoptSpecies("kitten", false), true);
+  assert.equal(canAdoptSpecies("puppy", false), true);
   assert.equal(canAdoptSpecies("dragon", true), false);
 });
