@@ -24,6 +24,7 @@ import {
   buildConfessionModePicker,
   buildReportNotificationPayload,
   REPORT_NOTIFICATION_ROLE_IDS,
+  formatReplyDescription,
 } from "../src/community-system.js";
 import { buildTicketPanelPayload } from "../src/ticket-system.js";
 
@@ -239,4 +240,9 @@ test("suggestion publication mode is validated and suggestion embeds omit timest
   assert.doesNotMatch(publish, /\.setTimestamp\(\)/);
   assert.doesNotMatch(publish, /Upvotes|Downvotes|Reports/);
   assert.match(source, /Suggestions can receive upvotes and downvotes/);
+});
+
+
+test("named community replies render real line breaks instead of literal escape text", () => {
+  assert.equal(formatReplyDescription("Hello ♡", "Kitti", "Mimi"), "**@Kitti replied to @Mimi**\n\nHello ♡");
 });
