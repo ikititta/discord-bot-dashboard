@@ -1,54 +1,88 @@
-const PROTECTED_CHANNEL_IDS = new Set([
-  "1569548753319362690",
-  "1569573843469865071",
-  "1569574031991119882",
-]);
+const originalSetName = new WeakMap();
+const patchedChannels = new WeakSet();
+const patchedManagers = new WeakSet();
+const pendingCreations = new Map();
 
-/**
- * Prevent every Sugar feature from renaming these server-managed channels.
- * Discord.js returns cached channel instances from the channel manager, so
- * guarding the instance method protects all bot modules that use setName().
- */
-export function protectChannelNames(guilds, onBlocked = console.warn) {
-  let protectedCount = 0;
+function protectChannel(channel, onBlocked = console.warn) {
+  if (!channel || typeof channel.setName !== "function" || patchedChannels.has(channel)) return false;
+  originalSetName.set(channel, channel.setName.bind(channel));
+  Object.defineProperty(channel, "setName", {
+    configurable: false,
+    writable: false,
+    value: async () => {
+      onBlocked(`[bot] blocked automatic channel rename for ${channel.id}; only private-chat owners may rename their own chats`);
+      return channel;
+    },
+  });
+  patchedChannels.add(channel);
+  return true;
+}
 
-  for (const guild of guilds.values()) {
-    for (const channel of guild.channels.cache.values()) {
-      if (!PROTECTED_CHANNEL_IDS.has(channel.id) || typeof channel.setName !== "function") continue;
-      if (channel.__sugarChannelNameProtected) continue;
-
-      Object.defineProperty(channel, "__sugarChannelNameProtected", {
-        configurable: false,
-        enumerable: false,
-        value: true,
-      });
-      Object.defineProperty(channel, "setName", {
-        configurable: false,
-        writable: false,
-        value: async () => {
-          onBlocked(`[bot] blocked an automatic rename attempt for protected channel ${channel.id}`);
-          return channel;
-        },
-      });
-      protectedCount += 1;
-    }
+function protectGuild(guild, onBlocked = console.warn) {
+  let count = 0;
+  for (const channel of guild.channels.cache.values()) {
+    if (protectChannel(channel, onBlocked)) count += 1;
   }
 
+  const manager = guild.channels;
+  if (!patchedManagers.has(manager) && typeof manager.create === "function") {
+    const create = manager.create.bind(manager);
+    Object.defineProperty(manager, "create", {
+      configurable: false,
+      writable: false,
+      value: async (options, ...args) => {
+        const topic = typeof options?.topic === "string" ? options.topic : null;
+        const existing = topic
+          ? manager.cache.find((channel) => channel.topic === topic && (!options.type || channel.type === options.type))
+          : null;
+        if (existing) return existing;
+
+        const key = topic ? `${guild.id}:${topic}` : null;
+        if (key && pendingCreations.has(key)) return pendingCreations.get(key);
+
+        const creation = create(options, ...args).then((channel) => {
+          protectChannel(channel, onBlocked);
+          return channel;
+        });
+        if (!key) return creation;
+
+        pendingCreations.set(key, creation);
+        try {
+          return await creation;
+        } finally {
+          if (pendingCreations.get(key) === creation) pendingCreations.delete(key);
+        }
+      },
+    });
+    patchedManagers.add(manager);
+  }
+  return count;
+}
+
+export function protectChannelNames(guilds, onBlocked = console.warn) {
+  let protectedCount = 0;
+  for (const guild of guilds.values()) protectedCount += protectGuild(guild, onBlocked);
   return protectedCount;
 }
 
-/** Rename only exact-match channels, leaving all other channels untouched. */
-export async function renameMatchingChannels(guilds, oldName, newName, onError = console.error) {
+export function protectNewChannel(channel, onBlocked = console.warn) {
+  return protectChannel(channel, onBlocked);
+}
+
+/** The only approved rename path is the existing private-chat owner command. */
+export async function renamePrivateChatChannel(channel, name, reason) {
+  const original = originalSetName.get(channel);
+  return original ? original(name, reason) : channel.setName(name, reason);
+}
+
+export async function renameMatchingChannels(guilds, oldName, newName, onError = console.warn) {
+  let blocked = 0;
   for (const guild of guilds.values()) {
     for (const channel of guild.channels.cache.values()) {
-      if (PROTECTED_CHANNEL_IDS.has(channel.id)) continue;
       if (channel.name !== oldName || typeof channel.setName !== "function") continue;
-
-      try {
-        await channel.setName(newName);
-      } catch (error) {
-        onError(`[bot] could not rename channel ${channel.id}: ${error.message}`);
-      }
+      blocked += 1;
+      onError(`[bot] blocked bulk rename attempt for channel ${channel.id}`);
     }
   }
+  return blocked;
 }
