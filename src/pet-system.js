@@ -323,7 +323,7 @@ function makePet(species = "cat") {
   };
 }
 function queuePetArtwork(message, store, profile, pet) {
-  if (!String(process.env.OPENAI_API_KEY ?? "").trim()) return "missing-key";
+  if (!String(process.env.CLOUDFLARE_ACCOUNT_ID ?? "").trim() || !String(process.env.CLOUDFLARE_API_TOKEN ?? "").trim()) return "missing-key";
   if (!pet.visualIdentity) return "unavailable";
   if (pet.visualIdentity.artStatus === "generating") return "generating";
   if (pet.visualIdentity.artStatus === "ready" && pet.visualIdentity.artPath && fs.existsSync(pet.visualIdentity.artPath)) return "ready";
