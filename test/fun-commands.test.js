@@ -77,6 +77,7 @@ test("fun help explains command types, stats, and VIP access", () => {
   assert.match(fields, /VIP unlocks !fuck, !kill \(30-second timeout\), complete statistics/);
   assert.doesNotMatch(fields, /Everyone can view their own basic stats/);
   assert.match(fields, /Two-person commands/);
+  assert.doesNotMatch(embed.data.description, /18\+/);
   assert.match(fields, /Solo commands/);
   assert.doesNotMatch(embed.data.footer.text, /consent/i);
   assert.match(fields, /!fuck @member/);
