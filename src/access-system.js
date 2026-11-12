@@ -230,7 +230,7 @@ async function refreshDashboardGuide(client, guild) {
 async function upsertPanel(channel, client, title, payload) {
   const recent = await channel.messages.fetch({ limit: 50 });
   const existing = recent.find((message) =>
-    message.author?.id === client.user.id && message.embeds.some((embed) => embed.title === title),
+    message.author?.id === client.user.id && message.embeds.some((embed) => normalizeName(embed.title) === normalizeName(title)),
   );
   if (existing) return existing.edit(payload);
   return channel.send(payload);
@@ -302,7 +302,7 @@ export async function ensureStartChannels(guild, client) {
     const recentGuideMessages = await guide.messages.fetch({ limit: 50 });
     const existingGuide = recentGuideMessages.find((message) =>
       message.author?.id === client.user.id &&
-      message.embeds.some((embed) => /guide/i.test(embed.title ?? "")),
+      message.embeds.some((embed) => normalizeName(embed.title).includes("guide")),
     );
     if (existingGuide) await existingGuide.edit(buildGuidePayload(guild));
   }
