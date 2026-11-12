@@ -51,8 +51,7 @@ const SUPPORT_CHANNEL_ID = "1568492748732895313";
 
 
 async function findOrCreateAgeReviewRole(guild) {
-  return findRoleByName(guild, AGE_REVIEW_ROLE_NAME) ??
-    guild.roles.create({ name: AGE_REVIEW_ROLE_NAME, reason: "Member selected 18-; restrict access to Support" });
+  return getOrCreateRole(guild, AGE_REVIEW_ROLE_NAME, undefined, "Member selected 18-; restrict access to Support");
 }
 
 function findSupportChannel(guild) {
@@ -233,14 +232,48 @@ export function buildSelfRolesPanelPayload() {
   }));
 }
 
-async function getOrCreateRole(guild, name, color) {
-  let role = findRoleByName(guild, name);
-  if (role) return role;
-  return guild.roles.create({
-    name,
-    ...(color !== undefined ? { color } : {}),
-    reason: "Create a Kittisugar self-role selection",
-  });
+const pendingRoleCreations = new Map();
+
+function findSelfRoleByName(guild, name) {
+  const expected = normalizeRoleName(name);
+  const roles = [...guild.roles.cache.values()];
+  return roles.find((role) => normalizeRoleName(role.name) === expected) ??
+    roles.find((role) => normalizeRoleName(role.name).replace(/\\d+$/u, "") === expected) ??
+    null;
+}
+
+/**
+ * Reuse the canonical self-role, even if Discord's cache is stale or two
+ * members choose the same option at nearly the same time. A trailing numeric
+ * suffix is treated as a legacy duplicate (for example, color-red 1).
+ */
+export async function getOrCreateRole(guild, name, color, reason = "Create a Kittisugar self-role selection") {
+  const existing = findSelfRoleByName(guild, name);
+  if (existing) return existing;
+
+  const key = `${guild.id}:${normalizeRoleName(name)}`;
+  const pending = pendingRoleCreations.get(key);
+  if (pending) return pending;
+
+  const creation = (async () => {
+    // Refresh Discord's role cache before creating anything. If refresh fails,
+    // fail closed rather than risk creating a duplicate role.
+    if (typeof guild.roles.fetch === "function") await guild.roles.fetch();
+    const refreshed = findSelfRoleByName(guild, name);
+    if (refreshed) return refreshed;
+    return guild.roles.create({
+      name,
+      ...(color !== undefined ? { color } : {}),
+      reason,
+    });
+  })();
+
+  pendingRoleCreations.set(key, creation);
+  try {
+    return await creation;
+  } finally {
+    if (pendingRoleCreations.get(key) === creation) pendingRoleCreations.delete(key);
+  }
 }
 
 async function replaceCategoryRole(member, category, selectedRole, managedRoleIds = []) {
@@ -257,8 +290,10 @@ async function replaceCategoryRole(member, category, selectedRole, managedRoleId
 async function applyChoice(member, category, value) {
   if (category === "gender") {
     const roleId = GENDER_ROLE_IDS[String(value)];
-    const role = roleId ? member.guild.roles.cache.get(roleId) : null;
-    if (!role) throw new Error(`The configured gender role ${roleId ?? value} was not found.`);
+    const role = (roleId ? member.guild.roles.cache.get(roleId) : null) ??
+      findSelfRoleByName(member.guild, `gender-${String(value).toLowerCase()}`) ??
+      findSelfRoleByName(member.guild, String(value).toLowerCase());
+    if (!role) throw new Error(`The configured gender role ${roleId ?? value} was not found. Sugar will not create a replacement automatically.`);
     await replaceCategoryRole(member, "gender", role, Object.values(GENDER_ROLE_IDS));
     return;
   }
