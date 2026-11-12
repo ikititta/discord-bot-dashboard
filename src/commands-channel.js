@@ -7,8 +7,7 @@ export const COMMANDS_CHANNEL_NAME = "📖｜୨୧・commands";
 export const COMMANDS_CHANNEL_TOPIC = "Kittisugar interactive all-commands panel · Sugar sticky";
 export const COMMANDS_PANEL_TITLE = "୨୧ 𝓚𝓲𝓽𝓽𝓲𝓼𝓾𝓰𝓪𝓻 · 𝓒𝓸𝓶𝓶𝓪𝓷𝓭𝓼 ♡";
 export const MODERATION_COMMANDS_CHANNEL_ID = "1570277294868660264";
-export const MODERATION_PANEL_TITLE = "୨୧ 𝓜𝓸𝓭𝓮𝓻𝓪𝓽𝓲𝓸𝓷 · 𝓒𝓸𝓶𝓶𝓪𝓷𝓭𝓼 ♡";
-const MODERATION_PREFIX = "sugar-moderation-commands";
+export const MODERATION_PANEL_TITLE = "୨୧ 𝓢𝓽𝓪𝓯𝓯 · 𝓣𝓸𝓸𝓵𝓼 ♡";
 const COLOR = 0xffd9ff;
 const PREFIX = "sugar-commands:";
 const categories = {
@@ -47,6 +46,14 @@ const categories = {
       "`/priv-chat leave` · `/priv-chat delete` · `/priv-chat commands`\n\n" +
       "The owner manages invites, renaming and deletion. Invited members can leave. The owner may rename their private chat at any time.",
   },
+  staff: {
+    label: "Staff Tools",
+    emoji: "🛡️",
+    description:
+      "**Moderator command**\\n" +
+      `\`/mod-delete amount:<1-100> [member:<member>]\` — delete up to 100 recent messages from this channel, optionally filtering by a member.\\n\\n` +
+      "The command is documented in <#1570277294868660264>. Access is limited to members with an authorised moderator role.",
+  },
   profile: {
     label: "Profiles & Tools",
     emoji: "🪞",
@@ -73,34 +80,17 @@ export function buildCommandsCategoryEmbed(category) {
 export function buildModerationCommandsEmbed() {
   return new EmbedBuilder()
     .setColor(COLOR)
-    .setTitle("🛡️ ୨୧ Moderation Commands ♡")
+    .setTitle("🛡️ ୨୧ Staff Tools ♡")
     .setDescription(
-      "**Member cleanup**\n" +
-      `\`/delete amount:<1-20>\` — delete up to 20 of your own recent messages.\n\n` +
-      "**VIP cleanup**\n" +
-      `\`/vip-delete amount:<1-100>\` — VIP members can delete up to 100 of their own recent messages.\n\n` +
-      "**Moderator cleanup**\n" +
-      `\`/mod-delete amount:<1-100> [member:<member>]\` — moderators can delete up to 100 recent messages in the channel, optionally filtering by member.\n\n` +
-      "**Automatic protection**\n" +
-      "Sugar also detects spam, repeated messages, mass mentions and unauthorised promotion. The strike system warns on the first infraction, applies a 10-minute timeout on the second and removes members after the third. Anti-raid protection restricts suspicious new accounts during join bursts."
+      "**/mod-delete amount:<1-100> [member:<member>]**\\n" +
+      "Delete up to 100 recent messages in this channel. Add a member to target their messages; leave it empty to clean eligible messages from the channel.\\n\\n" +
+      "This command is restricted to authorised moderators. Large deletions require confirmation."
     )
-    .setFooter({ text: "Kittisugar · Moderation guide ♡" });
+    .setFooter({ text: "Kittisugar · Staff tools ♡" });
 }
 
 export function buildModerationCommandsPanelPayload() {
-  return {
-    embeds: [new EmbedBuilder()
-      .setColor(COLOR)
-      .setTitle(MODERATION_PANEL_TITLE)
-      .setDescription("Moderation tools and server protection, neatly organised ♡\n\nPress the button below to see the available commands by category.")],
-    components: [new ActionRowBuilder().addComponents(
-      new ButtonBuilder()
-        .setCustomId(MODERATION_PREFIX)
-        .setLabel("Moderation Commands")
-        .setEmoji("🛡️")
-        .setStyle(ButtonStyle.Secondary),
-    )],
-  };
+  return { embeds: [buildModerationCommandsEmbed()] };
 }
 
 export async function ensureModerationCommandsPanel(guild, client) {
@@ -208,13 +198,6 @@ const refreshQueues = new Map();
 export function attachCommandsChannel(client) {
   client.on(Events.InteractionCreate, async (interaction) => {
     if (!interaction.isButton?.()) return;
-    if (interaction.customId === MODERATION_PREFIX) {
-      if (interaction.channelId !== MODERATION_COMMANDS_CHANNEL_ID) return;
-      await interaction.reply({ embeds: [buildModerationCommandsEmbed()], ephemeral: true }).catch((error) => {
-        console.error("[commands] moderation response failed: " + error.message);
-      });
-      return;
-    }
     if (!interaction.customId.startsWith(PREFIX)) return;
     const category = interaction.customId.slice(PREFIX.length);
     if (!categories[category]) return;
