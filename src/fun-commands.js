@@ -413,8 +413,8 @@ export function attachFunCommands(client, { store, fetchImpl = fetch, token, app
         return;
       }
       if (name === "stats" || name === "vip" || name === "fun") {
-        if (name === "fun" && !/^stats(?:\\s|$)/i.test(args.trim())) return;
-        const statsArgs = name === "vip" ? `vip ${args}` : name === "fun" ? `stats ${args.trim().replace(/^stats\\s*/i, "")}` : `stats ${args}`;
+        if (name === "fun" && !/^stats(?:\s|$)/i.test(args.trim())) return;
+        const statsArgs = name === "vip" ? `vip ${args}` : name === "fun" ? `stats ${args.trim().replace(/^stats\s*/i, "")}` : `stats ${args}`;
         await handleStats(message, store, statsArgs);
         return;
       }
