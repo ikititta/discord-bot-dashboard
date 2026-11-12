@@ -6,6 +6,7 @@ import {
 } from "discord.js";
 import { createCanvas, loadImage } from "@napi-rs/canvas";
 import { registerApplicationCommands } from "./command-registry.js";
+import { extractAddressedCommand } from "./command-address.js";
 
 const QUOTES_CHANNEL_NAME = "🖋️｜୨୧•𝓺𝓾𝓸𝓽𝓮𝓼";
 const PINK = "#ffd9ff";
@@ -309,8 +310,8 @@ export function attachQuoteSystem(client, { token, applicationId } = {}) {
   client.on(Events.MessageCreate, async (message) => {
     if (message.author.bot || !message.guild) return;
 
-    const commandText = String(message.content ?? "").trim();
-    if (!/^!quote(?:\\s|$)/i.test(commandText)) return;
+    const commandText = extractAddressedCommand(message, client.user);
+    if (!commandText || !/^!quote(?:\\s|$)/i.test(commandText)) return;
 
     console.info(
       `[quotes] command received guild=${message.guild.id} channel=${message.channelId} message=${message.id} type=${message.type} hasReference=${Boolean(message.reference?.messageId)}`,
