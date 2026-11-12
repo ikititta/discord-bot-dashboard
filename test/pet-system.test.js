@@ -4,7 +4,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { ChannelType } from "discord.js";
-import { PetStore, formatPetChannelName, isUsersPetRoom, PET_ADOPTION_CHANNEL_IDS, ensurePetCategoryPosition, PET_ROOMS_CATEGORY_ID, PET_CATEGORY_BELOW_ID, applyNeedsDecay, chileDateKey, canAdoptPet, refreshPetUnlocks, migratePetWallet, removePetFromProfile, parsePetDeleteConfirmationId, canDeletePet, canAdoptSpecies, VIP_ONLY_PET_SPECIES } from "../src/pet-system.js";
+import { PetStore, formatPetChannelName, isUsersPetRoom, PET_ADOPTION_CHANNEL_IDS, ensurePetCategoryPosition, PET_ROOMS_CATEGORY_ID, PET_PANEL_CHANNEL_ID, PET_CATEGORY_BELOW_ID, applyNeedsDecay, chileDateKey, canAdoptPet, refreshPetUnlocks, migratePetWallet, removePetFromProfile, parsePetDeleteConfirmationId, canDeletePet, canAdoptSpecies, VIP_ONLY_PET_SPECIES } from "../src/pet-system.js";
 import { petSummary } from "../src/member-profile-system.js";
 
 test("virtual pet data persists across store restarts", () => {
@@ -232,6 +232,15 @@ test("only cats and dogs are available to everyone; all other species are VIP-on
   assert.equal(canAdoptSpecies("dragon", true), false);
 });
 
+
+
+test("pets panel targets the configured channel ID even if its name changes", () => {
+  const source = fs.readFileSync(new URL("../src/pet-system.js", import.meta.url), "utf8");
+  assert.equal(PET_PANEL_CHANNEL_ID, "1570223501317513408");
+  assert.ok(source.includes("guild.channels.cache.get(PET_PANEL_CHANNEL_ID)"));
+  assert.ok(source.includes("guild.channels.fetch(PET_PANEL_CHANNEL_ID)"));
+  assert.ok(!source.includes("item.type === ChannelType.GuildText && item.name === CHANNEL_NAME"));
+});
 
 test("pets hub exposes create-pet and delete-pet actions", () => {
   const source = fs.readFileSync(new URL("../src/pet-system.js", import.meta.url), "utf8");
