@@ -1,4 +1,5 @@
 import { toRoyalBold } from "./embed-format.js";
+import { NEW_ROLE_ID, MEMBER_ROLE_ID } from "./role-ids.js";
 import { attachRoleOnboarding, ensureSelfRolesChannel, startRoleOnboarding } from "./role-onboarding.js";
 
 import {
@@ -18,8 +19,6 @@ const START_CATEGORY_NAME = "start";
 const ACCESS_CHANNEL_NAME = "✅｜୨୧•𝓰𝓮𝓽-𝓪𝓬𝓬𝓮𝓼𝓼";
 const RULES_CHANNEL_NAME = "📃｜୨୧•𝓻𝓾𝓵𝓮𝓼";
 const GUIDE_CHANNEL_NAME = "📖｜୨୧•𝓰𝓾𝓲𝓭𝓮";
-const NEW_ROLE_NAME = "new";
-const MEMBER_ROLE_NAME = "member";
 export const BOOSTER_ROLE_NAME = "୨୧ 𝓑𝓸𝓸𝓼𝓽𝓮𝓻";
 export const BOOSTER_ROLE_COLOR = 0xff9ad5;
 
@@ -47,6 +46,14 @@ export const NEW_USER_VISIBLE_CATEGORY_ID = "1569548036055507055";
 
 export function normalizeName(value) {
   return String(value ?? "").normalize("NFKD").toLowerCase().replace(/\p{M}/gu, "").replace(/[^a-z0-9]/g, "");
+}
+
+export function findNewRole(guild) {
+  return guild.roles.cache.get(NEW_ROLE_ID) ?? null;
+}
+
+export function findMemberRole(guild) {
+  return guild.roles.cache.get(MEMBER_ROLE_ID) ?? null;
 }
 
 export function findRoleByName(guild, name) {
@@ -274,7 +281,7 @@ async function ensureTextChannel(guild, category, name, newRole, botId) {
 }
 
 export async function ensureStartChannels(guild, client) {
-  const newRole = findRoleByName(guild, NEW_ROLE_NAME);
+  const newRole = findNewRole(guild);
   if (!newRole) {
     console.warn(`[access] the New role was not found in guild ${guild.id}; start channels were not configured.`);
     return null;
@@ -350,7 +357,7 @@ export function attachAccessSystem(client, { settings } = {}) {
       try {
         await ensureStartChannels(guild, client);
         await ensureSelfRolesChannel(guild, client);
-        const newRole = findRoleByName(guild, NEW_ROLE_NAME);
+        const newRole = findNewRole(guild);
         if (newRole && !(await applyNewRoleVisibility(guild, newRole))) {
           console.warn(`[access] visible category ${NEW_USER_VISIBLE_CATEGORY_ID} was not found in guild ${guild.id}; New-role visibility was not changed.`);
         }
@@ -368,12 +375,19 @@ export function attachAccessSystem(client, { settings } = {}) {
   client.on(Events.GuildMemberAdd, async (member) => {
     try { const role = findRoleByName(member.guild, BOOSTER_ROLE_NAME); if (role) await syncBoosterRole(member, role); }
     catch (error) { console.error("[boosters] could not sync joining member " + member.id + " in guild " + member.guild.id + ": " + error.message); }
-    const newRole = findRoleByName(member.guild, NEW_ROLE_NAME);
-    const memberRole = findRoleByName(member.guild, MEMBER_ROLE_NAME);
-    if (!newRole || (memberRole && member.roles.cache.has(memberRole.id))) return;
-    await member.roles.add(newRole, "Assign the New role before Kittisugar access verification").catch((error) => {
-      console.error(`[access] could not assign New role to member ${member.id}: ${error.message}`);
-    });
+    const newRole = findNewRole(member.guild);
+    const memberRole = findMemberRole(member.guild);
+    if (!newRole) {
+      console.error(`[access] New role ${NEW_ROLE_ID} was not found in guild ${member.guild.id}; cannot assign it to joining member ${member.id}.`);
+      return;
+    }
+    if (memberRole && member.roles.cache.has(memberRole.id)) return;
+    try {
+      await member.roles.add(newRole, "Assign the New role before Kittisugar access verification");
+      console.info(`[access] assigned New role ${NEW_ROLE_ID} to joining member ${member.id} in guild ${member.guild.id}`);
+    } catch (error) {
+      console.error(`[access] could not assign New role ${NEW_ROLE_ID} to member ${member.id}: ${error.message}`);
+    }
   });
 
   client.on(Events.ChannelCreate, (channel) => {
