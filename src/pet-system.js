@@ -11,6 +11,8 @@ import { generatePetArtwork } from "./pet-art.js";
 const COLOR = 0xffd9ff;
 const VIP_ROLE_ID = "1568188640113463437";
 const CHANNEL_NAME = "🐾｜୨୧ ・𝓹𝓮𝓽𝓼";
+export const PET_ROOMS_CATEGORY_ID = "1568179038625857576";
+export const PET_CATEGORY_BELOW_ID = "1570223501317513408";
 const BUTTON_ID = "sugar-pets:open";
 const PET_SPECIES = {
   cat: "cat", dog: "dog", puppy: "dog", kitten: "cat", hamster: "hamster",
@@ -164,6 +166,26 @@ async function ensurePetsChannel(guild, client, store) {
   else await channel.send(panelPayload());
   return channel;
 }
+
+export async function ensurePetCategoryPosition(guild, onError = console.warn) {
+  const category = guild.channels.cache.get(PET_ROOMS_CATEGORY_ID);
+  const reference = guild.channels.cache.get(PET_CATEGORY_BELOW_ID);
+  if (category?.type !== ChannelType.GuildCategory || reference?.type !== ChannelType.GuildCategory) {
+    onError("[pets] pet-room category positioning skipped: one or both configured categories are missing.");
+    return false;
+  }
+  if (category.position > reference.position) return false;
+  try {
+    await category.setPosition(reference.position + 1, {
+      reason: "Place the pet rooms category below the configured server category",
+    });
+    return true;
+  } catch (error) {
+    onError("[pets] pet-room category could not be repositioned: " + error.message);
+    return false;
+  }
+}
+
 const PET_VISUAL_TRAITS = {
   palettes: ["vanilla cream", "strawberry pink", "lavender", "peach", "mint", "powder blue", "cocoa"],
   eyes: ["glossy round eyes", "sleepy crescent eyes", "sparkling starry eyes", "soft gradient eyes"],
@@ -389,12 +411,14 @@ export function attachPetSystem(client, store) {
   if (!store) throw new Error("The virtual-pet store is required.");
   client.once(Events.ClientReady, async () => {
     for (const guild of client.guilds.cache.values()) {
+      await ensurePetCategoryPosition(guild);
       try { await ensurePetsChannel(guild, client, store); }
       catch (error) { console.error("[pets] channel setup failed: " + error.message); }
     }
   });
   client.on(Events.GuildCreate, (guild) => {
-    void ensurePetsChannel(guild, client, store).catch((error) => console.error("[pets] channel setup failed: " + error.message));
+    void ensurePetCategoryPosition(guild).then(() => ensurePetsChannel(guild, client, store))
+      .catch((error) => console.error("[pets] channel setup failed: " + error.message));
   });
   client.on(Events.InteractionCreate, async (interaction) => {
     const owned = (ownerId) => interaction.user.id === ownerId;
@@ -482,10 +506,17 @@ export function attachPetSystem(client, store) {
         petChannel = guild.channels.cache.find((item) => item.type === ChannelType.GuildText && item.topic === topic);
       }
       if (!petChannel) {
-        const petsChannel = guild.channels.cache.find((item) => item.name === CHANNEL_NAME);
+        const petsCategory = guild.channels.cache.get(PET_ROOMS_CATEGORY_ID) ??
+          await guild.channels.fetch(PET_ROOMS_CATEGORY_ID).catch(() => null);
+        if (!petsCategory || petsCategory.type !== ChannelType.GuildCategory) {
+          return interaction.reply({
+            content: "The pet rooms category is unavailable. Please ask a moderator to check the server setup ♡",
+            ephemeral: true,
+          });
+        }
         petChannel = await guild.channels.create({
           name: formatPetChannelName(interaction.user.username), type: ChannelType.GuildText,
-          ...(petsChannel?.parentId ? { parent: petsChannel.parentId } : {}), topic,
+          parent: PET_ROOMS_CATEGORY_ID, topic,
           permissionOverwrites: [
             { id: guild.roles.everyone.id, deny: [PermissionFlagsBits.ViewChannel] },
             { id: interaction.user.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory, PermissionFlagsBits.AttachFiles, PermissionFlagsBits.EmbedLinks], deny: [PermissionFlagsBits.AddReactions] },
