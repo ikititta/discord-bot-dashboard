@@ -234,6 +234,15 @@ test("only cats and dogs are available to everyone; all other species are VIP-on
 
 
 
+test("pets startup refreshes every old panel and does not treat the panel channel as a category", () => {
+  const source = fs.readFileSync(new URL("../src/pet-system.js", import.meta.url), "utf8");
+  assert.ok(source.includes("oldPanels.size"));
+  assert.ok(source.includes("Promise.all([...oldPanels.values()].map((message) => message.edit(panelPayload())))"));
+  assert.ok(source.includes('export const PET_CATEGORY_BELOW_ID = "";'));
+  assert.ok(!source.includes("await ensurePetCategoryPosition(guild);"));
+  assert.ok(!source.includes("ensurePetCategoryPosition(guild).then"));
+});
+
 test("pets panel targets the configured channel ID even if its name changes", () => {
   const source = fs.readFileSync(new URL("../src/pet-system.js", import.meta.url), "utf8");
   assert.equal(PET_PANEL_CHANNEL_ID, "1570223501317513408");
