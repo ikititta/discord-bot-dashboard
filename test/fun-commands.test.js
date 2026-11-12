@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import {
   FUN_ROLE_IDS,
   FUN_VIP_ROLE_ID,
+  KILL_TIMEOUT_MS,
   buildFunActionText,
   buildFunHelpEmbed,
   buildFunStatsEmbed,
@@ -42,6 +43,8 @@ test("fun commands use the existing Kittisugar gender role IDs only", () => {
   assert.equal(isVip(memberWithRoles([])), false);
   assert.equal(isVip(memberWithRoles(["1568188534836428812"])), false);
   assert.equal(isVipOnlyFunCommand("fuck"), true);
+  assert.equal(isVipOnlyFunCommand("kill"), true);
+  assert.equal(KILL_TIMEOUT_MS, 30_000);
   assert.equal(isVipOnlyFunCommand("spank"), false);
   assert.equal(resolveGifPairing("female", "female"), "ff");
   assert.equal(resolveGifPairing("male", "male"), "mm");
@@ -71,7 +74,7 @@ test("fun help explains command types, stats, and VIP access", () => {
   const fields = embed.data.fields.map((field) => field.name + " " + field.value).join("\\n");
   assert.match(fields, /!stats/);
   assert.match(fields, /!vip stats @member/);
-  assert.match(fields, /VIP unlocks !fuck, statistics/);
+  assert.match(fields, /VIP unlocks !fuck, !kill \(30-second timeout\), complete statistics/);
   assert.doesNotMatch(fields, /Everyone can view their own basic stats/);
   assert.match(fields, /Two-person commands/);
   assert.match(fields, /Solo commands/);
