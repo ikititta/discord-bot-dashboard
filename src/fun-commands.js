@@ -18,7 +18,7 @@ const PURRBOT_API_BASE = "https://api.purrbot.site/v2";
 const GIFUKAI_PAIRING_CATEGORIES = new Set(["hug", "kiss", "pat", "cry", "sleep", "pout"]);
 const REQUEST_TIMEOUT_MS = 8_000;
 const COLOR = 0xffd9ff;
-const VIP_STATS_MESSAGE = "VIP unlocks full stats and lets you view another member with !vip stats @member. Everyone can view their own basic stats with !stats; VIP members can use !vip stats for their complete report. ♡";
+const VIP_STATS_MESSAGE = "This is a VIP-only benefit. Get the VIP role to use !stats, view your complete report, and look up another member with !vip stats @member. ♡";
 
 const TWO_PERSON_COMMANDS = Object.freeze({
   slap: { gif: "slap", text: "has slapped" },
@@ -206,7 +206,7 @@ export function isVerifiedAdult(member) {
   return Boolean(roles.has?.(FUN_MEMBER_ROLE_ID) || hasMemberRole);
 }
 
-function isVip(member) {
+export function isVip(member) {
   return Boolean(member?.roles?.cache?.has(FUN_VIP_ROLE_ID));
 }
 
@@ -266,10 +266,11 @@ async function handleStats(message, store, args) {
   }
 
   if (parts[0]?.toLowerCase() === "stats") {
+    if (!isVip(message.member)) return safeReply(message, { content: VIP_STATS_MESSAGE });
     return showStats(message, store, {
       targetMember: message.member,
       targetUser: message.author,
-      full: false,
+      full: true,
     });
   }
   return null;
