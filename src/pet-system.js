@@ -91,11 +91,14 @@ function buildPetEmbed() {
 }
 function buildPetCommandsEmbed() {
   return new EmbedBuilder().setColor(COLOR).setTitle("୨୧ 𝓟𝓮𝓽 𝓡𝓸𝓸𝓶 · 𝓒𝓸𝓶𝓶𝓪𝓷𝓭𝓼 ♡")
-    .setDescription("**Adoption · Everyone**\n`!pet adopt` — open the adoption embed and choose a species: cat, dog, hamster, rabbit, fish, bird, guinea pig, turtle, fox or ferret.\nNon-VIP pets receive a unique random design. VIP members can customise before adopting.\n\n" +
-      "**Care & play · Everyone**\n`!pet` · `!pet stats` · `!pet feed` · `!pet play` · `!pet cuddle` · `!pet talk` · `!pet story`\n`!pet shop` · `!pet buy <treat|toy|potion>` · `!pet use <item>` · `!pet daily` · `!pet gif` · `!pet inventory` · `!pet select <number>`\n\n" +
-      "**VIP customisation**\nChoose your pet’s name, colour, breed, appearance and personality in the adoption form. Existing pets can also be edited with `!pet name <name>`, `!pet color <color>`, `!pet breed <breed>`, `!pet appearance <details>` and `!pet personality <traits>`.\n\n" +
-      "**VIP extras**\n`!pet room` · `!pet outfit <name>` · `!pet rare` · `!pet slots` · `!pet minigame`")
-    .setFooter({ text: "Use these commands in your private pet room ♡" });
+    .setDescription(
+      "**Adoption · Everyone**\n`!pet adopt` — open the interactive adoption menu and choose a species. Everyone receives a unique random design; VIP can customise before adopting. One pet per member by default; VIP can unlock up to three slots.\n\n" +
+      "**Care & bonding · Everyone**\n`!pet` · `!pet stats` · `!pet feed` · `!pet play` · `!pet cuddle` · `!pet talk` · `!pet story` · `!pet gif [happy|dance|sleep]`\nPlay, cuddle and talk to build bond. Higher bond unlocks exclusive dialogue and reaction GIFs.\n\n" +
+      "**Coins & items · Everyone**\n`!pet daily` · `!pet shop` · `!pet buy <treat|toy|potion>` · `!pet use <item>` · `!pet inventory` · `!pet select <number>`\nTreats restore hunger, toys boost happiness and bond, and potions refill hunger completely. Your coins are shared across all your pets.\n\n" +
+      "**VIP customisation**\n`!pet name <name>` · `!pet color <color>` · `!pet breed <breed>` · `!pet appearance <details>` · `!pet personality <traits>`\n\n" +
+      "**VIP extras**\n`!pet room` · `!pet outfit <name>` · `!pet rare` · `!pet slots` · `!pet minigame`"
+    )
+    .setFooter({ text: "Use these commands in your private pet room · Your progress is saved ♡" });
 }
 function buildAdoptionEmbed(selectedSpecies = null, vip = false) {
   const speciesLine = selectedSpecies ? "Selected companion: **" + selectedSpecies + "** ♡" : "Choose the species you’d love to meet ♡";
