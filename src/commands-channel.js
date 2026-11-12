@@ -75,13 +75,13 @@ export function buildModerationCommandsEmbed() {
     .setColor(COLOR)
     .setTitle("🛡️ ୨୧ Moderation Commands ♡")
     .setDescription(
-      "**Member cleanup**\\n" +
-      `\`/delete amount:<1-20>\` — delete up to 20 of your own recent messages.\\n\\n` +
-      "**VIP cleanup**\\n" +
-      `\`/vip-delete amount:<1-100>\` — VIP members can delete up to 100 of their own recent messages.\\n\\n` +
-      "**Moderator cleanup**\\n" +
-      `\`/mod-delete amount:<1-100> [member:<member>]\` — moderators can delete up to 100 recent messages in the channel, optionally filtering by member.\\n\\n` +
-      "**Automatic protection**\\n" +
+      "**Member cleanup**\n" +
+      `\`/delete amount:<1-20>\` — delete up to 20 of your own recent messages.\n\n` +
+      "**VIP cleanup**\n" +
+      `\`/vip-delete amount:<1-100>\` — VIP members can delete up to 100 of their own recent messages.\n\n` +
+      "**Moderator cleanup**\n" +
+      `\`/mod-delete amount:<1-100> [member:<member>]\` — moderators can delete up to 100 recent messages in the channel, optionally filtering by member.\n\n` +
+      "**Automatic protection**\n" +
       "Sugar also detects spam, repeated messages, mass mentions and unauthorised promotion. The strike system warns on the first infraction, applies a 10-minute timeout on the second and removes members after the third. Anti-raid protection restricts suspicious new accounts during join bursts."
     )
     .setFooter({ text: "Kittisugar · Moderation guide ♡" });
@@ -92,7 +92,7 @@ export function buildModerationCommandsPanelPayload() {
     embeds: [new EmbedBuilder()
       .setColor(COLOR)
       .setTitle(MODERATION_PANEL_TITLE)
-      .setDescription("Moderation tools and server protection, neatly organised ♡\\n\\nPress the button below to see the available commands by category.")],
+      .setDescription("Moderation tools and server protection, neatly organised ♡\n\nPress the button below to see the available commands by category.")],
     components: [new ActionRowBuilder().addComponents(
       new ButtonBuilder()
         .setCustomId(MODERATION_PREFIX)
