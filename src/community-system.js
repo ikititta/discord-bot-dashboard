@@ -1010,7 +1010,10 @@ async function createPrivateReportsChannel(interaction, settings) {
       allow: [...viewPermissions, PermissionFlagsBits.ManageChannels],
     },
   ];
-  const moderatorRoleIds = settings?.get(guild.id)?.moderatorRoleIds ?? [];
+  const moderatorRoleIds = new Set([
+    ...(settings?.get(guild.id)?.moderatorRoleIds ?? []),
+    ...REPORT_NOTIFICATION_ROLE_IDS,
+  ]);
   for (const roleId of moderatorRoleIds) {
     if (guild.roles.cache.has(roleId)) {
       permissionOverwrites.push({ id: roleId, allow: viewPermissions });
@@ -1107,14 +1110,15 @@ async function migrateSuggestionReactions(channel, botUserId) {
 
 async function sendSuggestionReactionReport(message, user, settings) {
   const guild = message.guild;
-  let reportChannel = await guild.channels.fetch(REPORTS_CHANNEL_ID).catch(() => null);
-  const configuredId = settings?.get(guild.id)?.reportsChannelId;
-  if (!reportChannel && /^\d{17,20}$/.test(configuredId ?? "")) {
-    reportChannel = await guild.channels.fetch(configuredId).catch(() => null);
-  }
-  if (!reportChannel || reportChannel.type !== ChannelType.GuildText) {
-    console.warn("[community] suggestion reaction report received but no reports channel is configured.");
-    return;
+  const context = { guild, guildId: guild.id, client: message.client };
+  let reportChannel = await getConfiguredReportsChannel(context, settings);
+  if (!reportChannel) {
+    try {
+      reportChannel = await createPrivateReportsChannel(context, settings);
+    } catch (error) {
+      console.error("[community] suggestion report could not access a private reports channel: " + error.message);
+      return;
+    }
   }
   const everyone = reportChannel.permissionsFor(guild.roles.everyone);
   if (!everyone || everyone.has(PermissionFlagsBits.ViewChannel)) {
