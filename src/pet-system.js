@@ -53,6 +53,16 @@ export class PetStore {
   }
 }
 
+export function migratePetWallet(profile) {
+  if (!profile || profile.walletVersion === 1) return profile;
+  const additional = Array.isArray(profile.additionalPets) ? profile.additionalPets : [];
+  const primaryCoins = Number.isFinite(Number(profile.coins)) ? Math.max(0, Number(profile.coins)) : 100;
+  const legacyAdditionalCoins = additional.reduce((total, pet) => total + Math.max(0, Number(pet?.coins) || 0), 0);
+  profile.coins = primaryCoins + legacyAdditionalCoins;
+  for (const pet of additional) if (pet && typeof pet === "object") pet.coins = 0;
+  profile.walletVersion = 1;
+  return profile;
+}
 export function canAdoptPet(profile, vip) {
   if (!profile) return true;
   if (!vip) return false;
@@ -226,7 +236,7 @@ function makePet(species = "cat") {
     name: "Mochi",
     species,
     visualIdentity: createPetVisualIdentity(),
-    level: 1, xp: 0, hunger: 70, happiness: 70, bond: 0, coins: 100,
+    level: 1, xp: 0, hunger: 70, happiness: 70, bond: 0, coins: 100, walletVersion: 1,
     lastNeedsAt: Date.now(),
     inventory: [], room: "cozy room", outfit: "default", slots: 1, additionalPets: [], activePetIndex: 0,
     lastMinigame: null, lastDailyReward: null,
@@ -329,6 +339,7 @@ async function runPetCommand(message, store, client) {
   const vip = isVip(message.member);
   let pet = profile ? (profile.activePetIndex > 0 ? profile.additionalPets?.[profile.activePetIndex - 1] : profile) : null;
   if (profile) {
+    migratePetWallet(profile);
     profile.coins ??= 100;
     if (pet) { applyNeedsDecay(pet); refreshPetUnlocks(pet); }
   }
@@ -530,6 +541,7 @@ export function attachPetSystem(client, store) {
       const guild = interaction.guild, user = interaction.user, vip = isVip(interaction.member);
       if (!guild || !PET_SPECIES_OPTIONS.includes(species)) throw new Error("Invalid pet adoption request.");
       let profile = store.get(guild.id, user.id);
+      if (profile) migratePetWallet(profile);
       const count = profile ? 1 + (profile.additionalPets?.length ?? 0) : 0;
       if (profile && !vip) throw new Error("You already have a pet ♡ VIP members can unlock more pet slots.");
       if (profile && !canAdoptPet(profile, vip)) throw new Error("All your pet slots are full. Use `!pet slots` to unlock another VIP slot ♡");
