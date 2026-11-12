@@ -937,7 +937,7 @@ function isPublicRepliesChannel(channel, kind) {
 }
 
 export function buildCommunityRepliesChannelName(kind, serial) {
-  if (!validReplyKind(kind) || !/^\d{3}$/.test(String(serial ?? ""))) {
+  if (!["confession", "letter"].includes(kind) || !/^\d{3}$/.test(String(serial ?? ""))) {
     throw new Error("Invalid community replies channel name.");
   }
   const label = kind === "confession"
