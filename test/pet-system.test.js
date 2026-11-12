@@ -4,7 +4,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { ChannelType } from "discord.js";
-import { PetStore, formatPetChannelName, ensurePetCategoryPosition, PET_ROOMS_CATEGORY_ID, PET_CATEGORY_BELOW_ID, applyNeedsDecay, chileDateKey, canAdoptPet, refreshPetUnlocks, migratePetWallet } from "../src/pet-system.js";
+import { PetStore, formatPetChannelName, ensurePetCategoryPosition, PET_ROOMS_CATEGORY_ID, PET_CATEGORY_BELOW_ID, applyNeedsDecay, chileDateKey, canAdoptPet, refreshPetUnlocks, migratePetWallet } from "../src/pet-system.js";\nimport { petSummary } from "../src/member-profile-system.js";
 
 test("virtual pet data persists across store restarts", () => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), "kittisugar-pets-"));
@@ -118,4 +118,15 @@ test("legacy pet balances migrate into one shared wallet without losing coins", 
   assert.equal(profile.walletVersion, 1);
   migratePetWallet(profile);
   assert.equal(profile.coins, 155);
+});
+test("member profiles show the shared wallet and pet bond", () => {
+  const summary = petSummary({
+    coins: 150,
+    activePetIndex: 1,
+    additionalPets: [{
+      name: "Mimi", species: "cat", level: 2, xp: 4, hunger: 60, happiness: 80, bond: 25, coins: 0,
+    }],
+  });
+  assert.match(summary, /Bond 25\/100/);
+  assert.match(summary, /Coins: 150/);
 });
