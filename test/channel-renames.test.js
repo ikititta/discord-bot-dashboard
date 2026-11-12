@@ -14,7 +14,9 @@ function makeGuild(channels = []) {
     cache: {
       values: () => cache.values(),
       find: (predicate) => [...cache.values()].find(predicate),
+      get: (id) => cache.get(id),
     },
+    edit: async (id, options) => { const channel = cache.get(id); if (channel && options?.name) channel.name = options.name; return channel; },
     create: async (options) => {
       const channel = {
         id: String(cache.size + 1),
@@ -132,4 +134,14 @@ test("channel creation with a stable topic reuses an existing channel and serial
   assert.equal(first.id, second.id);
   assert.equal((await manager.create(options)).id, first.id);
   assert.equal(creates, 1);
+});
+
+
+test("blocks channel renames routed through the guild channel manager", async () => {
+  const channel = { id: "manager-edit", name: "protected", setName: async () => {} };
+  const guild = makeGuild([channel]);
+  protectChannelNames(new Map([[guild.id, guild]]));
+  const result = await guild.channels.edit(channel.id, { name: "renamed" });
+  assert.equal(result, channel);
+  assert.equal(channel.name, "protected");
 });
