@@ -70,7 +70,7 @@ function buildPetEmbed() {
 }
 function buildPetCommandsEmbed() {
   return new EmbedBuilder().setColor(COLOR).setTitle("୨୧ 𝓟𝓮𝓽 𝓡𝓸𝓸𝓶 · 𝓒𝓸𝓶𝓶𝓪𝓷𝓭𝓼 ♡")
-    .setDescription("**Everyone**\\n`!pet adopt <species>` · `!pet` · `!pet stats`\\n`!pet feed` · `!pet play` · `!pet cuddle` · `!pet talk` · `!pet story`\\n`!pet shop` · `!pet buy treat/toy` · `!pet inventory` · `!pet select <number>`\\n\\n**VIP customization**\\n`!pet name <name>` · `!pet color <color>` · `!pet breed <breed>`\\n`!pet appearance <details>` · `!pet personality <traits>`\\n\\n**VIP extras**\\n`!pet room` · `!pet outfit <name>` · `!pet rare` · `!pet slots` · `!pet minigame`")
+    .setDescription("**Everyone**\n`!pet adopt <species>` · `!pet` · `!pet stats`\n`!pet feed` · `!pet play` · `!pet cuddle` · `!pet talk` · `!pet story`\n`!pet shop` · `!pet buy treat/toy` · `!pet inventory` · `!pet select <number>`\n\n**VIP customization**\n`!pet name <name>` · `!pet color <color>` · `!pet breed <breed>`\n`!pet appearance <details>` · `!pet personality <traits>`\n\n**VIP extras**\n`!pet room` · `!pet outfit <name>` · `!pet rare` · `!pet slots` · `!pet minigame`")
     .setFooter({ text: "Use these commands in your private pet room ♡" });
 }
 
