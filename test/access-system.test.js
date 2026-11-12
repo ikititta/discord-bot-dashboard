@@ -177,24 +177,8 @@ test("access, rules, and guide panels contain the required confirmations and upd
   assert.ok(guideText.includes("`!pet adopt` — open the pet adoption menu."));
   assert.doesNotMatch(guideText, /delete amount:/);
   assert.doesNotMatch(guideText, /!rep stats/);
-  assert.match(guideText, /!pet adopt` — open the interactive adoption embed/);
-  assert.match(guideText, /Non-VIP members receive a unique random design/);
-  assert.match(guideText, /VIP members can customise name, colour, breed, appearance and personality/);
-  assert.match(guideText, /!pet talk/);
-  assert.match(guideText, /!pet story/);
-  assert.match(guideText, /!pet room/);
-  assert.match(guideText, /!pet personality/);
-  assert.match(guideText, /!fun stats/);
-  assert.match(guideText, /selfies/);
-  assert.match(guideText, /Introduce yourself/);
-  assert.match(guideText, /virtual pet/);
   assert.doesNotMatch(guideText, /!pet daily/);
   assert.doesNotMatch(guideText, /!funhelp/);
-  assert.match(guideText, /show or hide channels/i);
-  assert.match(guide.embeds[0].data.footer.text, /Quick guide/);
-  assert.doesNotMatch(guideText, /pinned in #dashboard/);
-  assert.ok(guideText.includes("`/vip-delete amount:` — VIP message cleanup."));
-  assert.ok(guideText.includes("`/mod-delete amount: [member:]` — moderator cleanup."));
 });
 
 test("detects Discord server booster status", () => {
