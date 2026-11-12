@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { ChannelType } from "discord.js";
 
-import { handlePrivateChatInteraction } from "../src/private-chat-system.js";
+import { findPrivateChatsCategory, handlePrivateChatInteraction } from "../src/private-chat-system.js";
 import { formatPrivateChatChannelName } from "../src/private-chat-format.js";
 
 const OWNER_ID = "323456789012345678";
@@ -170,4 +170,17 @@ test("non-owners cannot use owner-only private-chat buttons", async () => {
 
 test("private chat channel names use the requested decorative spacing", () => {
   assert.equal(formatPrivateChatChannelName("test"), "👥｜୨୧・𝓽𝓮𝓼𝓽");
+});
+
+
+test("private chats are created only under the Private Chats category", async () => {
+  const general = { id: "general", type: ChannelType.GuildCategory, name: "General" };
+  const privateChats = { id: "private-chats", type: ChannelType.GuildCategory, name: "୨୧ Private Chats ♡" };
+  const guild = {
+    channels: {
+      cache: new Map([[general.id, general], [privateChats.id, privateChats]]),
+      fetch: async () => {},
+    },
+  };
+  assert.equal(await findPrivateChatsCategory(guild), privateChats);
 });
