@@ -276,9 +276,9 @@ test("pets panel buttons use the requested order, labels and Discord colours", (
   const source = fs.readFileSync(new URL("../src/pet-system.js", import.meta.url), "utf8");
   const panel = source.slice(source.indexOf("function panelPayload()"), source.indexOf("async function ensurePetsChannel"));
   const expected = [
-    '.setCustomId(BUTTON_ID).setLabel("Create A Pet Room ♡").setStyle(ButtonStyle.Success)',
+    '.setCustomId(BUTTON_ID).setLabel("Create A Pet Room ♡").setStyle(ButtonStyle.Primary)',
     '.setCustomId("sugar-pets:global-top").setLabel("Top Pets ♡").setStyle(ButtonStyle.Secondary)',
-    '.setCustomId("sugar-pets:create-pet").setLabel("Adopt A Pet ♡").setStyle(ButtonStyle.Secondary)',
+    '.setCustomId("sugar-pets:create-pet").setLabel("Adopt A Pet ♡").setStyle(ButtonStyle.Success)',
     '.setCustomId("sugar-pets:delete-pet").setLabel("Delete A Pet ♡").setStyle(ButtonStyle.Danger)',
   ];
   let previous = -1;
