@@ -205,7 +205,7 @@ export function buildGuidePayload(guild) {
       "`!pet stats` · `!pet feed` · `!pet play` · `!pet cuddle` · `!pet talk` · `!pet story` · `!pet gif [happy|dance|sleep]` — care, bond and unlock reactions.\n" +
       "`!pet daily` · `!pet shop` · `!pet buy <treat|toy|potion>` · `!pet use <item>` · `!pet inventory` · `!pet select <number>` — shared coins and items. Potions refill hunger completely.\n" +
       "VIP pet customisation: `!pet name`, `!pet color`, `!pet breed`, `!pet appearance`, `!pet personality`. VIP extras: `!pet room`, `!pet outfit`, `!pet rare`, `!pet slots`, `!pet minigame`.\n" +
-      "`!funhelp` / `/fun help` — fun guide. `!stats` and `!vip stats [@member]` — VIP statistics. `!fuck @member` — VIP-only fun command.\n" +
+      "`!funhelp` / `/fun help` — fun guide. `!stats` / `!fun stats` and `!vip stats [@member]` — VIP statistics. `!fuck @member` — VIP-only fun command.\n" +
       "`!couple @member` · `!propose @member` · `!marry @member` · `!breakup` · `!divorce` — relationships.\n" +
       `## ୨୧ ${guideSectionTitle("Sugar AI")}\n\n` +
       "Mention Sugar or address the bot directly to start a conversation ♡" + buildServerMap(guild)
