@@ -236,10 +236,19 @@ const pendingRoleCreations = new Map();
 
 function findSelfRoleByName(guild, name) {
   const expected = normalizeRoleName(name);
-  const roles = [...guild.roles.cache.values()];
-  return roles.find((role) => normalizeRoleName(role.name) === expected) ??
-    roles.find((role) => normalizeRoleName(role.name).replace(/\d+$/u, "") === expected) ??
-    null;
+  const cache = guild.roles.cache;
+  if (typeof cache.values === "function") {
+    const roles = [...cache.values()];
+    return roles.find((role) => normalizeRoleName(role.name) === expected) ??
+      roles.find((role) => normalizeRoleName(role.name).replace(/\d+$/u, "") === expected) ??
+      null;
+  }
+  if (typeof cache.find === "function") {
+    return cache.find((role) => normalizeRoleName(role.name) === expected) ??
+      cache.find((role) => normalizeRoleName(role.name).replace(/\d+$/u, "") === expected) ??
+      null;
+  }
+  return null;
 }
 
 /**
