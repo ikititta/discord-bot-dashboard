@@ -124,11 +124,11 @@ function vip(member) { return member?.roles?.cache?.has(VIP_ROLE_ID) === true; }
 function member(memberObj) { return memberObj?.roles?.cache?.has(MEMBER_ROLE_ID) === true; }
 export function makePanelPayload() {
   const embed = new EmbedBuilder().setColor(COLOR).setTitle("୨୧ 𝓡𝓮𝓹𝓾𝓽𝓪𝓽𝓲𝓸𝓷 ♡")
-    .setDescription("Give another member a positive or negative reputation vote.\\n\\n" +
-      "**How it works**\\n" +
-      "♡ Choose **Give Positive** or **Give Negative**, then select a member.\\n" +
-      "♡ Each member has one active vote per person and may change it later.\\n" +
-      "♡ Vote honestly and respectfully. Harassment, threats, private information, and vote manipulation are not allowed.\\n\\n" +
+    .setDescription("Give another member a positive or negative reputation vote.\n\n" +
+      "**How it works**\n" +
+      "♡ Choose **Give Positive** or **Give Negative**, then select a member.\n" +
+      "♡ Each member has one active vote per person and may change it later.\n" +
+      "♡ Vote honestly and respectfully. Harassment, threats, private information, and vote manipulation are not allowed.\n\n" +
       "Use the buttons below to vote. All reputation commands are listed in the Commands thread in this channel.")
     .setFooter({ text: "Kindness looks good on everyone ♡" });
   return { embeds: [embed], components: [
