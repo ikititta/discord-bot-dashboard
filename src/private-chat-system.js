@@ -923,7 +923,7 @@ export async function createPrivateChat(interaction, client, store, displayName,
 
 export async function findPrivateChatsCategory(guild) {
   let categories = findPrivateChatsCategories(guild);
-  if (!categories.length) {
+  if (!categories.length && typeof guild.channels.fetch === "function") {
     await guild.channels.fetch();
     categories = findPrivateChatsCategories(guild);
   }
