@@ -7,21 +7,22 @@ const MAX_IMAGE_BYTES = 12 * 1024 * 1024;
 function buildPrompt(pet) {
   const identity = pet.visualIdentity ?? {};
   return [
-    "Create one original 2D super-deformed chibi mascot illustration in an unmistakably cute kawaii sticker / character-design style, centered and fully visible.",
-    "Match the visual language of popular Japanese kawaii mascot stickers: enormous rounded head, tiny compact body, short stubby paws or limbs, simplified rounded anatomy, oversized expressive glossy eyes, tiny nose and mouth, soft blush cheeks, adorable friendly expression.",
-    "Use clean bold smooth dark outlines, simple flat pastel fills, crisp cel shading with only a few soft highlights, high contrast readable shapes, polished vector-like cartoon finish.",
-    "This must look like a cute illustrated mascot or plushie character design, NOT realistic animal concept art, NOT semi-realistic, NOT painterly, NOT 3D, NOT photorealistic. Avoid realistic fur strands, realistic anatomy, realistic lighting, gradients that make it look lifelike, and delicate thin sketch lines.",
+    "Draw a cute 2D kawaii chibi mascot sticker, like a simple Japanese character sticker or cute stationery illustration. The result must be obviously cartoon art, not an animal portrait.",
+    "Use an extreme cute mascot proportion: very large round head (about 65 percent of character height), tiny rounded body, tiny short limbs, simplified plush-like paws, huge shiny circular cartoon eyes, tiny simple mouth, rosy circular blush cheeks.",
+    "Use thick clean dark-brown or black outer line art, smooth closed shapes, flat pastel colors, minimal cel shading, simple highlights, crisp graphic edges, adorable playful expression.",
+    "ABSOLUTE STYLE RULE: flat 2D kawaii sticker illustration only. No realism, no semi-realism, no painterly rendering, no 3D, no realistic fur, no detailed animal anatomy, no soft airbrush portrait, no cinematic lighting, no thin sketch outlines. Keep it bold, simple, graphic and irresistibly cute.",
     `Species: ${String(pet.species ?? "fantasy animal").slice(0, 40)}.`,
     `Breed or variety: ${String(identity.breed ?? "not specified").slice(0, 40)}.`,
     `Main palette: ${String(identity.palette ?? "pastel").slice(0, 40)}.`,
-    `Physical appearance (follow these details literally): ${String(identity.appearance ?? "simple rounded kawaii features").slice(0, 180)}.`,
-    `Eyes: ${String(identity.eyes ?? "large expressive eyes").slice(0, 60)}.`,
-    `Distinctive markings: ${String(identity.markings ?? "subtle cute markings").slice(0, 80)}.`,
-    `Accessory: ${String(identity.accessory ?? "none").slice(0, 60)}.`,
+    `CUSTOM PHYSICAL DESCRIPTION — highest priority; reproduce every detail exactly: ${String(identity.appearance ?? "no extra custom physical details").slice(0, 180)}.`,
+    `Eye style only if not specified in the custom description: ${String(identity.eyes ?? "large glossy cartoon eyes").slice(0, 60)}.`,
+    `Extra markings only if not specified in the custom description: ${String(identity.markings ?? "soft rosy cheeks").slice(0, 80)}.`,
+    `Extra accessory only if not specified in the custom description: ${String(identity.accessory ?? "none").slice(0, 60)}. The custom physical description overrides this default if they conflict.`,
     `Personality: ${String(identity.personality ?? "sweet").slice(0, 40)}.`,
     `Current outfit: ${String(pet.outfit ?? "default").slice(0, 40)}.`,
-    "Keep the character design simple, bold, cute and instantly readable at small Discord avatar size. Use a plain white or very pale pastel background, no text, no letters, no watermark, no border, no collage, no extra characters.",
-    "This is a unique recurring character design. Preserve all listed traits exactly.",
+    "The custom physical description is more important than randomized defaults. Never omit, replace, hide or contradict a user-requested accessory, ribbon, bow, color, marking, hairstyle or body feature.",
+    "Keep the whole character visible, simple and readable at small Discord avatar size, on a plain white background. No text, no letters, no watermark, no border, no collage, no extra characters.",
+    "Preserve the same individual character identity in every redraw. Reproduce all user-provided physical details exactly.",
   ].join(" ").slice(0, 2048);
 }
 
