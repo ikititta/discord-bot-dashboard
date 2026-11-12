@@ -65,18 +65,18 @@ function isVip(member) {
 }
 function buildPetEmbed() {
   return new EmbedBuilder().setColor(COLOR).setTitle("୨୧ 𝓥𝓲𝓻𝓽𝓾𝓪𝓵 𝓟𝓮𝓽𝓼 ♡")
-    .setDescription("Adopt your own little companion and watch them grow ♡\\n\\n" +
+    .setDescription("Adopt your own little companion and watch them grow ♡\n\n" +
       "Open your private pet room, then type `!pet adopt` to start the interactive adoption. " +
-      "Choose a species from the selector. Everyone gets a unique, randomly designed pet; VIP members can customise its name, colour, breed, appearance and personality before adopting.\\n\\n" +
+      "Choose a species from the selector. Everyone gets a unique, randomly designed pet; VIP members can customise its name, colour, breed, appearance and personality before adopting.\n\n" +
       "Care for your pet, earn XP and coins, unlock stories, and collect more companions with VIP slots.")
     .setFooter({ text: "Your pet and progress are saved ♡ · Adoption starts with !pet adopt" });
 }
 function buildPetCommandsEmbed() {
   return new EmbedBuilder().setColor(COLOR).setTitle("୨୧ 𝓟𝓮𝓽 𝓡𝓸𝓸𝓶 · 𝓒𝓸𝓶𝓶𝓪𝓷𝓭𝓼 ♡")
-    .setDescription("**Adoption · Everyone**\\n`!pet adopt` — open the adoption embed and choose a species: cat, dog, hamster, rabbit, fish, bird, guinea pig, turtle, fox or ferret.\\nNon-VIP pets receive a unique random design. VIP members can customise before adopting.\\n\\n" +
-      "**Care & play · Everyone**\\n`!pet` · `!pet stats` · `!pet feed` · `!pet play` · `!pet cuddle` · `!pet talk` · `!pet story`\\n`!pet shop` · `!pet buy <treat|toy>` · `!pet inventory` · `!pet select <number>`\\n\\n" +
-      "**VIP customisation**\\nChoose your pet’s name, colour, breed, appearance and personality in the adoption form. Existing pets can also be edited with `!pet name <name>`, `!pet color <color>`, `!pet breed <breed>`, `!pet appearance <details>` and `!pet personality <traits>`.\\n\\n" +
-      "**VIP extras**\\n`!pet room` · `!pet outfit <name>` · `!pet rare` · `!pet slots` · `!pet minigame`")
+    .setDescription("**Adoption · Everyone**\n`!pet adopt` — open the adoption embed and choose a species: cat, dog, hamster, rabbit, fish, bird, guinea pig, turtle, fox or ferret.\nNon-VIP pets receive a unique random design. VIP members can customise before adopting.\n\n" +
+      "**Care & play · Everyone**\n`!pet` · `!pet stats` · `!pet feed` · `!pet play` · `!pet cuddle` · `!pet talk` · `!pet story`\n`!pet shop` · `!pet buy <treat|toy>` · `!pet inventory` · `!pet select <number>`\n\n" +
+      "**VIP customisation**\nChoose your pet’s name, colour, breed, appearance and personality in the adoption form. Existing pets can also be edited with `!pet name <name>`, `!pet color <color>`, `!pet breed <breed>`, `!pet appearance <details>` and `!pet personality <traits>`.\n\n" +
+      "**VIP extras**\n`!pet room` · `!pet outfit <name>` · `!pet rare` · `!pet slots` · `!pet minigame`")
     .setFooter({ text: "Use these commands in your private pet room ♡" });
 }
 function buildAdoptionEmbed(selectedSpecies = null, vip = false) {
@@ -85,7 +85,7 @@ function buildAdoptionEmbed(selectedSpecies = null, vip = false) {
     ? "As a VIP member, you can customise your companion’s name, colour, breed, appearance and personality before adopting."
     : "Your companion will receive a one-of-a-kind random name and design. Want to choose every detail yourself? VIP unlocks full pet customisation ♡";
   return new EmbedBuilder().setColor(COLOR).setTitle("୨୧ 𝓐 𝓛𝓲𝓽𝓽𝓵𝓮 𝓐𝓭𝓸𝓹𝓽𝓲𝓸𝓷 ♡")
-    .setDescription(speciesLine + "\\n\\n" + designLine + "\\n\\nPick a species below to continue.")
+    .setDescription(speciesLine + "\n\n" + designLine + "\n\nPick a species below to continue.")
     .setFooter({ text: "Every companion gets its own unique identity ♡" });
 }
 function buildSpeciesSelect(userId) {
@@ -257,7 +257,7 @@ async function runPetCommand(message, store, client) {
     if (profile && 1 + (profile.additionalPets?.length ?? 0) >= (profile.slots ?? 1)) return reply("All your pet slots are full. Use `!pet slots` to unlock another VIP slot ♡");
     return message.reply({ embeds: [buildAdoptionEmbed(null, vip)], components: [buildSpeciesSelect(userId)], allowedMentions: { repliedUser: false } });
   }
-  if (!pet) return reply("You don't have a pet yet. Choose a species with `!pet adopt <species>` ♡");
+  if (!pet) return reply("You don't have a pet yet. Choose a species with `!pet adopt` ♡");
 
   if (action === "select") {
     const index = Number(argument);
@@ -370,7 +370,7 @@ async function runPetCommand(message, store, client) {
     if (action === "slots") {
       profile.slots = Math.min(3, profile.slots + 1);
       store.save(guildId, userId, profile);
-      return reply(`VIP pet slots: ${profile.slots}/3 ♡ Use !pet adopt <species> to fill your new slot.`);
+      return reply(`VIP pet slots: ${profile.slots}/3 ♡ Use !pet adopt to fill your new slot.`);
     }
     if (action === "minigame") {
       const today = new Date().toISOString().slice(0, 10);
@@ -378,7 +378,7 @@ async function runPetCommand(message, store, client) {
       pet.lastMinigame = today; pet.coins += 30; pet.xp += 10;
     }
   } else {
-    return reply("Try `!pet adopt <species>`, `stats`, `feed`, `play`, `talk`, `story`, `shop`, `inventory`, or `select` ♡");
+    return reply("Try `!pet adopt`, `stats`, `feed`, `play`, `talk`, `story`, `shop`, `inventory`, or `select` ♡");
   }
 
   while (pet.xp >= pet.level * 25) { pet.xp -= pet.level * 25; pet.level += 1; }
@@ -445,7 +445,7 @@ export function attachPetSystem(client, store) {
           breed: interaction.fields.getTextInputValue("pet_breed").trim(), appearance: interaction.fields.getTextInputValue("pet_appearance").trim(),
           personality: interaction.fields.getTextInputValue("pet_personality").trim(),
         });
-        return interaction.reply({ content: "Welcome home, **" + companion.name + "** the " + companion.species + "! Your custom companion is being created ♡\\n" + status(companion), ephemeral: true });
+        return interaction.reply({ content: "Welcome home, **" + companion.name + "** the " + companion.species + "! Your custom companion is being created ♡\n" + status(companion), ephemeral: true });
       } catch (error) { return interaction.reply({ content: error.message, ephemeral: true }); }
     }
 
@@ -467,7 +467,7 @@ export function attachPetSystem(client, store) {
         try {
           const companion = await createAdoptedPet(species);
           const vip = isVip(interaction.member);
-          return interaction.update({ embeds: [buildAdoptionEmbed(species, vip).setDescription("You adopted **" + companion.name + "** the " + companion.species + "!\\n\\n" + (vip ? "Your companion is ready to meet you." : "Sugar chose a unique random design for you. VIP members can customise every detail of future companions.") + " ♡\\n\\n" + status(companion))], components: [] });
+          return interaction.update({ embeds: [buildAdoptionEmbed(species, vip).setDescription("You adopted **" + companion.name + "** the " + companion.species + "!\n\n" + (vip ? "Your companion is ready to meet you." : "Sugar chose a unique random design for you. VIP members can customise every detail of future companions.") + " ♡\n\n" + status(companion))], components: [] });
         } catch (error) { return interaction.reply({ content: error.message, ephemeral: true }); }
       }
     }
