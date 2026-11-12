@@ -17,8 +17,10 @@ export function buildCommandsThreadGuidePayload() {
         "**Reputation commands**\n\n" +
         "`!rep` — view your reputation, positive and negative votes, and comments.\n" +
         "`!rep @member` — view another member's reputation, positive and negative votes, and comments.\n" +
+        "`!rep stats` — view your reputation statistics.\n" +
+        "`!rep stats @member` — view another member's reputation statistics.\n" +
         "`!rep top` — see the positive and negative reputation rankings.\n" +
-        "`!rep comments @member` — read reputation comments.\n\n" +
+        "`!rep comments [@member]` — read reputation comments.\n\n" +
         "♡ Use these commands in this thread."
       )
       .setFooter({ text: "Kittisugar · Reputation help ♡" })],
@@ -66,18 +68,17 @@ export async function ensureCommandsBoard(guild, client) {
     thread = archived.threads.find((item) => item.name === COMMANDS_THREAD_NAME && item.parentId === channel.id) ?? null;
   }
 
-  if (!panel) { panel = await channel.send(buildCommandsPanelPayload()); } else {
-    await panel.edit(buildCommandsPanelPayload());
-    if (!thread) thread = await channel.threads.fetch(panel.id).catch(() => null);
-    if (!thread) {
-      thread = await panel.startThread({
-        name: COMMANDS_THREAD_NAME,
-        autoArchiveDuration: 10080,
-        reason: "Create the Kittisugar commands thread from its board embed",
-      });
-    } else if (thread.archived) {
-      await thread.setArchived(false, "Reopen the Kittisugar commands thread");
-    }
+  if (!panel) panel = await channel.send(buildCommandsPanelPayload());
+  else await panel.edit(buildCommandsPanelPayload());
+  if (!thread) thread = await channel.threads.fetch(panel.id).catch(() => null);
+  if (!thread) {
+    thread = await panel.startThread({
+      name: COMMANDS_THREAD_NAME,
+      autoArchiveDuration: 10080,
+      reason: "Create the Kittisugar commands thread from its board embed",
+    });
+  } else if (thread.archived) {
+    await thread.setArchived(false, "Reopen the Kittisugar commands thread");
   }
   await refreshCommandsThreadSticky(thread, client);
 
