@@ -7,18 +7,20 @@ const MAX_IMAGE_BYTES = 12 * 1024 * 1024;
 function buildPrompt(pet) {
   const identity = pet.visualIdentity ?? {};
   return [
-    "Create one original, polished 2D kawaii virtual-pet character illustration, centered and fully visible.",
+    "Create one original 2D super-deformed chibi mascot illustration in an unmistakably cute kawaii sticker / character-design style, centered and fully visible.",
+    "Match the visual language of popular Japanese kawaii mascot stickers: enormous rounded head, tiny compact body, short stubby paws or limbs, simplified rounded anatomy, oversized expressive glossy eyes, tiny nose and mouth, soft blush cheeks, adorable friendly expression.",
+    "Use clean bold smooth dark outlines, simple flat pastel fills, crisp cel shading with only a few soft highlights, high contrast readable shapes, polished vector-like cartoon finish.",
+    "This must look like a cute illustrated mascot or plushie character design, NOT realistic animal concept art, NOT semi-realistic, NOT painterly, NOT 3D, NOT photorealistic. Avoid realistic fur strands, realistic anatomy, realistic lighting, gradients that make it look lifelike, and delicate thin sketch lines.",
     `Species: ${String(pet.species ?? "fantasy animal").slice(0, 40)}.`,
     `Breed or variety: ${String(identity.breed ?? "not specified").slice(0, 40)}.`,
     `Main palette: ${String(identity.palette ?? "pastel").slice(0, 40)}.`,
-    `Physical appearance: ${String(identity.appearance ?? "cute natural features").slice(0, 60)}.`,
+    `Physical appearance (follow these details literally): ${String(identity.appearance ?? "simple rounded kawaii features").slice(0, 180)}.`,
     `Eyes: ${String(identity.eyes ?? "large expressive eyes").slice(0, 60)}.`,
     `Distinctive markings: ${String(identity.markings ?? "subtle cute markings").slice(0, 80)}.`,
     `Accessory: ${String(identity.accessory ?? "none").slice(0, 60)}.`,
     `Personality: ${String(identity.personality ?? "sweet").slice(0, 40)}.`,
     `Current outfit: ${String(pet.outfit ?? "default").slice(0, 40)}.`,
-    "Soft pastel storybook art, crisp clean silhouette, delicate details, charming expressive face, subtle soft shadow.",
-    "Simple clean light background, no text, no letters, no watermark, no border, no collage, no extra characters.",
+    "Keep the character design simple, bold, cute and instantly readable at small Discord avatar size. Use a plain white or very pale pastel background, no text, no letters, no watermark, no border, no collage, no extra characters.",
     "This is a unique recurring character design. Preserve all listed traits exactly.",
   ].join(" ").slice(0, 2048);
 }
