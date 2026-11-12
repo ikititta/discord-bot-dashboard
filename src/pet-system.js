@@ -403,6 +403,11 @@ export function removePetFromProfile(profile, petId) {
   return { removed, remaining: 1 + (profile.additionalPets?.length ?? 0), empty: false };
 }
 
+export function parsePetDeleteConfirmationId(customId) {
+  const match = /^sugar-pets:delete-confirm:([^:]+):([^:]+)$/.exec(String(customId ?? ""));
+  return match ? { ownerId: match[1], petId: match[2] } : null;
+}
+
 function buildPetDeleteMenu(userId, profile) {
   const pets = [profile, ...(profile.additionalPets ?? [])].filter(Boolean);
   return new ActionRowBuilder().addComponents(new StringSelectMenuBuilder()
@@ -696,7 +701,9 @@ export function attachPetSystem(client, store) {
     }
 
     if (interaction.isButton?.() && interaction.customId.startsWith("sugar-pets:delete-confirm:")) {
-      const [, , , ownerId, petId] = interaction.customId.split(":");
+      const confirmation = parsePetDeleteConfirmationId(interaction.customId);
+      if (!confirmation) return interaction.reply({ content: "This deletion confirmation is invalid. Open !pet delete again ♡", ephemeral: true });
+      const { ownerId, petId } = confirmation;
       if (!owned(ownerId)) return interaction.reply({ content: "This confirmation belongs to someone else ♡", ephemeral: true });
       if (!isVip(interaction.member)) return interaction.reply({ content: "Deleting pets is a VIP-only feature ♡", ephemeral: true });
       const profile = store.get(interaction.guildId, ownerId);
