@@ -3,7 +3,8 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { PetStore, formatPetChannelName } from "../src/pet-system.js";
+import { ChannelType } from "discord.js";
+import { PetStore, formatPetChannelName, ensurePetCategoryPosition, PET_ROOMS_CATEGORY_ID, PET_CATEGORY_BELOW_ID } from "../src/pet-system.js";
 
 test("virtual pet data persists across store restarts", () => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), "kittisugar-pets-"));
@@ -40,4 +41,31 @@ test("personal pet rooms use private text-channel title format", () => {
   const name = formatPetChannelName("Kitti");
   assert.match(name, /^🐾｜୨୧・.+’s 𝓹𝓮𝓽$/u);
   assert.ok(name.length < 100);
+});
+
+
+test("pet rooms category is positioned below the configured reference category", async () => {
+  const events = [];
+  const petCategory = {
+    id: PET_ROOMS_CATEGORY_ID, type: ChannelType.GuildCategory, position: 2,
+    async setPosition(position, options) { events.push({ position, options }); this.position = position; },
+  };
+  const referenceCategory = { id: PET_CATEGORY_BELOW_ID, type: ChannelType.GuildCategory, position: 7 };
+  const guild = { channels: { cache: new Map([[petCategory.id, petCategory], [referenceCategory.id, referenceCategory]]) } };
+
+  assert.equal(await ensurePetCategoryPosition(guild, () => {}), true);
+  assert.equal(petCategory.position, 8);
+  assert.equal(events.length, 1);
+});
+
+test("pet rooms category is not moved when it is already below the reference category", async () => {
+  const petCategory = {
+    id: PET_ROOMS_CATEGORY_ID, type: ChannelType.GuildCategory, position: 9,
+    async setPosition() { throw new Error("should not move an already correctly placed category"); },
+  };
+  const referenceCategory = { id: PET_CATEGORY_BELOW_ID, type: ChannelType.GuildCategory, position: 7 };
+  const guild = { channels: { cache: new Map([[petCategory.id, petCategory], [referenceCategory.id, referenceCategory]]) } };
+
+  assert.equal(await ensurePetCategoryPosition(guild, () => {}), false);
+  assert.equal(petCategory.position, 9);
 });
