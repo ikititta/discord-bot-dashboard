@@ -846,8 +846,7 @@ export function formatReplyDescription(body, replyName, targetName) {
 }
 
 async function ensureCommunityPostThread(parent, kind) {
-  const marker = /sugar-thread:([0-9]{17,20})/.exec(parent.embeds?.[0]?.footer?.text ?? "");
-  let thread = marker ? await parent.guild.channels.fetch(marker[1]).catch(() => null) : parent.thread;
+  let thread = parent.thread;
   if (!thread && parent.hasThread) {
     thread = await parent.channel.threads.fetch({ message: parent.id }).catch(() => null);
   }
@@ -860,8 +859,6 @@ async function ensureCommunityPostThread(parent, kind) {
     });
   }
   if (thread.archived) await thread.setArchived(false).catch(() => {});
-  const embed = EmbedBuilder.from(parent.embeds[0]).setFooter({ text: "sugar-thread:" + thread.id });
-  await parent.edit({ embeds: [embed] });
   return thread;
 }
 
