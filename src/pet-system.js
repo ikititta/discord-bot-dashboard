@@ -16,12 +16,16 @@ export const PET_ROOMS_CATEGORY_ID = "1568179038625857576";
 export const PET_CATEGORY_BELOW_ID = "1570223501317513408";
 const BUTTON_ID = "sugar-pets:open";
 const PET_SPECIES = {
-  cat: "cat", dog: "dog", puppy: "dog", kitten: "cat", hamster: "hamster",
-  rabbit: "rabbit", bunny: "rabbit", fish: "fish", bird: "bird",
-  guinea: "guinea pig", "guinea pig": "guinea pig", "guinea-pig": "guinea pig", turtle: "turtle", fox: "fox", ferret: "ferret",
+  cat: "cat", kitten: "cat", dog: "dog", puppy: "dog",
+  hamster: "hamster", rabbit: "rabbit", bunny: "rabbit", fish: "fish", bird: "bird",
+  guinea: "guinea pig", "guinea pig": "guinea pig", "guinea-pig": "guinea pig",
+  turtle: "turtle", fox: "fox", ferret: "ferret", hedgehog: "hedgehog",
+  chinchilla: "chinchilla", mouse: "mouse", rat: "rat", squirrel: "squirrel",
+  raccoon: "raccoon", deer: "deer", owl: "owl", parrot: "parrot",
+  snake: "snake", lizard: "lizard", frog: "frog", axolotl: "axolotl",
 };
 const PET_SPECIES_OPTIONS = [...new Set(Object.values(PET_SPECIES))];
-export const VIP_ONLY_PET_SPECIES = new Set(["fox", "ferret", "turtle"]);
+export const VIP_ONLY_PET_SPECIES = new Set(PET_SPECIES_OPTIONS.filter((species) => !["cat", "dog"].includes(species)));
 export function canAdoptSpecies(species, vip) {
   return PET_SPECIES_OPTIONS.includes(species) && (vip === true || !VIP_ONLY_PET_SPECIES.has(species));
 }
@@ -134,7 +138,7 @@ function buildAdoptionEmbed(selectedSpecies = null, vip = false) {
   const speciesLine = selectedSpecies ? "Selected companion: **" + selectedSpecies + "** ♡" : "Choose the species you’d love to meet ♡";
   const designLine = vip
     ? "As a VIP member, you can customise your companion’s name, gender, colour, breed, appearance and personality. You also have access to rare species: fox, ferret and turtle ♡"
-    : "Your companion will receive a one-of-a-kind random name and design. Cats, dogs, hamsters, rabbits, fish, birds and guinea pigs are available to everyone. Rare species (fox, ferret and turtle) and full customisation are VIP-exclusive ♡";
+    : "Your companion will receive a one-of-a-kind random name and design. Only cats and dogs are available to everyone. Every other species is VIP-exclusive, along with full customisation ♡";
   return new EmbedBuilder().setColor(COLOR).setTitle("୨୧ 𝓐 𝓛𝓲𝓽𝓽𝓵𝓮 𝓐𝓭𝓸𝓹𝓽𝓲𝓸𝓷 ♡")
     .setDescription(speciesLine + "\n\n" + designLine + "\n\nPick a species below to continue.")
     .setFooter({ text: "Every companion gets its own unique identity ♡" });
@@ -144,11 +148,29 @@ function buildSpeciesSelect(userId, vip = false) {
     .setCustomId("sugar-pets:species:" + userId)
     .setPlaceholder("Choose your pet’s species ♡")
     .addOptions([
-      { label: "Cat", value: "cat", emoji: "🐱" }, { label: "Dog", value: "dog", emoji: "🐶" },
-      { label: "Hamster", value: "hamster", emoji: "🐹" }, { label: "Rabbit", value: "rabbit", emoji: "🐰" },
-      { label: "Fish", value: "fish", emoji: "🐠" }, { label: "Bird", value: "bird", emoji: "🐦" },
-      { label: "Guinea pig", value: "guinea pig", emoji: "🐾" }, { label: "Turtle", value: "turtle", emoji: "🐢" },
-      { label: "Fox", value: "fox", emoji: "🦊" }, { label: "Ferret", value: "ferret", emoji: "🤎" },
+      { label: "Cat", value: "cat", emoji: "🐱" },
+      { label: "Dog", value: "dog", emoji: "🐶" },
+      { label: "Hamster", value: "hamster", emoji: "🐹" },
+      { label: "Rabbit", value: "rabbit", emoji: "🐰" },
+      { label: "Fish", value: "fish", emoji: "🐠" },
+      { label: "Bird", value: "bird", emoji: "🐦" },
+      { label: "Guinea pig", value: "guinea pig", emoji: "🐾" },
+      { label: "Turtle", value: "turtle", emoji: "🐢" },
+      { label: "Fox", value: "fox", emoji: "🦊" },
+      { label: "Ferret", value: "ferret", emoji: "🤎" },
+      { label: "Hedgehog", value: "hedgehog", emoji: "🦔" },
+      { label: "Chinchilla", value: "chinchilla", emoji: "🐭" },
+      { label: "Mouse", value: "mouse", emoji: "🐁" },
+      { label: "Rat", value: "rat", emoji: "🐀" },
+      { label: "Squirrel", value: "squirrel", emoji: "🐿️" },
+      { label: "Raccoon", value: "raccoon", emoji: "🦝" },
+      { label: "Deer", value: "deer", emoji: "🦌" },
+      { label: "Owl", value: "owl", emoji: "🦉" },
+      { label: "Parrot", value: "parrot", emoji: "🦜" },
+      { label: "Snake", value: "snake", emoji: "🐍" },
+      { label: "Lizard", value: "lizard", emoji: "🦎" },
+      { label: "Frog", value: "frog", emoji: "🐸" },
+      { label: "Axolotl", value: "axolotl", emoji: "🩷" },
     ].filter((option) => vip || !VIP_ONLY_PET_SPECIES.has(option.value))));
 }
 function buildAdoptionActions(userId, species, vip) {
