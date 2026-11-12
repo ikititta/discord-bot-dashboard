@@ -117,15 +117,10 @@ test("duplicate message events produce only one provider call and reply", async 
 });
 
 
-test("a direct reply to Sugar triggers a response and passes member context", async () => {
+test("a reply to Sugar does not trigger an AI response unless Sugar is directly addressed", async () => {
   let calls = 0;
-  let receivedProfile;
   const respond = createMessageResponder({
-    generateReply: async (_prompt, _history, profile) => {
-      calls += 1;
-      receivedProfile = profile;
-      return "I’m here!";
-    },
+    generateReply: async () => { calls += 1; return "I’m here!"; },
     getBotUserId: () => BOT_ID,
   });
   const incoming = message({ content: "and what do you think?", id: "reply-1" });
@@ -133,25 +128,29 @@ test("a direct reply to Sugar triggers a response and passes member context", as
     messageId: "sugar-message",
     message: { author: { id: BOT_ID } },
   };
-  incoming.member = {
-    displayName: "Kitti",
-    joinedAt: new Date("2025-01-01T00:00:00.000Z"),
-    roles: { cache: [{ name: "Member" }] },
-  };
-  incoming.author = {
-    id: "user-1",
-    bot: false,
-    username: "kitti",
-    globalName: "Kitti",
-    createdAt: new Date("2024-01-01T00:00:00.000Z"),
+
+  await respond(incoming);
+
+  assert.equal(calls, 0);
+  assert.equal(incoming.replies.length, 0);
+});
+
+test("a reply to Sugar triggers AI only when Sugar is directly mentioned", async () => {
+  let calls = 0;
+  const respond = createMessageResponder({
+    generateReply: async () => { calls += 1; return "I’m here!"; },
+    getBotUserId: () => BOT_ID,
+  });
+  const incoming = message({ content: `<@${BOT_ID}> and what do you think?`, id: "reply-2" });
+  incoming.reference = {
+    messageId: "sugar-message",
+    message: { author: { id: BOT_ID } },
   };
 
   await respond(incoming);
 
   assert.equal(calls, 1);
   assert.equal(incoming.replies[0].content, "I’m here!");
-  assert.equal(receivedProfile.username, "kitti");
-  assert.deepEqual(receivedProfile.roles, ["Member"]);
 });
 
 test("a reply to another member does not trigger Sugar", async () => {
