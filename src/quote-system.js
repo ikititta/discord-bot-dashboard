@@ -311,7 +311,7 @@ export function attachQuoteSystem(client, { token, applicationId } = {}) {
     if (message.author.bot || !message.guild) return;
 
     const commandText = extractAddressedCommand(message, client.user);
-    if (!commandText || !/^!quote(?:\\s|$)/i.test(commandText)) return;
+    if (!commandText || !/^!quote(?:\s|$)/i.test(commandText)) return;
 
     console.info(
       `[quotes] command received guild=${message.guild.id} channel=${message.channelId} message=${message.id} type=${message.type} hasReference=${Boolean(message.reference?.messageId)}`,
