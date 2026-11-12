@@ -181,7 +181,7 @@ test("each confession, poll and love letter has one native Discord discussion th
   assert.match(replies, /await ensureCommunityPostThread\(parent, kind\)/);
   assert.match(replies, /await thread\.send/);
   assert.doesNotMatch(replies, /guild\.channels\.create/);
-  assert.match(source, /parent\.startThread\(/);
+  assert.match(source, /parent\.startThread\(/);\n  assert.doesNotMatch(source, /sugar-thread:/);
 });
 
 test("community post reply picker offers anonymous and named thread replies", () => {
