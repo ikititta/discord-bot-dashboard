@@ -273,8 +273,16 @@ async function runPetCommand(message, store, client) {
       shy: [` ${pet.name} peeks out, then quietly scoots closer to you.`, ` ${pet.name} whispers, "I saved you the comfiest spot."`],
       adventurous: [` ${pet.name} looks toward the horizon. "Let's discover somewhere new!"`, ` ${pet.name} is already ready for your next little adventure.`],
     };
-    const personality = String(pet.visualIdentity?.personality ?? "gentle").toLowerCase();
-    const line = choose(lines[personality] ?? lines.gentle);
+    const personalityText = String(pet.visualIdentity?.personality ?? "gentle").toLowerCase();
+    const personality = Object.keys(lines).find((trait) => personalityText.includes(trait)) ?? "gentle";
+    const unlockedDialogue = pet.level >= 10
+      ? [`${pet.name} whispers, "No matter how far we go, you're my favorite part of every story."`, `${pet.name} looks at you with a knowing smile. "Remember our very first day together?"`]
+      : pet.level >= 5
+        ? [`${pet.name} tells you about a dream where you explored a castle in the clouds.`, `${pet.name} says, "I think we're becoming quite the team."`]
+        : pet.level >= 3
+          ? [`${pet.name} has a new little secret to share: "I saved a special place in my heart for you."`, `${pet.name} asks if you'll go on another adventure soon.`]
+          : [];
+    const line = choose([...lines[personality], ...unlockedDialogue]);
     pet.dialogueCount = (pet.dialogueCount ?? 0) + 1;
     pet.happiness = Math.min(100, pet.happiness + 2);
     store.save(guildId, userId, profile);
