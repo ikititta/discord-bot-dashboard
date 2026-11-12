@@ -25,5 +25,5 @@ export function extractAddressedCommand(message, botUser) {
   }
 
   if (!addressed) return null;
-  return content.replace(/^[\s,:;.!?—-]+|[\s,:;.!?—-]+$/g, "").replace(/\s+/g, " ").trim();
+  return content.replace(/^[\s,:;.?—-]+|[\s,:;.!?—-]+$/g, "").replace(/\s+/g, " ").trim();
 }
