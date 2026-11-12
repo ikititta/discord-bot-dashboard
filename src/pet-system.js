@@ -401,7 +401,18 @@ async function runPetCommand(message, store, client) {
     if (profile && !canAdoptPet(profile, vip)) return reply("All your pet slots are full. Use `!pet slots` to unlock another VIP slot ♡");
     return message.reply({ embeds: [buildAdoptionEmbed(null, vip)], components: [buildSpeciesSelect(userId)], allowedMentions: { repliedUser: false } });
   }
-  if (!pet) return reply("You don't have a pet yet. Choose a species with `!pet adopt` ♡");
+  if (action === "delete") {
+    if (!profile) return reply("You have no pets to delete ♡");
+    const pets = [profile, ...(profile.additionalPets ?? [])].filter(Boolean);
+    for (const item of pets) item.id ??= randomUUID();
+    store.save(guildId, userId, profile);
+    return message.reply({
+      content: "Choose which companion you want to delete. Sugar will ask you to confirm before removing it ♡",
+      components: [buildPetDeleteMenu(userId, profile)],
+      allowedMentions: { repliedUser: false },
+    });
+  }
+    if (!pet) return reply("You don't have a pet yet. Choose a species with `!pet adopt` ♡");
 
   if (action === "select") {
     const index = Number(argument);
