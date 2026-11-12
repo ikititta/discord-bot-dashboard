@@ -27,7 +27,8 @@ const PET_SPECIES = {
 const PET_SPECIES_OPTIONS = [...new Set(Object.values(PET_SPECIES))];
 export const VIP_ONLY_PET_SPECIES = new Set(PET_SPECIES_OPTIONS.filter((species) => !["cat", "dog"].includes(species)));
 export function canAdoptSpecies(species, vip) {
-  return PET_SPECIES_OPTIONS.includes(species) && (vip === true || !VIP_ONLY_PET_SPECIES.has(species));
+  const normalized = PET_SPECIES[String(species ?? "").toLowerCase()] ?? String(species ?? "").toLowerCase();
+  return PET_SPECIES_OPTIONS.includes(normalized) && (vip === true || !VIP_ONLY_PET_SPECIES.has(normalized));
 }
 const SHOP = { treat: 10, toy: 25, potion: 60 };
 const MEMBER_ROLE_ID = "1568188534836428812";
@@ -137,7 +138,7 @@ function buildPetCommandsEmbed() {
 function buildAdoptionEmbed(selectedSpecies = null, vip = false) {
   const speciesLine = selectedSpecies ? "Selected companion: **" + selectedSpecies + "** ♡" : "Choose the species you’d love to meet ♡";
   const designLine = vip
-    ? "As a VIP member, you can customise your companion’s name, gender, colour, breed, appearance and personality. You also have access to rare species: fox, ferret and turtle ♡"
+    ? "As a VIP member, you can customise your companion’s name, gender, colour, breed, appearance and personality. You also unlock the full species collection ♡"
     : "Your companion will receive a one-of-a-kind random name and design. Only cats and dogs are available to everyone. Every other species is VIP-exclusive, along with full customisation ♡";
   return new EmbedBuilder().setColor(COLOR).setTitle("୨୧ 𝓐 𝓛𝓲𝓽𝓽𝓵𝓮 𝓐𝓭𝓸𝓹𝓽𝓲𝓸𝓷 ♡")
     .setDescription(speciesLine + "\n\n" + designLine + "\n\nPick a species below to continue.")
