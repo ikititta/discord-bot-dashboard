@@ -323,9 +323,15 @@ function makePet(species = "cat") {
   };
 }
 function queuePetArtwork(message, store, profile, pet) {
-  if (!process.env.OPENAI_API_KEY || !pet.visualIdentity ||
-      pet.visualIdentity.artStatus === "generating" || pet.visualIdentity.artStatus === "ready") return;
+  if (!String(process.env.OPENAI_API_KEY ?? "").trim()) return "missing-key";
+  if (!pet.visualIdentity) return "unavailable";
+  if (pet.visualIdentity.artStatus === "generating") return "generating";
+  if (pet.visualIdentity.artStatus === "ready" && pet.visualIdentity.artPath && fs.existsSync(pet.visualIdentity.artPath)) return "ready";
+
+  // A previous "ready" status is not enough: FadeHost may have restarted
+  // without retaining the generated image file. Regenerate it when missing.
   pet.visualIdentity.artStatus = "generating";
+  pet.visualIdentity.artPath = null;
   store.save(message.guild.id, message.author.id, profile);
   void generatePetArtwork({ pet, dataDir: path.dirname(store.file) }).then((file) => {
     pet.visualIdentity.artStatus = "ready";
@@ -337,11 +343,17 @@ function queuePetArtwork(message, store, profile, pet) {
       files: [file],
       allowedMentions: { parse: [] },
     });
-  }).catch((error) => {
+  }).catch(async (error) => {
     pet.visualIdentity.artStatus = "failed";
+    pet.visualIdentity.artPath = null;
     store.save(message.guild.id, message.author.id, profile);
     console.error("[pets] AI artwork generation failed: " + error.message);
+    await message.channel.send({
+      content: "I couldn't create your pet's illustration this time. Use `!pet` again to retry ♡",
+      allowedMentions: { parse: [] },
+    }).catch(() => {});
   });
+  return "generating";
 }
 
 export function applyNeedsDecay(pet, now = Date.now()) {
@@ -499,12 +511,19 @@ async function runPetCommand(message, store, client) {
     pet.id ??= randomUUID();
     pet.visualIdentity ??= createPetVisualIdentity();
     store.save(guildId, userId, profile);
-    queuePetArtwork(message, store, profile, pet);
+    const artworkStatus = queuePetArtwork(message, store, profile, pet);
     const artPath = pet.visualIdentity?.artStatus === "ready" ? pet.visualIdentity.artPath : null;
     if (artPath && fs.existsSync(artPath)) {
       return message.reply({ content: status(pet, profile.coins, vip), files: [artPath], allowedMentions: { repliedUser: false } });
     }
-    return reply(status(pet, profile.coins, vip) + (pet.visualIdentity?.artStatus === "generating" ? "\n♡ Your unique artwork is being created..." : ""));
+    const artworkNotice = artworkStatus === "missing-key"
+      ? "\n♡ Pet illustrations aren't configured yet. Please ask an admin to check OPENAI_API_KEY in FadeHost."
+      : artworkStatus === "generating"
+        ? "\n♡ Your unique artwork is being created..."
+        : artworkStatus === "unavailable"
+          ? "\n♡ Your pet's illustration isn't available right now."
+          : "";
+    return reply(status(pet, profile.coins, vip) + artworkNotice);
   }
 
   if (action === "stats") {
