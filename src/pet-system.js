@@ -156,7 +156,7 @@ function buildAdoptionActions(userId, species, vip) {
 }
 function buildAdoptionModal(userId, species) {
   const modal = new ModalBuilder().setCustomId("sugar-pets:customize-submit:" + userId + ":" + encodeURIComponent(species)).setTitle("Customise your companion ♡");
-  const fields = [["pet_name", "Name", "Choose a name", true, 24], ["pet_color", "Colour", "e.g. strawberry pink", false, 60], ["pet_breed", "Breed", "Optional breed", false, 60], ["pet_appearance", "Appearance", "Markings, eyes, accessories...", false, 60], ["pet_personality", "Personality", "e.g. gentle, curious, playful", false, 60]];
+  const fields = [["pet_name", "Name", "Choose a name", true, 24], ["pet_gender", "Gender", "female or male", true, 6], ["pet_color", "Colour", "e.g. strawberry pink", false, 60], ["pet_breed", "Breed", "Optional breed", false, 60], ["pet_appearance", "Appearance", "Markings, eyes, accessories...", false, 60], ["pet_personality", "Personality", "e.g. gentle, curious, playful", false, 60]];
   for (const [id, label, placeholder, required, maxLength] of fields) modal.addComponents(new ActionRowBuilder().addComponents(
     new TextInputBuilder().setCustomId(id).setLabel(label).setPlaceholder(placeholder).setStyle(TextInputStyle.Short).setRequired(required).setMaxLength(maxLength),
   ));
@@ -261,8 +261,9 @@ function makePet(species = "cat") {
     id: randomUUID(),
     name: "Mochi",
     species,
+    gender: choose(["female", "male"]),
     visualIdentity: createPetVisualIdentity(),
-    level: 1, xp: 0, hunger: 70, happiness: 70, bond: 0, coins: 100, walletVersion: 1,
+    level: 1, xp: 0, hunger: 70, happiness: 70, hygiene: 100, toilet: 100, energy: 100, bond: 0, coins: 100, walletVersion: 1,
     lastNeedsAt: Date.now(),
     inventory: [], room: "cozy room", outfit: "default", slots: 1, additionalPets: [], activePetIndex: 0,
     lastMinigame: null, lastDailyReward: null,
@@ -341,8 +342,9 @@ async function sendPetGif(message, pet, category) {
 }
 function status(pet, walletCoins = pet.coins, vip = false) {
   const displayName = pet.name + (vip ? " VIP" : "");
-  return `**${displayName}** the ${pet.species} · Level ${pet.level}
+  return `**${displayName}** the ${pet.species} · ${pet.gender === "male" ? "Male" : "Female"} · Level ${pet.level}
 ♡ Hunger: ${pet.hunger}/100 · Happiness: ${pet.happiness}/100
+♡ Hygiene: ${Number(pet.hygiene ?? 100)}/100 · Toilet: ${Number(pet.toilet ?? 100)}/100 · Energy: ${Number(pet.energy ?? 100)}/100
 ♡ Bond: ${pet.bond ?? 0} · Coins: ${walletCoins} · XP: ${pet.xp}
 ♡ Room: ${pet.room} · Outfit: ${pet.outfit}`;
 }
@@ -415,6 +417,7 @@ async function runPetCommand(message, store, client) {
     return message.reply({ embeds: [buildAdoptionEmbed(null, vip)], components: [buildSpeciesSelect(userId)], allowedMentions: { repliedUser: false } });
   }
   if (action === "delete") {
+    if (!vip) return reply("Deleting pets is a VIP-only feature ♡");
     if (!profile) return reply("You have no pets to delete ♡");
     const pets = [profile, ...(profile.additionalPets ?? [])].filter(Boolean);
     for (const item of pets) item.id ??= randomUUID();
@@ -618,6 +621,11 @@ export function attachPetSystem(client, store) {
       if (profile && !canAdoptPet(profile, vip)) throw new Error("All your pet slots are full. Use `!pet slots` to unlock another VIP slot ♡");
       const companion = makePet(species);
       companion.vip = vip;
+      if (vip && customization.gender) {
+        const selectedGender = String(customization.gender).toLowerCase();
+        if (!["female", "male"].includes(selectedGender)) throw new Error("Choose female or male for your pet ♡");
+        companion.gender = selectedGender;
+      }
       if (profile) companion.coins = 0;
       if (vip) {
         if (customization.name) companion.name = customization.name.slice(0, 24);
@@ -640,6 +648,7 @@ export function attachPetSystem(client, store) {
     if (interaction.isStringSelectMenu?.() && interaction.customId.startsWith("sugar-pets:delete-select:")) {
       const ownerId = interaction.customId.split(":")[2];
       if (!owned(ownerId)) return interaction.reply({ content: "This pet menu belongs to someone else ♡", ephemeral: true });
+      if (!isVip(interaction.member)) return interaction.reply({ content: "Deleting pets is a VIP-only feature ♡", ephemeral: true });
       const petId = interaction.values?.[0];
       const profile = store.get(interaction.guildId, ownerId);
       const selected = profile && [profile, ...(profile.additionalPets ?? [])].find((pet) => pet?.id === petId);
@@ -656,6 +665,7 @@ export function attachPetSystem(client, store) {
     if (interaction.isButton?.() && interaction.customId.startsWith("sugar-pets:delete-confirm:")) {
       const [, , , ownerId, petId] = interaction.customId.split(":");
       if (!owned(ownerId)) return interaction.reply({ content: "This confirmation belongs to someone else ♡", ephemeral: true });
+      if (!isVip(interaction.member)) return interaction.reply({ content: "Deleting pets is a VIP-only feature ♡", ephemeral: true });
       const profile = store.get(interaction.guildId, ownerId);
       if (!profile) return interaction.update({ content: "You no longer have any pets ♡", components: [] });
       const result = removePetFromProfile(profile, petId);
@@ -686,7 +696,7 @@ export function attachPetSystem(client, store) {
       if (!isVip(interaction.member)) return interaction.reply({ content: "Full pet customisation is a VIP feature ♡ Your pet can still receive a random design.", ephemeral: true });
       try {
         const companion = await createAdoptedPet(decodeURIComponent(encodedSpecies || ""), {
-          name: interaction.fields.getTextInputValue("pet_name").trim(), color: interaction.fields.getTextInputValue("pet_color").trim(),
+          name: interaction.fields.getTextInputValue("pet_name").trim(), gender: interaction.fields.getTextInputValue("pet_gender").trim(), color: interaction.fields.getTextInputValue("pet_color").trim(),
           breed: interaction.fields.getTextInputValue("pet_breed").trim(), appearance: interaction.fields.getTextInputValue("pet_appearance").trim(),
           personality: interaction.fields.getTextInputValue("pet_personality").trim(),
         });
