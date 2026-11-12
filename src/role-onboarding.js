@@ -56,9 +56,8 @@ async function findOrCreateAgeReviewRole(guild) {
 }
 
 function findSupportChannel(guild) {
-  return guild.channels.cache.get(SUPPORT_CHANNEL_ID) ??
-    guild.channels.cache.find((channel) => channel.type === ChannelType.GuildText && normalizeRoleName(channel.name) === "support") ??
-    null;
+  const channel = guild.channels.cache.get(SUPPORT_CHANNEL_ID);
+  return channel?.type === ChannelType.GuildText ? channel : null;
 }
 
 /**
