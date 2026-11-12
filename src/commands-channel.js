@@ -25,8 +25,8 @@ const categories = {
     description:
       "**Adoption & profile**\n`!pet adopt` · `!pet` · `!pet stats` · `!pet select <number>`\nChoose a species in the adoption selector. Everyone gets a random design; VIP can customise before adopting. One pet per member by default; VIP can unlock up to three slots.\n\n" +
       "**Care & bonding**\n`!pet feed` · `!pet play` · `!pet cuddle` · `!pet talk` · `!pet story` · `!pet gif [happy|dance|sleep]`\nBonding unlocks special dialogue and reaction GIFs.\n\n" +
-      "**Coins & items**\n`!pet daily` · `!pet shop` · `!pet buy <treat|toy|potion>` · `!pet use <item>` · `!pet inventory`\nTreats restore hunger, toys boost happiness and bond, and potions refill hunger completely.\n\n" +
-      "**VIP customisation & extras**\n`!pet name <name>` · `!pet color <color>` · `!pet breed <breed>` · `!pet appearance <details>` · `!pet personality <traits>` · `!pet room` · `!pet outfit <name>` · `!pet rare` · `!pet slots` · `!pet minigame`",
+      "**Coins & items**\n`!pet daily` · `!pet shop` · `!pet buy <treat|toy|potion>` · `!pet use <item>` · `!pet inventory` · `!pet delete`\nTreats restore hunger, toys boost happiness and bond, and potions refill hunger completely.\n\n" +
+      "**VIP customisation & extras**\n`!pet name <name>` · `!pet color <color>` · `!pet breed <breed>` · `!pet appearance <details>` · `!pet personality <traits>` · `!pet room` · `!pet outfit <name>` · `!pet slots` · `!pet minigame`",
   },
   community: {
     label: "Community",
