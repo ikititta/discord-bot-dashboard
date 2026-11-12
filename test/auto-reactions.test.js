@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { AUTO_REACTIONS, shouldAutoReactToMessage, addAutoReactions } from "../src/auto-reactions.js";
+import { AUTO_REACTIONS, AUTO_REACTIONS_CHANNEL_ID, shouldAutoReactToMessage, addAutoReactions } from "../src/auto-reactions.js";
 import {
   TICKET_PANEL_CHANNEL_ID,
   TICKET_CATEGORY_ID,
@@ -16,7 +16,7 @@ function message(overrides = {}) {
     id: "message-1",
     guild: { id: "guild-1" },
     author: { id: "member-1", bot: false },
-    channelId: "regular-channel",
+    channelId: AUTO_REACTIONS_CHANNEL_ID,
     channel: { name: "general", parentId: null, topic: null, isTextBased: () => true },
     ...overrides,
   };
@@ -26,15 +26,17 @@ test("automatic reactions are the five requested emojis", () => {
   assert.deepEqual(AUTO_REACTIONS, ["😊", "😭", "😔", "💀", "💗"]);
 });
 
-test("ordinary member messages in server text channels receive reactions", () => {
+test("ordinary member messages in the designated channel receive reactions", () => {
   assert.equal(shouldAutoReactToMessage(message()), true);
   assert.equal(shouldAutoReactToMessage(message({
-    channel: { name: "chat-thread", parentId: "regular-channel", topic: null, isTextBased: () => true },
+    channel: { name: "chat-thread", parentId: AUTO_REACTIONS_CHANNEL_ID, topic: null, isTextBased: () => true },
   })), true);
 });
 
-test("automatic reactions are disabled in channel 1569930648804925522", () => {
+test("automatic reactions are disabled in every channel except the designated channel", () => {
   assert.equal(shouldAutoReactToMessage(message({ channelId: "1569930648804925522" })), false);
+  assert.equal(shouldAutoReactToMessage(message({ channelId: "another-channel" })), false);
+  assert.equal(shouldAutoReactToMessage(message({ channelId: AUTO_REACTIONS_CHANNEL_ID })), true);
 });
 
 test("automatic reactions are disabled in the Comments thread", () => {
