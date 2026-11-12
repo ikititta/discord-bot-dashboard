@@ -104,6 +104,9 @@ export function isUsersPetRoom(channel, userId) {
 function isVip(member) {
   return member?.roles?.cache?.has(VIP_ROLE_ID) === true;
 }
+export function canDeletePet(vip) {
+  return vip === true;
+}
 function buildPetEmbed() {
   return new EmbedBuilder().setColor(COLOR).setTitle("୨୧ 𝓥𝓲𝓻𝓽𝓾𝓪𝓵 𝓟𝓮𝓽𝓼 ♡")
     .setDescription("Adopt your own little companion and watch them grow ♡\n\n" +
@@ -417,7 +420,7 @@ async function runPetCommand(message, store, client) {
     return message.reply({ embeds: [buildAdoptionEmbed(null, vip)], components: [buildSpeciesSelect(userId)], allowedMentions: { repliedUser: false } });
   }
   if (action === "delete") {
-    if (!vip) return reply("Deleting pets is a VIP-only feature ♡");
+    if (!canDeletePet(vip)) return reply("Deleting pets is a VIP-only feature ♡");
     if (!profile) return reply("You have no pets to delete ♡");
     const pets = [profile, ...(profile.additionalPets ?? [])].filter(Boolean);
     for (const item of pets) item.id ??= randomUUID();
@@ -648,7 +651,7 @@ export function attachPetSystem(client, store) {
     if (interaction.isStringSelectMenu?.() && interaction.customId.startsWith("sugar-pets:delete-select:")) {
       const ownerId = interaction.customId.split(":")[2];
       if (!owned(ownerId)) return interaction.reply({ content: "This pet menu belongs to someone else ♡", ephemeral: true });
-      if (!isVip(interaction.member)) return interaction.reply({ content: "Deleting pets is a VIP-only feature ♡", ephemeral: true });
+      if (!canDeletePet(isVip(interaction.member))) return interaction.reply({ content: "Deleting pets is a VIP-only feature ♡", ephemeral: true });
       const petId = interaction.values?.[0];
       const profile = store.get(interaction.guildId, ownerId);
       const selected = profile && [profile, ...(profile.additionalPets ?? [])].find((pet) => pet?.id === petId);
@@ -755,7 +758,17 @@ export function attachPetSystem(client, store) {
             { id: client.user.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory, PermissionFlagsBits.EmbedLinks, PermissionFlagsBits.ManageMessages], deny: [PermissionFlagsBits.AddReactions] },
           ], reason: "Create a private personal pet channel",
         });
-        await petChannel.send({ content: `Welcome <@${interaction.user.id}>! Your little pet corner is ready ♡`, embeds: [buildPetCommandsEmbed()], allowedMentions: { users: [interaction.user.id] } });
+        const ownerProfile = store.get(guild.id, interaction.user.id);
+        const firstPet = ownerProfile ? (ownerProfile.activePetIndex > 0 ? ownerProfile.additionalPets?.[ownerProfile.activePetIndex - 1] : ownerProfile) : null;
+        await petChannel.send({
+          content: `Welcome <@${interaction.user.id}>! Your private pet corner is ready ♡`,
+          embeds: [
+            new EmbedBuilder().setColor(COLOR).setTitle("୨୧ 𝓦𝓮𝓵𝓬𝓸𝓶𝓮 𝓱𝓸𝓶𝓮 ♡")
+              .setDescription(firstPet ? status(firstPet, ownerProfile.coins, isVip(interaction.member)) : "Your room is ready! Adopt your first companion with `!pet adopt` ♡"),
+            buildPetCommandsEmbed(),
+          ],
+          allowedMentions: { users: [interaction.user.id] },
+        });
       }
       const roomMessages = await petChannel.messages.fetch({ limit: 20 });
       const commandsEmbed = roomMessages.find((message) => message.author?.id === client.user.id && message.embeds.some((embed) => embed.title === "୨୧ 𝓟𝓮𝓽 𝓡𝓸𝓸𝓶 · 𝓒𝓸𝓶𝓶𝓪𝓷𝓭𝓼 ♡"));
