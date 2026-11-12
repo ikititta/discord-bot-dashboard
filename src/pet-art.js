@@ -7,23 +7,24 @@ const MAX_IMAGE_BYTES = 12 * 1024 * 1024;
 function buildPrompt(pet) {
   const identity = pet.visualIdentity ?? {};
   return [
-    "Draw a cute 2D kawaii chibi mascot sticker, like a simple Japanese character sticker or cute stationery illustration. The result must be obviously cartoon art, not an animal portrait.",
-    "Use an extreme cute mascot proportion: very large round head (about 65 percent of character height), tiny rounded body, tiny short limbs, simplified plush-like paws, huge shiny circular cartoon eyes, tiny simple mouth, rosy circular blush cheeks.",
-    "Use thick clean dark-brown or black outer line art, smooth closed shapes, flat pastel colors, minimal cel shading, simple highlights, crisp graphic edges, adorable playful expression.",
-    "ABSOLUTE STYLE RULE: flat 2D kawaii sticker illustration only. No realism, no semi-realism, no painterly rendering, no 3D, no realistic fur, no detailed animal anatomy, no soft airbrush portrait, no cinematic lighting, no thin sketch outlines. Keep it bold, simple, graphic and irresistibly cute.",
+    "Create a charming full-scene illustration for a kawaii virtual pet game, with the feeling of a collectible digital companion in a pastel fantasy world. This is game character artwork, NOT a sticker, NOT a product cutout, NOT an avatar icon.",
+    "Art direction: adorable Japanese kawaii mascot game art, sweet Sanrio-like charm and classic handheld virtual-pet game atmosphere, while keeping the character original. Cute rounded shapes, expressive oversized sparkling eyes, tiny nose and mouth, rosy cheeks, soft pastel palette, simple appealing cartoon anatomy.",
+    "The pet must have a complete visible body, a cute pose, and occupy the center of the scene. Keep its design polished, colorful, friendly, and unmistakably illustrated rather than realistic.",
+    "BACKGROUND IS REQUIRED AND IMPORTANT: create a beautiful coordinated pastel environment around the pet, like its little home in a virtual pet game. Include a softly detailed room or garden setting, decorative objects, plants or flowers, cushions, toys, gentle depth, and a visible floor or ground beneath the pet. Choose details that suit the species and personality. The background must fill the entire image edge to edge; do not leave it plain white or empty.",
+    "NO STICKER LOOK: absolutely no white sticker border, no white halo, no die-cut outline, no thick white rim around the character, no floating isolated cutout, no transparent or blank background, no badge frame, no circular avatar crop.",
+    "Use clean confident cartoon linework, soft cel shading, rich but gentle pastel colors, charming little environmental details, warm cozy lighting, and a cohesive game-art composition. Avoid photorealism, semi-realistic animal portraits, realistic fur, painterly realism, and 3D rendering.",
     `Species: ${String(pet.species ?? "fantasy animal").slice(0, 40)}.`,
     `Breed or variety: ${String(identity.breed ?? "not specified").slice(0, 40)}.`,
     `Main palette: ${String(identity.palette ?? "pastel").slice(0, 40)}.`,
-    `CUSTOM PHYSICAL DESCRIPTION — highest priority; reproduce every detail exactly: ${String(identity.appearance ?? "no extra custom physical details").slice(0, 180)}.`,
-    `Eye style only if not specified in the custom description: ${String(identity.eyes ?? "large glossy cartoon eyes").slice(0, 60)}.`,
-    `Extra markings only if not specified in the custom description: ${String(identity.markings ?? "soft rosy cheeks").slice(0, 80)}.`,
-    `Extra accessory only if not specified in the custom description: ${String(identity.accessory ?? "none").slice(0, 60)}. The custom physical description overrides this default if they conflict.`,
+    `CUSTOM PHYSICAL DESCRIPTION — reproduce every requested detail: ${String(identity.appearance ?? "no extra custom physical details").slice(0, 180)}.`,
+    `Eye details: ${String(identity.eyes ?? "large sparkling cartoon eyes").slice(0, 60)}.`,
+    `Markings: ${String(identity.markings ?? "soft rosy cheeks").slice(0, 80)}.`,
+    `Accessories: ${String(identity.accessory ?? "none").slice(0, 60)}.`,
     `Personality: ${String(identity.personality ?? "sweet").slice(0, 40)}.`,
     `Current outfit: ${String(pet.outfit ?? "default").slice(0, 40)}.`,
-    "The custom physical description is more important than randomized defaults. Never omit, replace, hide or contradict a user-requested accessory, ribbon, bow, color, marking, hairstyle or body feature.",
-    "Keep the whole character visible, simple and readable at small Discord avatar size, on a plain white background. No text, no letters, no watermark, no border, no collage, no extra characters.",
-    "Preserve the same individual character identity in every redraw. Reproduce all user-provided physical details exactly.",
-  ].join(" ").slice(0, 2048);
+    "User-provided physical details and accessories always override defaults. Never omit, replace, hide or contradict a requested ribbon, bow, color, marking, hairstyle or body feature. If a pink ribbon is requested, clearly draw a visible pink ribbon on the pet.",
+    "Preserve this individual pet's identity across redraws. No text, no letters, no watermark, no collage, no extra pets.",
+  ].join(" ").slice(0, 3500);
 }
 
 export async function generatePetArtwork({
