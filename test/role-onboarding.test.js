@@ -83,7 +83,8 @@ test("18- restriction grants Support first, removes Member, and applies a remova
   const ageRole = { id: "age-review", name: "age-review" };
   const memberRole = { id: "1568188534836428812", name: "Member" };
   const newRole = { id: "1568188492704522330", name: "New" };
-  const roleCache = new Map([[memberRole.id, memberRole], [newRole.id, newRole]]);
+  const roleMap = new Map([[memberRole.id, memberRole], [newRole.id, newRole]]);
+  const roleCache = { get: (id) => roleMap.get(id), find: (callback) => [...roleMap.values()].find(callback) };
   const support = {
     id: "1568492748732895313",
     type: 0,
@@ -98,9 +99,9 @@ test("18- restriction grants Support first, removes Member, and applies a remova
   const guild = {
     roles: {
       cache: roleCache,
-      create: async () => { roleCache.set(ageRole.id, ageRole); return ageRole; },
+      create: async () => { roleMap.set(ageRole.id, ageRole); return ageRole; },
     },
-    channels: { cache: new Map([[support.id, support], [general.id, general]]) },
+    channels: { cache: { get: (id) => new Map([[support.id, support], [general.id, general]]).get(id), find: (callback) => [support, general].find(callback), values: () => [support, general].values() } },
   };
   const assigned = new Set([memberRole.id]);
   const member = {
@@ -128,8 +129,8 @@ test("18- restriction grants Support first, removes Member, and applies a remova
 test("18- restriction fails safely when Support is missing", async () => {
   let roleCreated = false;
   const guild = {
-    roles: { cache: new Map(), create: async () => { roleCreated = true; } },
-    channels: { cache: new Map() },
+    roles: { cache: { get: () => null, find: () => null }, create: async () => { roleCreated = true; } },
+    channels: { cache: { get: () => null, find: () => null, values: () => [][Symbol.iterator]() } },
   };
   const member = {
     roles: { cache: { has: () => false }, add: async () => { throw new Error("must not assign"); }, remove: async () => {} },
