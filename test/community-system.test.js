@@ -16,6 +16,7 @@ import {
   buildPublicationModePicker,
   buildPublicationRecipientPicker,
   buildCommunityPostComponents,
+  buildPollVoteComponents,
   buildCommunityRepliesChannelName,
   buildLoveLetterReplyComponents,
   buildCommunityThreadReplyComponents,
@@ -171,20 +172,16 @@ test("legacy standalone confess picker now opens two anonymous-or-named buttons"
   assert.ok(buttons.every((item) => item.type === 2));
 });
 
-test("confession and love letter replies use public text channel names with their post numbers", () => {
-  assert.equal(
-    buildCommunityRepliesChannelName("confession", "001"),
-    "🤫｜୨୧・𝓬𝓸𝓷𝓯𝓮𝓼𝓼𝓲𝓸𝓷-001-𝓻𝓮𝓹𝓵𝓲𝓮𝓼",
-  );
-  assert.equal(
-    buildCommunityRepliesChannelName("letter", "012"),
-    "💌｜୨୧・𝓵𝓸𝓿𝓮-𝓵𝓮𝓽𝓽𝓮𝓻-012-𝓻𝓮𝓹𝓵𝓲𝓮𝓼",
-  );
-  assert.throws(() => buildCommunityRepliesChannelName("poll", "001"), /Invalid/);
+test("each confession, poll and love letter has one native Discord discussion thread", () => {
   const source = fs.readFileSync(new URL("../src/community-system.js", import.meta.url), "utf8");
-  assert.ok(source.includes("guild.channels.create("));
-  assert.ok(!source.includes("channel.threads.fetch(parent.id"));
-  assert.ok(!source.includes("parent.startThread("));
+  for (const kind of ["confession", "poll", "letter"]) {
+    assert.ok(source.includes(`ensureCommunityPostThread(message, "${kind}")`));
+  }
+  const replies = source.slice(source.indexOf("async function publishThreadReply"), source.indexOf("function buildReportModal"));
+  assert.match(replies, /await ensureCommunityPostThread\(parent, kind\)/);
+  assert.match(replies, /await thread\.send/);
+  assert.doesNotMatch(replies, /guild\.channels\.create/);
+  assert.match(source, /parent\.startThread\(/);
 });
 
 test("community post reply picker offers anonymous and named thread replies", () => {
@@ -245,4 +242,37 @@ test("suggestion publication mode is validated and suggestion embeds omit timest
 
 test("named community replies render real line breaks instead of literal escape text", () => {
   assert.equal(formatReplyDescription("Hello ♡", "Kitti", "Mimi"), "**@Kitti replied to @Mimi**\n\nHello ♡");
+});
+
+test("poll vote buttons persist one active choice per person", () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "kittisugar-polls-"));
+  try {
+    const store = new CommunityStore(directory);
+    const guildId = "1567093019377930363";
+    const messageId = "1568188534836428812";
+    const userId = "1568188640113463437";
+    store.createPoll(guildId, messageId, "Which?", ["A", "B", "C"]);
+    assert.deepEqual(store.getPollResults(guildId, messageId).counts, [0, 0, 0]);
+    store.votePoll(guildId, messageId, userId, 0);
+    assert.deepEqual(store.getPollResults(guildId, messageId).counts, [1, 0, 0]);
+    store.votePoll(guildId, messageId, userId, 2);
+    assert.deepEqual(store.getPollResults(guildId, messageId).counts, [0, 0, 1]);
+    const restarted = new CommunityStore(directory);
+    assert.equal(restarted.getPoll(guildId, messageId).votes[userId], 2);
+  } finally { fs.rmSync(directory, { recursive: true, force: true }); }
+});
+
+test("poll controls give each person one replaceable vote", () => {
+  const rows = buildPollVoteComponents("1568188534836428812", ["First", "Second", "Third"], [2, 1, 0]);
+  const voteButtons = rows[0].toJSON().components;
+  assert.equal(voteButtons.length, 3);
+  assert.deepEqual(voteButtons.map((item) => item.custom_id), [
+    "sugar-community:poll-vote:1568188534836428812:0",
+    "sugar-community:poll-vote:1568188534836428812:1",
+    "sugar-community:poll-vote:1568188534836428812:2",
+  ]);
+  assert.deepEqual(rows[1].toJSON().components.map((item) => item.custom_id), [
+    "sugar-community:reply:poll:1568188534836428812",
+    "sugar-community:report:poll:1568188534836428812",
+  ]);
 });
