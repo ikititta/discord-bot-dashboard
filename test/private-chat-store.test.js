@@ -136,10 +136,10 @@ test("legacy private-chat records without protected message IDs load without bei
   assert.equal(fs.readFileSync(filename, "utf8"), raw);
 });
 
-test("private-chat names use Discord-safe formatting and match decorative General categories", () => {
+test("private-chat names use Discord-safe formatting and match decorative Private Chats categories", () => {
   assert.equal(normalizePrivateChatLabel("Brian Moser"), "brian-moser");
   assert.equal(formatPrivateChatChannelName("Brian Moser"), "👥｜୨୧・𝓫𝓻𝓲𝓪𝓷-𝓶𝓸𝓼𝓮𝓻");
-  assert.equal(normalizeCategoryName("୨୧ ─────── 𝓖𝓮𝓷𝓮𝓻𝓪𝓵 ─────── ୨୧"), "general");
+  assert.equal(normalizeCategoryName("୨୧ ─────── 𝓟𝓻𝓲𝓿𝓪𝓽𝓮 𝓒𝓱𝓪𝓽𝓼 ─────── ୨୧"), "privatechats");
   assert.throws(() => normalizePrivateChatLabel("🎀"), /letter or number/);
 });
 
@@ -235,7 +235,7 @@ function makeCreationFixture({ failChannelCreation = false, failStore = false } 
   };
   const category = {
     id: "623456789012345678",
-    name: "General",
+    name: "Private Chats",
     type: ChannelType.GuildCategory,
   };
   const guild = {
