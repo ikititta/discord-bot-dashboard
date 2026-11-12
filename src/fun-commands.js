@@ -1,13 +1,9 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, Events, REST, Routes, SlashCommandBuilder } from "discord.js";
+import { GENDER_ROLE_IDS } from "./role-onboarding.js";
 
 const KITTISUGAR_GUILD_ID = "1567093019377930363";
 
-export const FUN_ROLE_IDS = Object.freeze({
-  female: "1569638102949953567",
-  male: "1569807000278269983",
-  trans: "1569807011217145948",
-  "non-binary": "1569807020809396455",
-});
+export const FUN_ROLE_IDS = GENDER_ROLE_IDS;
 export const FUN_VIP_ROLE_ID = "1568188640113463437";
 export const FUN_MEMBER_ROLE_ID = "1568188534836428812";
 
