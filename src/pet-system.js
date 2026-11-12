@@ -449,7 +449,7 @@ export function attachPetSystem(client, store) {
       } catch (error) { return interaction.reply({ content: error.message, ephemeral: true }); }
     }
 
-    if (interaction.isButton?.() && interaction.customId.startsWith("sugar-pets:")) {
+    if (interaction.isButton?.() && (interaction.customId === "sugar-pets:global-top" || interaction.customId.startsWith("sugar-pets:adopt:") || interaction.customId.startsWith("sugar-pets:customize:"))) {
       if (interaction.customId === "sugar-pets:global-top") {
         try {
           if (!interaction.guild) return interaction.reply({ content: "The global pet top is only available inside a server ♡", ephemeral: true });
