@@ -333,6 +333,43 @@ function status(pet, walletCoins = pet.coins, vip = false) {
 ♡ Bond: ${pet.bond ?? 0} · Coins: ${walletCoins} · XP: ${pet.xp}
 ♡ Room: ${pet.room} · Outfit: ${pet.outfit}`;
 }
+export function removePetFromProfile(profile, petId) {
+  if (!profile || !petId) return { removed: null, remaining: 0 };
+  const additional = Array.isArray(profile.additionalPets) ? profile.additionalPets : [];
+  let removed = null;
+  if (profile.id === petId) {
+    removed = profile;
+    if (!additional.length) return { removed, remaining: 0, empty: true };
+    const next = additional.shift();
+    const coins = profile.coins, slots = profile.slots;
+    Object.assign(profile, next);
+    profile.coins = coins;
+    profile.slots = slots;
+    profile.additionalPets = additional;
+    profile.activePetIndex = 0;
+  } else {
+    const index = additional.findIndex((item) => item?.id === petId);
+    if (index < 0) return { removed: null, remaining: 1 + additional.length };
+    [removed] = additional.splice(index, 1);
+    profile.additionalPets = additional;
+    if (Number(profile.activePetIndex) > index + 1) profile.activePetIndex -= 1;
+    else if (Number(profile.activePetIndex) === index + 1) profile.activePetIndex = 0;
+  }
+  return { removed, remaining: 1 + (profile.additionalPets?.length ?? 0), empty: false };
+}
+
+function buildPetDeleteMenu(userId, profile) {
+  const pets = [profile, ...(profile.additionalPets ?? [])].filter(Boolean);
+  return new ActionRowBuilder().addComponents(new StringSelectMenuBuilder()
+    .setCustomId("sugar-pets:delete-select:" + userId)
+    .setPlaceholder("Choose the pet you want to delete")
+    .addOptions(pets.map((pet, index) => ({
+      label: String(pet.name || "Unnamed pet").slice(0, 100),
+      description: (pet.species || "pet") + " · Slot " + (index + 1),
+      value: String(pet.id),
+    }))));
+}
+
 async function refreshPetsPanel(guild, store, client) {
   const channel = guild.channels.cache.find((item) =>
     item.type === ChannelType.GuildText && item.name === CHANNEL_NAME,
