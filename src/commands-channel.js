@@ -7,7 +7,7 @@ export const COMMANDS_CHANNEL_NAME = "📖｜୨୧・commands";
 export const COMMANDS_CHANNEL_TOPIC = "Kittisugar interactive all-commands panel · Sugar sticky";
 export const COMMANDS_PANEL_TITLE = "୨୧ 𝓚𝓲𝓽𝓽𝓲𝓼𝓾𝓰𝓪𝓻 · 𝓒𝓸𝓶𝓶𝓪𝓷𝓭𝓼 ♡";
 export const MODERATION_COMMANDS_CHANNEL_ID = "1570277294868660264";
-export const MODERATION_PANEL_TITLE = "୨୧ 𝓢𝓽𝓪𝓯𝓯 · 𝓣𝓸𝓸𝓵𝓼 ♡";
+export const MODERATION_PANEL_TITLE = "୨୧ 𝓜𝓸𝓭𝓮𝓻𝓪𝓽𝓲𝓸𝓷 · 𝓒𝓸𝓶𝓶𝓪𝓷𝓭𝓼 ♡";
 const COLOR = 0xffd9ff;
 const PREFIX = "sugar-commands:";
 const categories = {
@@ -46,14 +46,6 @@ const categories = {
       "`/priv-chat leave` · `/priv-chat delete` · `/priv-chat commands`\n\n" +
       "The owner manages invites, renaming and deletion. Invited members can leave. The owner may rename their private chat at any time.",
   },
-  staff: {
-    label: "Staff Tools",
-    emoji: "🛡️",
-    description:
-      "**Moderator command**\n" +
-      `\`/mod-delete amount:<1-100> [member:<member>]\` — delete up to 100 recent messages from this channel, optionally filtering by a member.\n\n` +
-      "The command is documented in <#1570277294868660264>. Access is limited to members with an authorised moderator role.",
-  },
   profile: {
     label: "Profiles & Tools",
     emoji: "🪞",
@@ -80,13 +72,13 @@ export function buildCommandsCategoryEmbed(category) {
 export function buildModerationCommandsEmbed() {
   return new EmbedBuilder()
     .setColor(COLOR)
-    .setTitle("🛡️ ୨୧ Staff Tools ♡")
+    .setTitle("🛡️ ୨୧ Moderation ♡")
     .setDescription(
       "**/mod-delete amount:<1-100> [member:<member>]**\n" +
       "Delete up to 100 recent messages in this channel. Add a member to target their messages; leave it empty to clean eligible messages from the channel.\n\n" +
       "This command is restricted to authorised moderators. Large deletions require confirmation."
     )
-    .setFooter({ text: "Kittisugar · Staff tools ♡" });
+    .setFooter({ text: "Kittisugar · Moderation ♡" });
 }
 
 export function buildModerationCommandsPanelPayload() {
@@ -103,7 +95,7 @@ export async function ensureModerationCommandsPanel(guild, client) {
   const previous = [...recent.values()].filter((message) =>
     message.author?.id === client.user.id &&
     (message.embeds.some((embed) =>
-      [MODERATION_PANEL_TITLE, "୨୧ 𝓜𝓸𝓭𝓮𝓻𝓪𝓽𝓲𝓸𝓷 · 𝓒𝓸𝓶𝓶𝓪𝓷𝓭𝓼 ♡"].includes(embed.title)) ||
+      [MODERATION_PANEL_TITLE, "୨୧ 𝓢𝓽𝓪𝓯𝓯 · 𝓣𝓸𝓸𝓵𝓼 ♡"].includes(embed.title)) ||
       message.components.some((row) => row.components.some((component) => component.customId === "sugar-moderation-commands"))),
   );
   for (const message of previous) {
