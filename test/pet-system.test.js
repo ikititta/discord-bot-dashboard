@@ -4,7 +4,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { ChannelType } from "discord.js";
-import { PetStore, formatPetChannelName, isUsersPetRoom, ensurePetCategoryPosition, PET_ROOMS_CATEGORY_ID, PET_CATEGORY_BELOW_ID, applyNeedsDecay, chileDateKey, canAdoptPet, refreshPetUnlocks, migratePetWallet, removePetFromProfile } from "../src/pet-system.js";
+import { PetStore, formatPetChannelName, isUsersPetRoom, PET_ADOPTION_CHANNEL_IDS, ensurePetCategoryPosition, PET_ROOMS_CATEGORY_ID, PET_CATEGORY_BELOW_ID, applyNeedsDecay, chileDateKey, canAdoptPet, refreshPetUnlocks, migratePetWallet, removePetFromProfile } from "../src/pet-system.js";
 import { petSummary } from "../src/member-profile-system.js";
 
 test("virtual pet data persists across store restarts", () => {
@@ -45,6 +45,12 @@ test("personal pet rooms use private text-channel title format", () => {
 });
 
 
+
+test("pet adoption is enabled in the configured pets and personal pet channels", () => {
+  assert.equal(PET_ADOPTION_CHANNEL_IDS.has("1570257241511170150"), true);
+  assert.equal(PET_ADOPTION_CHANNEL_IDS.has("1570263323159695482"), true);
+  assert.equal(PET_ADOPTION_CHANNEL_IDS.has("general"), false);
+});
 
 test("personal pet room ownership recovers from a missing topic using private overwrites", () => {
   const channel = {
