@@ -50,8 +50,8 @@ const categories = {
     label: "Staff Tools",
     emoji: "🛡️",
     description:
-      "**Moderator command**\\n" +
-      `\`/mod-delete amount:<1-100> [member:<member>]\` — delete up to 100 recent messages from this channel, optionally filtering by a member.\\n\\n` +
+      "**Moderator command**\n" +
+      `\`/mod-delete amount:<1-100> [member:<member>]\` — delete up to 100 recent messages from this channel, optionally filtering by a member.\n\n` +
       "The command is documented in <#1570277294868660264>. Access is limited to members with an authorised moderator role.",
   },
   profile: {
@@ -82,8 +82,8 @@ export function buildModerationCommandsEmbed() {
     .setColor(COLOR)
     .setTitle("🛡️ ୨୧ Staff Tools ♡")
     .setDescription(
-      "**/mod-delete amount:<1-100> [member:<member>]**\\n" +
-      "Delete up to 100 recent messages in this channel. Add a member to target their messages; leave it empty to clean eligible messages from the channel.\\n\\n" +
+      "**/mod-delete amount:<1-100> [member:<member>]**\n" +
+      "Delete up to 100 recent messages in this channel. Add a member to target their messages; leave it empty to clean eligible messages from the channel.\n\n" +
       "This command is restricted to authorised moderators. Large deletions require confirmation."
     )
     .setFooter({ text: "Kittisugar · Staff tools ♡" });
@@ -102,7 +102,9 @@ export async function ensureModerationCommandsPanel(guild, client) {
   const recent = await channel.messages.fetch({ limit: 100 });
   const previous = [...recent.values()].filter((message) =>
     message.author?.id === client.user.id &&
-    message.embeds.some((embed) => embed.title === MODERATION_PANEL_TITLE),
+    (message.embeds.some((embed) =>
+      [MODERATION_PANEL_TITLE, "୨୧ 𝓜𝓸𝓭𝓮𝓻𝓪𝓽𝓲𝓸𝓷 · 𝓒𝓸𝓶𝓶𝓪𝓷𝓭𝓼 ♡"].includes(embed.title)) ||
+      message.components.some((row) => row.components.some((component) => component.customId === "sugar-moderation-commands"))),
   );
   for (const message of previous) {
     await message.delete().catch((error) => {
