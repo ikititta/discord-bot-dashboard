@@ -119,7 +119,7 @@ export function canDeletePet(vip) {
 }
 function buildPetEmbed() {
   return new EmbedBuilder().setColor(COLOR).setTitle("୨୧ 𝓥𝓲𝓻𝓽𝓾𝓪𝓵 𝓟𝓮𝓽𝓼 ♡")
-    .setDescription("Adopt your own virtual companion, create a private pet room and take care of your little friend ♡\\n\\n" +
+    .setDescription("Adopt your own virtual companion, create a private pet room and take care of your little friend ♡\n\n" +
       "All pet commands and activities are available inside your private room. Create your room below to get started!");
 }
 function buildPetRoomWelcomeEmbed(profile, pet, vip = false) {
