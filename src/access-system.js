@@ -201,11 +201,11 @@ export function buildGuidePayload(guild) {
       "`/priv-chat create|add|remove|rename|leave|delete|commands` — manage your private chat.\n" +
       "`!profile [@member]` — view a complete member profile and saved stats.\n" +
       "`!rep [@member]` · `!rep stats [@member]` · `!rep top` · `!rep comments [@member]` — reputation tools.\n" +
-      "`!pet adopt` — open the interactive adoption embed, choose a species, then adopt. Non-VIP members receive a unique random design; VIP members can customise name, colour, breed, appearance and personality before adopting.\n" +
-      "`!pet stats` · `!pet feed` · `!pet play` · `!pet cuddle` · `!pet talk` · `!pet story` — care for and bond with your pet.\n" +
-      "`!pet shop` · `!pet buy <treat|toy>` · `!pet inventory` · `!pet select <number>` — items and pet slots.\n" +
+      "`!pet adopt` — open the interactive species selector. One pet per member; VIP can unlock up to three slots and customise companions.\n" +
+      "`!pet stats` · `!pet feed` · `!pet play` · `!pet cuddle` · `!pet talk` · `!pet story` · `!pet gif [happy|dance|sleep]` — care, bond and unlock reactions.\n" +
+      "`!pet daily` · `!pet shop` · `!pet buy <treat|toy|potion>` · `!pet use <item>` · `!pet inventory` · `!pet select <number>` — shared coins and items. Potions refill hunger completely.\n" +
       "VIP pet customisation: `!pet name`, `!pet color`, `!pet breed`, `!pet appearance`, `!pet personality`. VIP extras: `!pet room`, `!pet outfit`, `!pet rare`, `!pet slots`, `!pet minigame`.\n" +
-      "`!fun stats` / `!stats` — fun statistics. `!vip stats [@member]` — complete VIP stats. `/fun help` — fun-command guide.\n" +
+      "`!funhelp` / `/fun help` — fun guide. `!stats` and `!vip stats [@member]` — VIP statistics. `!fuck @member` — VIP-only fun command.\n" +
       "`!couple @member` · `!propose @member` · `!marry @member` · `!breakup` · `!divorce` — relationships.\n" +
       `## ୨୧ ${guideSectionTitle("Sugar AI")}\n\n` +
       "Mention Sugar or address the bot directly to start a conversation ♡" + buildServerMap(guild)
