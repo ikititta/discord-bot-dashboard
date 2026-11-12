@@ -603,7 +603,8 @@ export function attachPetSystem(client, store) {
       const count = profile ? 1 + (profile.additionalPets?.length ?? 0) : 0;
       if (profile && !vip) throw new Error("You already have a pet ♡ VIP members can unlock more pet slots.");
       if (profile && !canAdoptPet(profile, vip)) throw new Error("All your pet slots are full. Use `!pet slots` to unlock another VIP slot ♡");
-      const companion = makePet(species);\n      companion.vip = vip;
+      const companion = makePet(species);
+      companion.vip = vip;
       if (profile) companion.coins = 0;
       if (vip) {
         if (customization.name) companion.name = customization.name.slice(0, 24);
