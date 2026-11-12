@@ -149,3 +149,43 @@ test("onboarding and fun commands share the exact configured Discord gender role
     "non-binary": "1569807020809396455",
   });
 });
+
+
+test("self-role creation is serialized and reuses a suffixed legacy duplicate", async () => {
+  const { getOrCreateRole } = await import("../src/role-onboarding.js");
+  const roleMap = new Map();
+  let creates = 0;
+  let refreshes = 0;
+  const guild = {
+    id: "guild-role-lock",
+    roles: {
+      cache: {
+        values: () => roleMap.values(),
+      },
+      fetch: async () => {
+        refreshes += 1;
+        await new Promise((resolve) => setTimeout(resolve, 5));
+        return roleMap;
+      },
+      create: async (data) => {
+        creates += 1;
+        const role = { id: `created-${creates}`, name: data.name };
+        roleMap.set(role.id, role);
+        return role;
+      },
+    },
+  };
+
+  const [first, second] = await Promise.all([
+    getOrCreateRole(guild, "color-red", 0xe74c3c),
+    getOrCreateRole(guild, "color-red", 0xe74c3c),
+  ]);
+  assert.equal(first.id, second.id);
+  assert.equal(creates, 1);
+  assert.equal(refreshes, 1);
+
+  roleMap.set("legacy", { id: "legacy", name: "color-red 1" });
+  const reused = await getOrCreateRole(guild, "color-red", 0xe74c3c);
+  assert.equal(reused.id, "legacy");
+  assert.equal(creates, 1);
+});
