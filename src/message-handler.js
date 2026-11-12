@@ -16,15 +16,12 @@ export function createMessageResponder({ generateReply, getBotUserId, memory, no
   return async function respondToMessage(message) {
     if (!message?.guild || !message.author || message.author.bot || message.webhookId) return;
     const botUserId = getBotUserId?.();
-    const isReplyToSugar = await referencesBotMessage(message, botUserId);
-    if (!isAddressedToSugar(message.content, botUserId) && !isReplyToSugar) return;
+    if (!isAddressedToSugar(message.content, botUserId)) return;
     if (!rememberMessage(message.id, seenMessages, now())) return;
     if (activeRequests >= MAX_CONCURRENT_REQUESTS) { await safeReply(message, BUSY_REPLY); return; }
 
     const userMessage = cleanAddressedMessage(message.content, botUserId);
-    const prompt = userMessage || (isReplyToSugar
-      ? "The user replied to your previous message. Continue naturally, using the reply as context."
-      : "The user addressed you by name but did not include a question. Reply with a brief, natural greeting.");
+    const prompt = userMessage || "The user addressed you by name but did not include a question. Reply with a brief, natural greeting.";
     activeRequests += 1;
     try {
       if (memory && CLEAR_MEMORY.test(prompt.trim())) {
@@ -49,13 +46,6 @@ export function createMessageResponder({ generateReply, getBotUserId, memory, no
   };
 }
 
-async function referencesBotMessage(message, botUserId) {
-  if (!botUserId || !message.reference?.messageId) return false;
-  try {
-    const referenced = message.reference.message ?? await message.channel.messages.fetch(message.reference.messageId);
-    return referenced?.author?.id === botUserId;
-  } catch { return false; }
-}
 
 export function buildMemberContext(member, user) {
   return {
