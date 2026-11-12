@@ -133,8 +133,8 @@ function buildPetCommandsEmbed() {
 function buildAdoptionEmbed(selectedSpecies = null, vip = false) {
   const speciesLine = selectedSpecies ? "Selected companion: **" + selectedSpecies + "** ♡" : "Choose the species you’d love to meet ♡";
   const designLine = vip
-    ? "As a VIP member, you can customise your companion’s name, colour, breed, appearance and personality before adopting."
-    : "Your companion will receive a one-of-a-kind random name and design. Want to choose every detail yourself? VIP unlocks full pet customisation ♡";
+    ? "As a VIP member, you can customise your companion’s name, gender, colour, breed, appearance and personality. You also have access to rare species: fox, ferret and turtle ♡"
+    : "Your companion will receive a one-of-a-kind random name and design. Cats, dogs, hamsters, rabbits, fish, birds and guinea pigs are available to everyone. Rare species (fox, ferret and turtle) and full customisation are VIP-exclusive ♡";
   return new EmbedBuilder().setColor(COLOR).setTitle("୨୧ 𝓐 𝓛𝓲𝓽𝓽𝓵𝓮 𝓐𝓭𝓸𝓹𝓽𝓲𝓸𝓷 ♡")
     .setDescription(speciesLine + "\n\n" + designLine + "\n\nPick a species below to continue.")
     .setFooter({ text: "Every companion gets its own unique identity ♡" });
