@@ -238,7 +238,7 @@ function findSelfRoleByName(guild, name) {
   const expected = normalizeRoleName(name);
   const roles = [...guild.roles.cache.values()];
   return roles.find((role) => normalizeRoleName(role.name) === expected) ??
-    roles.find((role) => normalizeRoleName(role.name).replace(/\\d+$/u, "") === expected) ??
+    roles.find((role) => normalizeRoleName(role.name).replace(/\d+$/u, "") === expected) ??
     null;
 }
 
