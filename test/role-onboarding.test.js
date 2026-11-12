@@ -10,6 +10,7 @@ import {
   buildSelfRolesPanelPayload,
   roleNameForSelection,
   findNsfwHiddenRole,
+  findNsfwVisibleRole,
   NSFW_HIDDEN_ROLE_ID,
   restrictUnderageMember,
 } from "../src/role-onboarding.js";
@@ -75,6 +76,17 @@ test("NSFW visibility uses the explicitly configured Hide NSFW Channels role ID"
   assert.equal(NSFW_HIDDEN_ROLE_ID, "1569885841180856361");
   assert.equal(findNsfwHiddenRole(guild), role);
   assert.equal(findNsfwHiddenRole({ roles: { cache: new Map() } }), null);
+});
+
+test("formatted Kittisugar roles are recognized by their bracket, math-script and exclamation style", () => {
+  const sfw = { id: "sfw-role", name: "꒰ 𝓢𝓕𝓦 ! ꒱" };
+  const nsfw = { id: "nsfw-role", name: "꒰ 𝓝𝓢𝓕𝓦 ! ꒱" };
+  const age = { id: "age-22", name: "꒰ 22 ! ꒱" };
+  const female = { id: "female", name: "꒰ 𝓕𝓮𝓶𝓪𝓵𝓮 ! ꒱" };
+  const cache = new Map([[sfw.id, sfw], [nsfw.id, nsfw], [age.id, age], [female.id, female]]);
+  const guild = { roles: { cache } };
+  assert.equal(findNsfwHiddenRole(guild), sfw);
+  assert.equal(findNsfwVisibleRole(guild), nsfw);
 });
 
 
