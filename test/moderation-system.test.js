@@ -11,7 +11,7 @@ function message({ content = "", mentions = {}, channel = "general", roles = [] 
     content,
     mentions: { users: { size: 0 }, roles: { size: 0 }, ...mentions },
     channel: { name: channel },
-    member: { roles: { cache: { some: (callback) => roles.some(callback) } } },
+    member: { roles: { cache: { has: (id) => roles.some((role) => role.id === id), some: (callback) => roles.some(callback) } } },
   };
 }
 
