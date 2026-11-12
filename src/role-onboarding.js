@@ -9,9 +9,18 @@ import {
 } from "discord.js";
 
 import { toRoyalBold } from "./embed-format.js";
+import { NEW_ROLE_ID, MEMBER_ROLE_ID } from "./role-ids.js";
 
 function normalizeRoleName(value) {
   return String(value ?? "").normalize("NFKD").toLowerCase().replace(/\p{M}/gu, "").replace(/[^a-z0-9]/g, "");
+}
+
+function findNewRole(guild) {
+  return guild.roles.cache.get(NEW_ROLE_ID) ?? null;
+}
+
+function findMemberRole(guild) {
+  return guild.roles.cache.get(MEMBER_ROLE_ID) ?? null;
 }
 
 function findRoleByName(guild, name) {
@@ -75,7 +84,7 @@ async function ensureAgeReviewVisibility(guild, role) {
       ...(channel.id === support.id ? { ReadMessageHistory: true, SendMessages: false } : {}),
     }, "Restrict age-review members to the Support channel");
   }
-  const newRole = findRoleByName(guild, "new");
+  const newRole = findNewRole(guild);
   if (newRole) await support.permissionOverwrites.edit(newRole, {
     ViewChannel: true, ReadMessageHistory: true, SendMessages: false,
   }, "Allow New members to reach Support");
@@ -181,8 +190,8 @@ async function handleAgeReviewApproval(interaction, settings) {
   const userId = interaction.customId.slice((AGE_REVIEW_PREFIX + "approve:").length);
   const member = await interaction.guild.members.fetch(userId).catch(() => null);
   const ageRole = findRoleByName(interaction.guild, AGE_REVIEW_ROLE_NAME);
-  const newRole = findRoleByName(interaction.guild, "new");
-  const memberRole = findRoleByName(interaction.guild, "member");
+  const newRole = findNewRole(interaction.guild);
+  const memberRole = findMemberRole(interaction.guild);
   if (!member || !ageRole || !newRole || !memberRole || !member.roles.cache.has(ageRole.id)) {
     return interaction.reply({ content: "This member is no longer awaiting age verification.", ephemeral: true });
   }
@@ -445,8 +454,8 @@ async function completeOnboarding(interaction) {
   const member = await interaction.guild.members.fetch(interaction.user.id);
   const ageReviewRole = findRoleByName(interaction.guild, AGE_REVIEW_ROLE_NAME);
   if (ageReviewRole && member.roles.cache.has(ageReviewRole.id)) throw new Error("Manual age verification is still pending.");
-  const newRole = findRoleByName(interaction.guild, "new");
-  const memberRole = findRoleByName(interaction.guild, "member");
+  const newRole = findNewRole(interaction.guild);
+  const memberRole = findMemberRole(interaction.guild);
   if (!newRole || !memberRole) throw new Error("Sugar couldn't find the New or Member role. Please contact a moderator.");
   const changed = await assignMemberAccess(member, { newRole, memberRole });
   return changed
@@ -456,8 +465,8 @@ async function completeOnboarding(interaction) {
 
 export async function startRoleOnboarding(interaction) {
   await interaction.deferReply({ ephemeral: true });
-  const newRole = findRoleByName(interaction.guild, "new");
-  const memberRole = findRoleByName(interaction.guild, "member");
+  const newRole = findNewRole(interaction.guild);
+  const memberRole = findMemberRole(interaction.guild);
   const member = await interaction.guild.members.fetch(interaction.user.id).catch(() => null);
   if (!member || !newRole || !memberRole) {
     return interaction.editReply("Sugar couldn't verify your server access. Please contact a moderator.");
