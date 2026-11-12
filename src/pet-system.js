@@ -91,7 +91,7 @@ export function formatPetChannelName(username) {
 
 export function isUsersPetRoom(channel, userId) {
   if (!channel || !userId || channel.type !== ChannelType.GuildText) return false;
-  const topicOwner = /^Sugar personal pet room for (\\d{17,20})$/.exec(channel.topic ?? "")?.[1];
+  const topicOwner = /^Sugar personal pet room for (\d{17,20})$/.exec(channel.topic ?? "")?.[1];
   if (topicOwner) return topicOwner === userId;
   if (!/^🐾｜୨୧・.+’s 𝓹𝓮𝓽$/u.test(channel.name ?? "")) return false;
   const ownerOverwrite = channel.permissionOverwrites?.cache?.get(userId);
@@ -778,7 +778,7 @@ export function attachPetSystem(client, store) {
   client.on(Events.MessageCreate, async (message) => {
     if (!message.guild || message.author?.bot || message.webhookId ||
         message.channel?.type !== ChannelType.GuildText ||
-        !/^!pet(?:\\s|$)/i.test(String(message.content ?? "").trim())) return;
+        !/^!pet(?:\s|$)/i.test(String(message.content ?? "").trim())) return;
     if (!isUsersPetRoom(message.channel, message.author.id)) return;
     try { await runPetCommand(message, store, client); }
     catch (error) {
