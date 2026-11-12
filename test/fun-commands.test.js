@@ -7,6 +7,7 @@ import {
   buildFunActionText,
   buildFunHelpEmbed,
   buildFunStatsEmbed,
+  isFunHelpCommand,
   fetchAnimeGif,
   fetchNsfwGif,
   getFunCommandDefinition,
@@ -200,4 +201,12 @@ test("!fuck rejects SFW or wrong-gender GIF results instead of falling back", as
       json: async () => ({ link: "https://cdn.purrbot.site/sfw/kiss/gif/kiss_001.gif", error: false }),
     }),
   }), /outside the selected fuck category/);
+});
+
+
+test("fun help works with both documented prefix syntaxes", () => {
+  assert.equal(isFunHelpCommand("funhelp"), true);
+  assert.equal(isFunHelpCommand("fun", "help"), true);
+  assert.equal(isFunHelpCommand("fun", "stats"), false);
+  assert.equal(isFunHelpCommand("smile"), false);
 });
