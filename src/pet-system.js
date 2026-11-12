@@ -104,9 +104,9 @@ function buildPetCommandsEmbed() {
     .setDescription(
       "**Adoption · Everyone**\n`!pet adopt` — open the interactive adoption menu and choose a species. Everyone receives a unique random design; VIP can customise before adopting. One pet per member by default; VIP can unlock up to three slots.\n\n" +
       "**Care & bonding · Everyone**\n`!pet` · `!pet stats` · `!pet feed` · `!pet play` · `!pet cuddle` · `!pet talk` · `!pet story` · `!pet gif [happy|dance|sleep]`\nPlay, cuddle and talk to build bond. Higher bond unlocks exclusive dialogue and reaction GIFs.\n\n" +
-      "**Coins & items · Everyone**\n`!pet daily` · `!pet shop` · `!pet buy <treat|toy|potion>` · `!pet use <item>` · `!pet inventory` · `!pet select <number>`\nTreats restore hunger, toys boost happiness and bond, and potions refill hunger completely. Your coins are shared across all your pets.\n\n" +
+      "**Coins & items · Everyone**\n`!pet daily` · `!pet shop` · `!pet buy <treat|toy|potion>` · `!pet use <item>` · `!pet inventory` · `!pet select <number>` · `!pet delete`\nTreats restore hunger, toys boost happiness and bond, and potions refill hunger completely. Your coins are shared across all your pets.\n\n" +
       "**VIP customisation**\n`!pet name <name>` · `!pet color <color>` · `!pet breed <breed>` · `!pet appearance <details>` · `!pet personality <traits>`\n\n" +
-      "**VIP extras**\n`!pet room` · `!pet outfit <name>` · `!pet slots` · `!pet minigame` · `!pet delete`"
+      "**VIP extras**\n`!pet room` · `!pet outfit <name>` · `!pet slots` · `!pet minigame`"
     )
     .setFooter({ text: "Use these commands in your private pet room · Your progress is saved ♡" });
 }
@@ -338,7 +338,7 @@ export function removePetFromProfile(profile, petId) {
   const additional = Array.isArray(profile.additionalPets) ? profile.additionalPets : [];
   let removed = null;
   if (profile.id === petId) {
-    removed = profile;
+    removed = structuredClone(profile);
     if (!additional.length) return { removed, remaining: 0, empty: true };
     const next = additional.shift();
     const coins = profile.coins, slots = profile.slots;
@@ -421,7 +421,7 @@ async function runPetCommand(message, store, client) {
     profile.activePetIndex = index - 1;
     store.save(guildId, userId, profile);
     pet = index === 1 ? profile : profile.additionalPets[index - 2];
-    return reply("Now caring for " + pet.name + " ♡\n" + status(pet, profile.coins));
+    return reply("Now caring for " + pet.name + (vip ? " VIP" : "") + " ♡\n" + status(pet, profile.coins, vip));
   }
   if (action === "view" || action === "status") {
     pet.id ??= randomUUID();
@@ -430,14 +430,14 @@ async function runPetCommand(message, store, client) {
     queuePetArtwork(message, store, profile, pet);
     const artPath = pet.visualIdentity?.artStatus === "ready" ? pet.visualIdentity.artPath : null;
     if (artPath && fs.existsSync(artPath)) {
-      return message.reply({ content: status(pet), files: [artPath], allowedMentions: { repliedUser: false } });
+      return message.reply({ content: status(pet, profile.coins, vip), files: [artPath], allowedMentions: { repliedUser: false } });
     }
-    return reply(status(pet, profile.coins) + (pet.visualIdentity?.artStatus === "generating" ? "\n♡ Your unique artwork is being created..." : ""));
+    return reply(status(pet, profile.coins, vip) + (pet.visualIdentity?.artStatus === "generating" ? "\n♡ Your unique artwork is being created..." : ""));
   }
 
   if (action === "stats") {
     const pets = [profile, ...(profile.additionalPets ?? [])].filter(Boolean);
-    return reply(`**${message.author.username}'s Pet Stats ♡**\nPets owned: ${pets.length}\nActive pet: ${pet.name}\nLevel: ${pet.level}\nXP: ${pet.xp}\nHunger: ${pet.hunger}/100\nHappiness: ${pet.happiness}/100\nCoins: ${profile.coins}\nBond: ${pet.bond ?? 0}\nDialogues: ${pet.dialogueCount ?? 0}\nStories unlocked: ${(pet.storyUnlocks ?? []).length}`);
+    return reply(`**${message.author.username}'s Pet Stats ♡**\nPets owned: ${pets.length}\nActive pet: ${pet.name}${vip ? " VIP" : ""}\nLevel: ${pet.level}\nXP: ${pet.xp}\nHunger: ${pet.hunger}/100\nHappiness: ${pet.happiness}/100\nCoins: ${profile.coins}\nBond: ${pet.bond ?? 0}\nDialogues: ${pet.dialogueCount ?? 0}\nStories unlocked: ${(pet.storyUnlocks ?? []).length}`);
   }
   if (action === "talk") {
     const lines = {
@@ -578,7 +578,7 @@ async function runPetCommand(message, store, client) {
   refreshPetUnlocks(pet);
   store.save(guildId, userId, profile);
   await refreshPetsPanel(message.guild, store, client);
-  return reply("Done ♡\n" + status(pet, profile.coins));
+  return reply("Done ♡\n" + status(pet, profile.coins, vip));
 }
 export function attachPetSystem(client, store) {
   if (!store) throw new Error("The virtual-pet store is required.");
@@ -603,7 +603,7 @@ export function attachPetSystem(client, store) {
       const count = profile ? 1 + (profile.additionalPets?.length ?? 0) : 0;
       if (profile && !vip) throw new Error("You already have a pet ♡ VIP members can unlock more pet slots.");
       if (profile && !canAdoptPet(profile, vip)) throw new Error("All your pet slots are full. Use `!pet slots` to unlock another VIP slot ♡");
-      const companion = makePet(species);
+      const companion = makePet(species);\n      companion.vip = vip;
       if (profile) companion.coins = 0;
       if (vip) {
         if (customization.name) companion.name = customization.name.slice(0, 24);
