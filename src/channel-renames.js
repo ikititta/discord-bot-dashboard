@@ -1,4 +1,5 @@
 const originalSetName = new WeakMap();
+const originalEdit = new WeakMap();
 const patchedChannels = new WeakSet();
 const patchedManagers = new WeakSet();
 const pendingCreations = new Map();
@@ -6,6 +7,20 @@ const pendingCreations = new Map();
 function protectChannel(channel, onBlocked = console.warn) {
   if (!channel || typeof channel.setName !== "function" || patchedChannels.has(channel)) return false;
   originalSetName.set(channel, channel.setName.bind(channel));
+  if (typeof channel.edit === "function") {
+    originalEdit.set(channel, channel.edit.bind(channel));
+    Object.defineProperty(channel, "edit", {
+      configurable: false,
+      writable: false,
+      value: async (options, ...args) => {
+        if (options && Object.prototype.hasOwnProperty.call(options, "name")) {
+          onBlocked(`[bot] blocked automatic channel rename through edit() for ${channel.id}`);
+          return channel;
+        }
+        return originalEdit.get(channel)(options, ...args);
+      },
+    });
+  }
   Object.defineProperty(channel, "setName", {
     configurable: false,
     writable: false,
