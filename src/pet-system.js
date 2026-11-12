@@ -126,17 +126,17 @@ function buildPetEmbed() {
 }
 function buildPetRoomWelcomeEmbed(profile, pet, vip = false) {
   const description = pet
-    ? status(pet, profile.coins, vip) + "\\n\\nThis is your little private corner together. Your companion was adopted in **#🐾｜୨୧ ・𝓹𝓮𝓽𝓼** and all their progress is saved here ♡"
+    ? status(pet, profile.coins, vip) + "\n\nThis is your little private corner together. Your companion was adopted in **#🐾｜୨୧ ・𝓹𝓮𝓽𝓼** and all their progress is saved here ♡"
     : "Your private pet corner is ready ♡ Adopt and choose your companion in **#🐾｜୨୧ ・𝓹𝓮𝓽𝓼** first. Once you have adopted them, their profile and information will appear here.";
   return new EmbedBuilder().setColor(COLOR).setTitle("୨୧ 𝓦𝓮𝓵𝓬𝓸𝓶𝓮 𝓱𝓸𝓶𝓮 ♡").setDescription(description)
     .setFooter({ text: "A little home for you and your companion ♡" });
 }
 const PET_HELP_CATEGORIES = {
-  care: { label: "Care & bonding", title: "୨୧ 𝓒𝓪𝓻𝓮 & 𝓑𝓸𝓷𝓭𝓲𝓷𝓰 ♡", body: "`!pet` · `!pet stats` · `!pet feed` · `!pet play` · `!pet cuddle` · `!pet talk` · `!pet story` · `!pet gif [happy|dance|sleep]`\\n\\nFeed, play, cuddle and talk to care for your companion, build your bond and unlock stories and GIFs." },
-  coins: { label: "Coins & items", title: "୨୧ 𝓒𝓸𝓲𝓷𝓼 & 𝓘𝓽𝓮𝓶𝓼 ♡", body: "`!pet daily` · `!pet shop` · `!pet buy <treat|toy|potion>` · `!pet use <item>` · `!pet inventory`\\n\\nEarn daily coins, buy treats, toys and potions. Your wallet is shared by all your pets." },
-  manage: { label: "My pets", title: "୨୧ 𝓜𝔂 𝓟𝓮𝓽𝓼 ♡", body: "`!pet select <number>` · `!pet stats`\\n\\nChoose which companion is active and check their individual stats. Adoption and species selection happen in the pets channel." },
-  customize: { label: "Customisation", title: "୨୧ 𝓒𝓾𝓼𝓽𝓸𝓶𝓲𝓼𝓪𝓽𝓲𝓸𝓷 ♡", body: "`!pet name <name>` · `!pet color <color>` · `!pet breed <breed>` · `!pet appearance <details>` · `!pet personality <traits>`\\n\\nVIP members can customise their companion's identity." },
-  vip: { label: "VIP features", title: "୨୧ 𝓥𝓘𝓟 𝓕𝓮𝓪𝓽𝓾𝓻𝓮𝓼 ♡", body: "`!pet delete` · `!pet room` · `!pet outfit <name>` · `!pet slots` · `!pet minigame`\\n\\nVIP unlocks extra species, customisation, additional pet slots and pet deletion." },
+  care: { label: "Care & bonding", title: "୨୧ 𝓒𝓪𝓻𝓮 & 𝓑𝓸𝓷𝓭𝓲𝓷𝓰 ♡", body: "`!pet` · `!pet stats` · `!pet feed` · `!pet play` · `!pet cuddle` · `!pet talk` · `!pet story` · `!pet gif [happy|dance|sleep]`\n\nFeed, play, cuddle and talk to care for your companion, build your bond and unlock stories and GIFs." },
+  coins: { label: "Coins & items", title: "୨୧ 𝓒𝓸𝓲𝓷𝓼 & 𝓘𝓽𝓮𝓶𝓼 ♡", body: "`!pet daily` · `!pet shop` · `!pet buy <treat|toy|potion>` · `!pet use <item>` · `!pet inventory`\n\nEarn daily coins, buy treats, toys and potions. Your wallet is shared by all your pets." },
+  manage: { label: "My pets", title: "୨୧ 𝓜𝔂 𝓟𝓮𝓽𝓼 ♡", body: "`!pet select <number>` · `!pet stats`\n\nChoose which companion is active and check their individual stats. Adoption and species selection happen in the pets channel." },
+  customize: { label: "Customisation", title: "୨୧ 𝓒𝓾𝓼𝓽𝓸𝓶𝓲𝓼𝓪𝓽𝓲𝓸𝓷 ♡", body: "`!pet name <name>` · `!pet color <color>` · `!pet breed <breed>` · `!pet appearance <details>` · `!pet personality <traits>`\n\nVIP members can customise their companion's identity." },
+  vip: { label: "VIP features", title: "୨୧ 𝓥𝓘𝓟 𝓕𝓮𝓪𝓽𝓾𝓻𝓮𝓼 ♡", body: "`!pet delete` · `!pet room` · `!pet outfit <name>` · `!pet slots` · `!pet minigame`\n\nVIP unlocks extra species, customisation, additional pet slots and pet deletion." },
 };
 function buildPetStickyPayload(ownerId) {
   const row = new ActionRowBuilder().addComponents(
@@ -150,17 +150,6 @@ function buildPetCategoryEmbed(category) {
   const item = PET_HELP_CATEGORIES[category];
   return new EmbedBuilder().setColor(COLOR).setTitle(item.title).setDescription(item.body)
     .setFooter({ text: "Use these commands in your private pet room ♡" });
-}
-function buildPetCommandsEmbed() {
-  return new EmbedBuilder().setColor(COLOR).setTitle("୨୧ 𝓟𝓮𝓽 𝓡𝓸𝓸𝓶 · 𝓒𝓸𝓶𝓶𝓪𝓷𝓭𝓼 ♡")
-    .setDescription(
-      "**Adoption · Everyone**\n`!pet adopt` — open the interactive adoption menu and choose a species. Everyone receives a unique random design; VIP can customise before adopting. One pet per member by default; VIP can unlock up to three slots.\n\n" +
-      "**Care & bonding · Everyone**\n`!pet` · `!pet stats` · `!pet feed` · `!pet play` · `!pet cuddle` · `!pet talk` · `!pet story` · `!pet gif [happy|dance|sleep]`\nPlay, cuddle and talk to build bond. Higher bond unlocks exclusive dialogue and reaction GIFs.\n\n" +
-      "**Coins & items · Everyone**\n`!pet daily` · `!pet shop` · `!pet buy <treat|toy|potion>` · `!pet use <item>` · `!pet inventory` · `!pet select <number>` · `!pet delete`\nTreats restore hunger, toys boost happiness and bond, and potions refill hunger completely. Your coins are shared across all your pets.\n\n" +
-      "**VIP customisation**\n`!pet name <name>` · `!pet color <color>` · `!pet breed <breed>` · `!pet appearance <details>` · `!pet personality <traits>`\n\n" +
-      "**VIP extras**\n`!pet room` · `!pet outfit <name>` · `!pet slots` · `!pet minigame`"
-    )
-    .setFooter({ text: "Use these commands in your private pet room · Your progress is saved ♡" });
 }
 function buildAdoptionEmbed(selectedSpecies = null, vip = false) {
   const speciesLine = selectedSpecies ? "Selected companion: **" + selectedSpecies + "** ♡" : "Choose the species you’d love to meet ♡";
