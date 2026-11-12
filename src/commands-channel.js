@@ -6,6 +6,9 @@ export const COMMANDS_CATEGORY_ID = "1568179038625857576";
 export const COMMANDS_CHANNEL_NAME = "📖｜୨୧・commands";
 export const COMMANDS_CHANNEL_TOPIC = "Kittisugar interactive all-commands panel · Sugar sticky";
 export const COMMANDS_PANEL_TITLE = "୨୧ 𝓚𝓲𝓽𝓽𝓲𝓼𝓾𝓰𝓪𝓻 · 𝓒𝓸𝓶𝓶𝓪𝓷𝓭𝓼 ♡";
+export const MODERATION_COMMANDS_CHANNEL_ID = "1570277294868660264";
+export const MODERATION_PANEL_TITLE = "୨୧ 𝓜𝓸𝓭𝓮𝓻𝓪𝓽𝓲𝓸𝓷 · 𝓒𝓸𝓶𝓶𝓪𝓷𝓭𝓼 ♡";
+const MODERATION_PREFIX = "sugar-moderation-commands";
 const COLOR = 0xffd9ff;
 const PREFIX = "sugar-commands:";
 const categories = {
@@ -54,13 +57,7 @@ const categories = {
       "`!pet shop` — pet shop and item prices.\n" +
       "`!pet inventory` — items owned by your active pet.",
   },
-  moderation: {
-    label: "Moderation",
-    emoji: "🛡️",
-    description:
-      "`/delete amount:` — delete your own recent messages.\n`/vip-delete amount:` — VIP message cleanup.\n`/mod-delete amount: [member:]` — moderator cleanup (moderator permissions required).\n\n" +
-      "Ticket panels, access verification and moderation actions are operated through their buttons and selectors in the relevant server channels. These are interactive controls, not text commands.",
-  },
+
 };
 
 export function buildCommandsCategoryEmbed(category) {
@@ -71,6 +68,60 @@ export function buildCommandsCategoryEmbed(category) {
     .setTitle(item.emoji + " ୨୧ " + item.label + " Commands ♡")
     .setDescription(item.description)
     .setFooter({ text: "Kittisugar · Commands guide ♡" });
+}
+
+export function buildModerationCommandsEmbed() {
+  return new EmbedBuilder()
+    .setColor(COLOR)
+    .setTitle("🛡️ ୨୧ Moderation Commands ♡")
+    .setDescription(
+      "**Member cleanup**\\n" +
+      `\`/delete amount:<1-20>\` — delete up to 20 of your own recent messages.\\n\\n` +
+      "**VIP cleanup**\\n" +
+      `\`/vip-delete amount:<1-100>\` — VIP members can delete up to 100 of their own recent messages.\\n\\n` +
+      "**Moderator cleanup**\\n" +
+      `\`/mod-delete amount:<1-100> [member:<member>]\` — moderators can delete up to 100 recent messages in the channel, optionally filtering by member.\\n\\n` +
+      "**Automatic protection**\\n" +
+      "Sugar also detects spam, repeated messages, mass mentions and unauthorised promotion. The strike system warns on the first infraction, applies a 10-minute timeout on the second and removes members after the third. Anti-raid protection restricts suspicious new accounts during join bursts."
+    )
+    .setFooter({ text: "Kittisugar · Moderation guide ♡" });
+}
+
+export function buildModerationCommandsPanelPayload() {
+  return {
+    embeds: [new EmbedBuilder()
+      .setColor(COLOR)
+      .setTitle(MODERATION_PANEL_TITLE)
+      .setDescription("Moderation tools and server protection, neatly organised ♡\\n\\nPress the button below to see the available commands by category.")],
+    components: [new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setCustomId(MODERATION_PREFIX)
+        .setLabel("Moderation Commands")
+        .setEmoji("🛡️")
+        .setStyle(ButtonStyle.Secondary),
+    )],
+  };
+}
+
+export async function ensureModerationCommandsPanel(guild, client) {
+  const channel = await guild.channels.fetch(MODERATION_COMMANDS_CHANNEL_ID).catch(() => null);
+  if (!channel || channel.type !== ChannelType.GuildText) {
+    console.error("[commands] moderation channel " + MODERATION_COMMANDS_CHANNEL_ID + " was not found; no channel was created.");
+    return null;
+  }
+  const recent = await channel.messages.fetch({ limit: 100 });
+  const previous = [...recent.values()].filter((message) =>
+    message.author?.id === client.user.id &&
+    message.embeds.some((embed) => embed.title === MODERATION_PANEL_TITLE),
+  );
+  for (const message of previous) {
+    await message.delete().catch((error) => {
+      if (error?.code !== 10008) throw error;
+    });
+  }
+  await channel.send(buildModerationCommandsPanelPayload());
+  console.info("[commands] moderation guide ready in #" + channel.name);
+  return channel;
 }
 
 export function buildCommandsPanelPayload() {
@@ -156,7 +207,14 @@ async function refreshCommandsSticky(channel, client) {
 const refreshQueues = new Map();
 export function attachCommandsChannel(client) {
   client.on(Events.InteractionCreate, async (interaction) => {
-    if (!interaction.isButton?.() || !interaction.customId.startsWith(PREFIX)) return;
+    if (!interaction.isButton?.()) return;
+    if (interaction.customId === MODERATION_PREFIX) {
+      await interaction.reply({ embeds: [buildModerationCommandsEmbed()], ephemeral: true }).catch((error) => {
+        console.error("[commands] moderation response failed: " + error.message);
+      });
+      return;
+    }
+    if (!interaction.customId.startsWith(PREFIX)) return;
     const category = interaction.customId.slice(PREFIX.length);
     if (!categories[category]) return;
     await interaction.reply({ embeds: [buildCommandsCategoryEmbed(category)], ephemeral: true }).catch((error) => {
@@ -183,8 +241,14 @@ export function attachCommandsChannel(client) {
   const setup = (guild) => ensureCommandsChannel(guild, client).catch((error) =>
     console.error("[commands] setup failed in " + guild.id + ": " + error.message),
   );
+  const setupAll = (guild) => {
+    void setup(guild);
+    void ensureModerationCommandsPanel(guild, client).catch((error) =>
+      console.error("[commands] moderation setup failed in " + guild.id + ": " + error.message),
+    );
+  };
   client.once(Events.ClientReady, () => {
-    for (const guild of client.guilds.cache.values()) void setup(guild);
+    for (const guild of client.guilds.cache.values()) setupAll(guild);
   });
-  client.on(Events.GuildCreate, (guild) => void setup(guild));
+  client.on(Events.GuildCreate, setupAll);
 }
