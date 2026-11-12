@@ -74,6 +74,23 @@ test("only the private-chat owner rename helper can use the original rename meth
   assert.equal(channel.name, "owner-renamed");
 });
 
+
+test("blocks edit({ name }) but the approved private-chat rename uses the original edit method", async () => {
+  const channel = {
+    id: "private-edit",
+    name: "before",
+    edit: async (options) => { if (options.name) channel.name = options.name; return channel; },
+    setName: async (name, reason) => channel.edit({ name }, reason),
+  };
+  const guild = makeGuild([channel]);
+  protectChannelNames(new Map([[guild.id, guild]]));
+
+  await channel.edit({ name: "blocked" });
+  assert.equal(channel.name, "before");
+  await renamePrivateChatChannel(channel, "owner-name", "owner action");
+  assert.equal(channel.name, "owner-name");
+});
+
 test("legacy bulk rename helper refuses all automated renames", async () => {
   const warnings = [];
   const channel = { id: "1", name: "transcriptions", setName: async () => assert.fail("must not rename") };
