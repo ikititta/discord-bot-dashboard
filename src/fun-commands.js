@@ -236,8 +236,8 @@ export function buildFunHelpEmbed() {
       { name: "Relationships", value: "!couple @member · !propose @member · !marry @member · !breakup · !divorce. The other member must accept proposals." },
       { name: "Two-person commands", value: "!hug @member · !slap @member · !bonk @member · !spank @member · !kiss @member · !fuck @member · !cuddle @member · !pat @member · !poke @member · !bite @member · !kick @member · !kill @member · !highfive @member · !handhold @member" },
       { name: "Solo commands", value: "!cry · !laugh · !dance · !sleep · !happy · !blush · !smug · !wave · !facepalm · !wink · !shrug · !smile · !pout" },
-      { name: "Statistics", value: "!fun stats or !stats — see your own basic stats.\n!vip stats — VIP members see their complete stats.\n!vip stats @member — VIP members see another members complete stats.\nStats count commands used, interactions received, and interaction partners." },
-      { name: "VIP", value: "VIP is a server role. It unlocks complete statistics and the ability to look up other members stats. Without VIP, you can still use !stats to see your own summary." },
+      { name: "Statistics", value: "!stats — VIP members can see their complete stats.\n!vip stats — same complete report.\n!vip stats @member — view another member’s complete stats.\nStats count commands used, interactions received, and interaction partners." },
+      { name: "VIP", value: "VIP is required to access statistics and VIP benefits. Members without the VIP role cannot use !stats or !vip stats." },
     )
     .setFooter({ text: "Have fun in Kittisugar ♡" });
 }
