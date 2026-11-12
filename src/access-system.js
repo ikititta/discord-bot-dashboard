@@ -182,34 +182,28 @@ export function buildGuidePayload(guild) {
       `• ${channelMention(guild, ["quotes"])}\nPost memorable, funny, or meaningful quotes from the community.\n` +
       `• ${channelMention(guild, ["selfies", "selfie"])}\nShare your selfies with the community.\n` +
       `• ${channelMention(guild, ["introductions", "introduction", "introduce-yourself", "introduceyourself"])}\nIntroduce yourself and let everyone get to know you.\n` +
-      `• ${channelMention(guild, ["pets"])}\nOpen a pet thread from the channel embed to adopt, care for, and play with your virtual pet.\n` +
+      `• ${channelMention(guild, ["pets"])}\nOpen your private pet room from the channel embed to adopt, care for, and play with your virtual pet.\n` +
       `## ୨୧ ${guideSectionTitle("Help")}\n\n` +
       `• ${channelMention(guild, ["support"])}\nOpen a private ticket for General, Buy VIP, Partnership, Apply, Report, Appeal, Error, or Other requests. Use Get Verified to complete server verification.\n` +
       `• ${channelMention(guild, ["privatechat", "privatechats", "private-chat"])}\nCreate and manage private chat rooms. Use /priv-chat commands to see the available options.\n` +
       `• ${channelMention(guild, ["selfroles", "self-roles"])}\nChoose or update your age, gender, sexuality, and chat color. You can also show or hide channels marked NSFW.\n` +
       `## ୨୧ ${guideSectionTitle("Commands")}\n\n` +
       "`/delete amount:` — delete your own recent messages.\n" +
-      "`/vip-delete amount:` — VIP message cleanup.\n" +
-      "`/mod-delete amount: [member:]` — moderator cleanup.\n" +
+      "`/vip-delete amount:` — VIP message cleanup. `/mod-delete amount: [member:]` — moderator cleanup.\n" +
       "`!quote` — reply to a message with !quote to create an image quote.\n" +
       "`/priv-chat create|add|remove|rename|leave|delete|commands` — manage your private chat.\n" +
-      "`/fun help` — view the fun-command guide.\n" +
-      "`!propose @member` / `!marry @member` — propose marriage. `!couple @member` — ask to become a couple; the other member must accept.\n" +
-      "`!breakup` / `!divorce` — end your current relationship.\n" +
-      "`!stats` — view your basic fun-command statistics.\n" +
-      "`!vip stats` — VIP members can view full statistics.\n" +
-      "`!vip stats @member` — VIP members can view another member's statistics.\n" +
-      "`!rep` — see your reputation. `!rep @member` — view someone else.\n" +
-      "`!rep top` — view the reputation ranking. `!rep comments @member` — read recent comments.\n" +
-      "`/vip-delete amount:` — VIP members can bulk-delete their own recent messages.\n" +
-      "`!pet` — view your pet. `!pet adopt` — adopt one. `!pet feed|play|cuddle` — care for it.\n" +
-      "`!pet shop|inventory|rename|select <number>` — use the shop, check items, rename, or switch pets.\n" +
-      "`!pet room|outfit|rare|slots|minigame` — VIP pet features and extras.\n" +
-      "Everyone can adopt and care for a pet; selected customisation and bonus features are VIP-only.\n" +
+      "`!profile [@member]` — view a complete member profile and saved stats.\n" +
+      "`!rep [@member]` · `!rep stats [@member]` · `!rep top` · `!rep comments [@member]` — reputation tools.\n" +
+      "`!pet adopt <species>` — adopt a cat, dog, hamster, rabbit, fish, bird, guinea pig, turtle, fox, or ferret.\n" +
+      "`!pet stats` · `!pet feed` · `!pet play` · `!pet cuddle` · `!pet talk` · `!pet story` — care for and bond with your pet.\n" +
+      "`!pet shop` · `!pet buy <treat|toy>` · `!pet inventory` · `!pet select <number>` — items and pet slots.\n" +
+      "VIP pet customisation: `!pet name`, `!pet color`, `!pet breed`, `!pet appearance`, `!pet personality`. VIP extras: `!pet room`, `!pet outfit`, `!pet rare`, `!pet slots`, `!pet minigame`.\n" +
+      "`!fun stats` / `!stats` — fun statistics. `!vip stats [@member]` — complete VIP stats. `/fun help` — fun-command guide.\n" +
+      "`!couple @member` · `!propose @member` · `!marry @member` · `!breakup` · `!divorce` — relationships.\n" +
       `## ୨୧ ${guideSectionTitle("Sugar AI")}\n\n` +
       "Mention Sugar or address the bot directly to start a conversation ♡" + buildServerMap(guild)
     )
-    .setFooter({ text: "This guide is also pinned in dashboard and will always be available there ♡" });
+    .setFooter({ text: "Kittisugar · Quick guide ♡" });
   return { embeds: [embed] };
 }
 
@@ -303,8 +297,15 @@ export async function ensureStartChannels(guild, client) {
     await upsertPanel(access, client, `୨୧ ${toRoyalBold("Get Access!")} ♡`, buildAccessPanelPayload(guild, { rulesChannel: rules, guideChannel: guide }));
   }
 
-  // Rules and Guide are member-managed text channels; Sugar must not
-  // automatically publish or refresh embeds in either channel.
+  // Refresh an existing Guide embed in place; never repost it or make it sticky.
+  if (guide) {
+    const recentGuideMessages = await guide.messages.fetch({ limit: 50 });
+    const existingGuide = recentGuideMessages.find((message) =>
+      message.author?.id === client.user.id &&
+      message.embeds.some((embed) => /guide/i.test(embed.title ?? "")),
+    );
+    if (existingGuide) await existingGuide.edit(buildGuidePayload(guild));
+  }
   const dashboard = guild.channels.cache.find((channel) =>
     channel.type === ChannelType.GuildText && normalizeName(channel.name) === "dashboard",
   );
