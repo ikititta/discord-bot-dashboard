@@ -4,7 +4,8 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { ChannelType } from "discord.js";
-import { PetStore, formatPetChannelName, ensurePetCategoryPosition, PET_ROOMS_CATEGORY_ID, PET_CATEGORY_BELOW_ID, applyNeedsDecay, chileDateKey, canAdoptPet, refreshPetUnlocks, migratePetWallet } from "../src/pet-system.js";\nimport { petSummary } from "../src/member-profile-system.js";
+import { PetStore, formatPetChannelName, ensurePetCategoryPosition, PET_ROOMS_CATEGORY_ID, PET_CATEGORY_BELOW_ID, applyNeedsDecay, chileDateKey, canAdoptPet, refreshPetUnlocks, migratePetWallet } from "../src/pet-system.js";
+import { petSummary } from "../src/member-profile-system.js";
 
 test("virtual pet data persists across store restarts", () => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), "kittisugar-pets-"));
