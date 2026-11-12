@@ -53,6 +53,12 @@ export class PetStore {
   }
 }
 
+export function canAdoptPet(profile, vip) {
+  if (!profile) return true;
+  if (!vip) return false;
+  const count = 1 + (profile.additionalPets?.length ?? 0);
+  return count < Math.max(1, Number(profile.slots) || 1);
+}
 function normalizePetChannelLabel(value) {
   const label = String(value ?? "member").normalize("NFKC").toLowerCase()
     .replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-+|-+$/g, "").slice(0, 42).replace(/-+$/g, "");
@@ -250,7 +256,7 @@ function queuePetArtwork(message, store, profile, pet) {
   });
 }
 
-function applyNeedsDecay(pet, now = Date.now()) {
+export function applyNeedsDecay(pet, now = Date.now()) {
   const last = Number(pet.lastNeedsAt) || now;
   const elapsedHours = Math.min(72, Math.max(0, (now - last) / 3_600_000));
   pet.hunger = Math.max(0, Math.round((Number(pet.hunger) || 0) - elapsedHours / 3));
@@ -258,13 +264,13 @@ function applyNeedsDecay(pet, now = Date.now()) {
   pet.lastNeedsAt = now;
 }
 
-function chileDateKey(date = new Date()) {
+export function chileDateKey(date = new Date()) {
   return new Intl.DateTimeFormat("en-CA", {
     timeZone: "America/Santiago", year: "numeric", month: "2-digit", day: "2-digit",
   }).format(date);
 }
 
-function refreshPetUnlocks(pet) {
+export function refreshPetUnlocks(pet) {
   const thresholds = [{ bond: 10, id: "happy" }, { bond: 25, id: "dance" }, { bond: 50, id: "sleep" }];
   pet.gifUnlocks ??= [];
   for (const item of thresholds) if ((pet.bond ?? 0) >= item.bond && !pet.gifUnlocks.includes(item.id)) pet.gifUnlocks.push(item.id);
@@ -322,7 +328,7 @@ async function runPetCommand(message, store, client) {
 
   if (action === "adopt") {
     if (profile && !vip) return reply("You already have a pet ♡ VIP members can unlock more pet slots.");
-    if (profile && 1 + (profile.additionalPets?.length ?? 0) >= (profile.slots ?? 1)) return reply("All your pet slots are full. Use `!pet slots` to unlock another VIP slot ♡");
+    if (profile && !canAdoptPet(profile, vip)) return reply("All your pet slots are full. Use `!pet slots` to unlock another VIP slot ♡");
     return message.reply({ embeds: [buildAdoptionEmbed(null, vip)], components: [buildSpeciesSelect(userId)], allowedMentions: { repliedUser: false } });
   }
   if (!pet) return reply("You don't have a pet yet. Choose a species with `!pet adopt` ♡");
@@ -490,6 +496,7 @@ async function runPetCommand(message, store, client) {
   }
 
   while (pet.xp >= pet.level * 25) { pet.xp -= pet.level * 25; pet.level += 1; }
+  refreshPetUnlocks(pet);
   store.save(guildId, userId, profile);
   await refreshPetsPanel(message.guild, store, client);
   return reply("Done ♡\n" + status(pet, profile.coins));
@@ -515,7 +522,7 @@ export function attachPetSystem(client, store) {
       let profile = store.get(guild.id, user.id);
       const count = profile ? 1 + (profile.additionalPets?.length ?? 0) : 0;
       if (profile && !vip) throw new Error("You already have a pet ♡ VIP members can unlock more pet slots.");
-      if (profile && count >= (profile.slots ?? 1)) throw new Error("All your pet slots are full. Use `!pet slots` to unlock another VIP slot ♡");
+      if (profile && !canAdoptPet(profile, vip)) throw new Error("All your pet slots are full. Use `!pet slots` to unlock another VIP slot ♡");
       const companion = makePet(species);
       if (profile) companion.coins = 0;
       if (vip) {
@@ -555,7 +562,7 @@ export function attachPetSystem(client, store) {
           breed: interaction.fields.getTextInputValue("pet_breed").trim(), appearance: interaction.fields.getTextInputValue("pet_appearance").trim(),
           personality: interaction.fields.getTextInputValue("pet_personality").trim(),
         });
-        return interaction.reply({ content: "Welcome home, **" + companion.name + "** the " + companion.species + "! Your custom companion is being created ♡\n" + status(companion), ephemeral: true });
+        return interaction.reply({ content: "Welcome home, **" + companion.name + "** the " + companion.species + "! Your custom companion is being created ♡\n" + status(companion, store.get(interaction.guild.id, interaction.user.id)?.coins ?? companion.coins), ephemeral: true });
       } catch (error) { return interaction.reply({ content: error.message, ephemeral: true }); }
     }
 
@@ -577,7 +584,7 @@ export function attachPetSystem(client, store) {
         try {
           const companion = await createAdoptedPet(species);
           const vip = isVip(interaction.member);
-          return interaction.update({ embeds: [buildAdoptionEmbed(species, vip).setDescription("You adopted **" + companion.name + "** the " + companion.species + "!\n\n" + (vip ? "Your companion is ready to meet you." : "Sugar chose a unique random design for you. VIP members can customise every detail of future companions.") + " ♡\n\n" + status(companion))], components: [] });
+          return interaction.update({ embeds: [buildAdoptionEmbed(species, vip).setDescription("You adopted **" + companion.name + "** the " + companion.species + "!\n\n" + (vip ? "Your companion is ready to meet you." : "Sugar chose a unique random design for you. VIP members can customise every detail of future companions.") + " ♡\n\n" + status(companion, store.get(interaction.guild.id, interaction.user.id)?.coins ?? companion.coins))], components: [] });
         } catch (error) { return interaction.reply({ content: error.message, ephemeral: true }); }
       }
     }
