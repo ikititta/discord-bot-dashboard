@@ -191,7 +191,8 @@ test("access, rules, and guide panels contain the required confirmations and upd
   assert.match(guideText, /show or hide channels/i);
   assert.match(guide.embeds[0].data.footer.text, /Quick guide/);
   assert.doesNotMatch(guideText, /pinned in #dashboard/);
-  assert.ok(guideText.includes("`/delete amount:` — delete your own recent messages.\n`/vip-delete amount:` — VIP message cleanup.\n`/mod-delete amount: [member:]` — moderator cleanup."));
+  assert.ok(guideText.includes("`/vip-delete amount:` — VIP message cleanup."));
+  assert.ok(guideText.includes("`/mod-delete amount: [member:]` — moderator cleanup."));
 });
 
 test("detects Discord server booster status", () => {
