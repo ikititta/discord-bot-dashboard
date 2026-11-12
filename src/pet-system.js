@@ -11,6 +11,7 @@ import { generatePetArtwork } from "./pet-art.js";
 const COLOR = 0xffd9ff;
 const VIP_ROLE_ID = "1568188640113463437";
 const CHANNEL_NAME = "🐾｜୨୧ ・𝓹𝓮𝓽𝓼";
+export const PET_ADOPTION_CHANNEL_IDS = new Set(["1570257241511170150", "1570263323159695482"]);
 export const PET_ROOMS_CATEGORY_ID = "1568179038625857576";
 export const PET_CATEGORY_BELOW_ID = "1570223501317513408";
 const BUTTON_ID = "sugar-pets:open";
@@ -195,7 +196,7 @@ async function ensurePetsChannel(guild, client, store) {
     return null;
   }
   await channel.permissionOverwrites.edit(guild.roles.everyone, {
-    ViewChannel: true, SendMessages: false, AddReactions: false, CreatePublicThreads: false, SendMessagesInThreads: false, ReadMessageHistory: true,
+    ViewChannel: true, SendMessages: true, AddReactions: false, CreatePublicThreads: false, SendMessagesInThreads: false, ReadMessageHistory: true,
   }, "Keep the virtual pets panel read-only");
   await channel.permissionOverwrites.edit(client.user.id, {
     ViewChannel: true, SendMessages: true, EmbedLinks: true, ReadMessageHistory: true,
@@ -779,7 +780,10 @@ export function attachPetSystem(client, store) {
     if (!message.guild || message.author?.bot || message.webhookId ||
         message.channel?.type !== ChannelType.GuildText ||
         !/^!pet(?:\s|$)/i.test(String(message.content ?? "").trim())) return;
-    if (!isUsersPetRoom(message.channel, message.author.id)) return;
+    const isPrivatePetRoom = isUsersPetRoom(message.channel, message.author.id);
+    const isAdoptionCommand = /^!pet\\s+adopt(?:\\s|$)/i.test(String(message.content ?? "").trim());
+    const isAdoptionChannel = PET_ADOPTION_CHANNEL_IDS.has(message.channel.id);
+    if (!isPrivatePetRoom && !(isAdoptionChannel && isAdoptionCommand)) return;
     try { await runPetCommand(message, store, client); }
     catch (error) {
       console.error("[pets] command failed: " + error.message);
