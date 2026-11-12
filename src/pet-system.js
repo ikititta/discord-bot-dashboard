@@ -119,11 +119,9 @@ export function canDeletePet(vip) {
 }
 function buildPetEmbed() {
   return new EmbedBuilder().setColor(COLOR).setTitle("୨୧ 𝓥𝓲𝓻𝓽𝓾𝓪𝓵 𝓟𝓮𝓽𝓼 ♡")
-    .setDescription("Adopt your own little companion and watch them grow ♡\n\n" +
-      "Open your private pet room, then type `!pet adopt` to start the interactive adoption. " +
-      "Choose a species from the selector. Everyone gets a unique, randomly designed pet; VIP members can customise its name, colour, breed, appearance and personality before adopting.\n\n" +
-      "Care for your pet, earn XP and coins, unlock stories and reaction GIFs through bonding, and collect more companions with VIP slots. Earn coins with daily rewards and meaningful server activity.")
-    .setFooter({ text: "Your pet and progress are saved ♡ · Adoption starts with !pet adopt" });
+    .setDescription("Adopt a little companion, care for them and watch your bond grow ♡\\n\\n" +
+      "Use the buttons below to create your pet room, adopt a pet or explore the global top.")
+    .setFooter({ text: "Your pet and progress are saved ♡" });
 }
 function buildPetRoomWelcomeEmbed(profile, pet, vip = false) {
   const description = pet
@@ -227,8 +225,8 @@ function buildGlobalPetLeaderboard(store, guildId) {
 }
 function panelPayload() {
   return { embeds: [buildPetEmbed()], components: [new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId(BUTTON_ID).setLabel("Create A Pet Room ♡").setStyle(ButtonStyle.Primary),
-    new ButtonBuilder().setCustomId("sugar-pets:global-top").setLabel("Top Pets ♡").setStyle(ButtonStyle.Success),
+    new ButtonBuilder().setCustomId(BUTTON_ID).setLabel("Create A Pet Room ♡").setStyle(ButtonStyle.Success),
+    new ButtonBuilder().setCustomId("sugar-pets:global-top").setLabel("Top Pets ♡").setStyle(ButtonStyle.Secondary),
     new ButtonBuilder().setCustomId("sugar-pets:create-pet").setLabel("Adopt A Pet ♡").setStyle(ButtonStyle.Secondary),
     new ButtonBuilder().setCustomId("sugar-pets:delete-pet").setLabel("Delete A Pet ♡").setStyle(ButtonStyle.Danger),
   )] };
