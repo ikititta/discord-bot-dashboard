@@ -96,7 +96,7 @@ function buildPetCommandsEmbed() {
       "**Care & bonding · Everyone**\n`!pet` · `!pet stats` · `!pet feed` · `!pet play` · `!pet cuddle` · `!pet talk` · `!pet story` · `!pet gif [happy|dance|sleep]`\nPlay, cuddle and talk to build bond. Higher bond unlocks exclusive dialogue and reaction GIFs.\n\n" +
       "**Coins & items · Everyone**\n`!pet daily` · `!pet shop` · `!pet buy <treat|toy|potion>` · `!pet use <item>` · `!pet inventory` · `!pet select <number>`\nTreats restore hunger, toys boost happiness and bond, and potions refill hunger completely. Your coins are shared across all your pets.\n\n" +
       "**VIP customisation**\n`!pet name <name>` · `!pet color <color>` · `!pet breed <breed>` · `!pet appearance <details>` · `!pet personality <traits>`\n\n" +
-      "**VIP extras**\n`!pet room` · `!pet outfit <name>` · `!pet rare` · `!pet slots` · `!pet minigame`"
+      "**VIP extras**\n`!pet room` · `!pet outfit <name>` · `!pet slots` · `!pet minigame` · `!pet delete`"
     )
     .setFooter({ text: "Use these commands in your private pet room · Your progress is saved ♡" });
 }
@@ -316,8 +316,9 @@ async function sendPetGif(message, pet, category) {
   const embed = new EmbedBuilder().setColor(COLOR).setDescription(pet.name + " shares a little " + selected + " moment with you ♡").setImage(url.toString());
   return message.reply({ embeds: [embed], allowedMentions: { repliedUser: false } });
 }
-function status(pet, walletCoins = pet.coins) {
-  return `**${pet.name}** the ${pet.species} · Level ${pet.level}
+function status(pet, walletCoins = pet.coins, vip = false) {
+  const displayName = pet.name + (vip ? " VIP" : "");
+  return `**${displayName}** the ${pet.species} · Level ${pet.level}
 ♡ Hunger: ${pet.hunger}/100 · Happiness: ${pet.happiness}/100
 ♡ Bond: ${pet.bond ?? 0} · Coins: ${walletCoins} · XP: ${pet.xp}
 ♡ Room: ${pet.room} · Outfit: ${pet.outfit}`;
@@ -492,16 +493,12 @@ async function runPetCommand(message, store, client) {
     pet.xp += 2;
   } else if (action === "inventory") {
     return reply(pet.inventory?.length ? "Your inventory: " + pet.inventory.join(", ") : "Your inventory is empty ♡");
-  } else if (["room", "outfit", "rare", "slots", "minigame"].includes(action)) {
+  } else if (["room", "outfit", "slots", "minigame"].includes(action)) {
     if (!vip) return reply("That pet feature is VIP-only ♡ Your pet and progress are still yours.");
     if (action === "room") pet.room = "VIP dream room";
     if (action === "outfit") {
       if (!argument) return reply("Use `!pet outfit <name>` to choose an outfit.");
       pet.outfit = argument.slice(0, 30);
-    }
-    if (action === "rare") {
-      if (!pet.species.startsWith("rare ")) pet.species = "rare " + pet.species;
-      pet.xp += 15;
     }
     if (action === "slots") {
       const currentSlots = Math.max(1, Number(profile.slots) || 1);
