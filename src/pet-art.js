@@ -46,7 +46,22 @@ export async function generatePetArtwork({ pet, dataDir, apiKey = process.env.OP
       }),
       signal: controller.signal,
     });
-    if (!response.ok) throw new Error(`Pet artwork provider returned HTTP ${response.status}.`);
+    if (!response.ok) {
+      let details = "";
+      try {
+        const errorPayload = await response.json();
+        const providerError = errorPayload?.error ?? errorPayload;
+        const code = typeof providerError?.code === "string" ? providerError.code : "";
+        const type = typeof providerError?.type === "string" ? providerError.type : "";
+        const message = typeof providerError?.message === "string" ? providerError.message : "";
+        details = [code && `code=${code}`, type && `type=${type}`, message && message.slice(0, 500)]
+          .filter(Boolean).join("; ");
+      } catch {
+        // Keep the HTTP status useful even if the provider response is not JSON.
+      }
+      const retryAfter = response.headers?.get?.("retry-after");
+      throw new Error(`Pet artwork provider returned HTTP ${response.status}.${details ? " " + details : ""}${retryAfter ? " Retry-After=" + retryAfter + "s." : ""}`);
+    }
     const payload = await response.json();
     const encoded = payload?.data?.[0]?.b64_json;
     if (typeof encoded !== "string" || !encoded) throw new Error("Pet artwork provider returned no image.");
