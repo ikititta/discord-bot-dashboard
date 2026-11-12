@@ -205,6 +205,10 @@ export function isVip(member) {
   return Boolean(member?.roles?.cache?.has(FUN_VIP_ROLE_ID));
 }
 
+export function isVipOnlyFunCommand(name) {
+  return name === "fuck";
+}
+
 function displayName(member, user) {
   return member?.displayName ?? user?.globalName ?? user?.username ?? "Someone";
 }
@@ -236,7 +240,7 @@ export function buildFunHelpEmbed() {
       { name: "Two-person commands", value: "!hug @member · !slap @member · !bonk @member · !spank @member · !kiss @member · !fuck @member · !cuddle @member · !pat @member · !poke @member · !bite @member · !kick @member · !kill @member · !highfive @member · !handhold @member" },
       { name: "Solo commands", value: "!cry · !laugh · !dance · !sleep · !happy · !blush · !smug · !wave · !facepalm · !wink · !shrug · !smile · !pout" },
       { name: "Statistics", value: "!stats — VIP members can see their complete stats.\n!vip stats — same complete report.\n!vip stats @member — view another member’s complete stats.\nStats count commands used, interactions received, and interaction partners." },
-      { name: "VIP", value: "VIP is required to access statistics and VIP benefits. Members without the VIP role cannot use !stats or !vip stats." },
+      { name: "VIP", value: "VIP unlocks !fuck, statistics, and other exclusive benefits. Members without the VIP role cannot use !fuck, !stats, or !vip stats." },
     )
     .setFooter({ text: "Have fun in Kittisugar ♡" });
 }
@@ -278,6 +282,10 @@ async function handleStats(message, store, args) {
 async function handleFunAction(message, store, name, args, fetchImpl) {
   const definition = getFunCommandDefinition(name);
   if (!definition) return false;
+  if (isVipOnlyFunCommand(name) && !isVip(message.member)) {
+    await safeReply(message, { content: "The !fuck command is a VIP-only benefit ♡" });
+    return true;
+  }
 
   let targetMember = null;
   let targetUser = null;

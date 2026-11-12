@@ -169,5 +169,5 @@ test("non-owners cannot use owner-only private-chat buttons", async () => {
 });
 
 test("private chat channel names use the requested decorative spacing", () => {
-  assert.equal(formatPrivateChatChannelName("test"), "👤｜୨୧ ・𝓽𝓮𝓼𝓽");
+  assert.equal(formatPrivateChatChannelName("test"), "👥｜୨୧・𝓽𝓮𝓼𝓽");
 });

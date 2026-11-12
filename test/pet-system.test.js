@@ -4,7 +4,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { ChannelType } from "discord.js";
-import { PetStore, formatPetChannelName, ensurePetCategoryPosition, PET_ROOMS_CATEGORY_ID, PET_CATEGORY_BELOW_ID } from "../src/pet-system.js";
+import { PetStore, formatPetChannelName, ensurePetCategoryPosition, PET_ROOMS_CATEGORY_ID, PET_CATEGORY_BELOW_ID, applyNeedsDecay, chileDateKey, canAdoptPet, refreshPetUnlocks, migratePetWallet } from "../src/pet-system.js";
 
 test("virtual pet data persists across store restarts", () => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), "kittisugar-pets-"));
@@ -68,4 +68,54 @@ test("pet rooms category is not moved when it is already below the reference cat
 
   assert.equal(await ensurePetCategoryPosition(guild, () => {}), false);
   assert.equal(petCategory.position, 9);
+});
+
+test("pet needs decrease gently and cap offline decay", () => {
+  const pet = { hunger: 70, happiness: 70, lastNeedsAt: 1_000 };
+  applyNeedsDecay(pet, 1_000 + 24 * 60 * 60 * 1000);
+  assert.equal(pet.hunger, 62);
+  assert.equal(pet.happiness, 68);
+  applyNeedsDecay(pet, 1_000 + 10 * 24 * 60 * 60 * 1000);
+  assert.ok(pet.hunger >= 38);
+  assert.ok(pet.happiness >= 62);
+  assert.ok(pet.hunger >= 0 && pet.happiness >= 0);
+});
+
+test("one pet is the default and VIP can use only unlocked slots", () => {
+  const profile = { additionalPets: [], slots: 1 };
+  assert.equal(canAdoptPet(null, false), true);
+  assert.equal(canAdoptPet(profile, false), false);
+  assert.equal(canAdoptPet(profile, true), false);
+  profile.slots = 2;
+  assert.equal(canAdoptPet(profile, true), true);
+  profile.additionalPets.push({ name: "Mimi" });
+  assert.equal(canAdoptPet(profile, true), false);
+});
+
+test("pet bond unlocks reaction GIF categories progressively", () => {
+  const pet = { bond: 10, gifUnlocks: [] };
+  refreshPetUnlocks(pet);
+  assert.deepEqual(pet.gifUnlocks, ["happy"]);
+  pet.bond = 25;
+  refreshPetUnlocks(pet);
+  assert.deepEqual(pet.gifUnlocks, ["happy", "dance"]);
+  pet.bond = 50;
+  refreshPetUnlocks(pet);
+  assert.deepEqual(pet.gifUnlocks, ["happy", "dance", "sleep"]);
+});
+
+test("pet daily date keys use Chile local time", () => {
+  assert.equal(chileDateKey(new Date("2026-11-12T02:00:00.000Z")), "2026-11-11");
+});
+test("legacy pet balances migrate into one shared wallet without losing coins", () => {
+  const profile = {
+    coins: 100,
+    additionalPets: [{ name: "Mimi", coins: 35 }, { name: "Boba", coins: 20 }],
+  };
+  migratePetWallet(profile);
+  assert.equal(profile.coins, 155);
+  assert.deepEqual(profile.additionalPets.map((pet) => pet.coins), [0, 0]);
+  assert.equal(profile.walletVersion, 1);
+  migratePetWallet(profile);
+  assert.equal(profile.coins, 155);
 });

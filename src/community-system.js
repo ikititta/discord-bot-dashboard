@@ -93,10 +93,32 @@ export function buildSuggestionModePicker() {
 
 export function buildCommunityPostComponents(kind, messageId) {
   const buttons = [];
-  if (kind === "confession" || kind === "letter") buttons.push(replyButton(kind, messageId));
+  if (["confession", "letter", "poll"].includes(kind)) buttons.push(replyButton(kind, messageId));
   if (kind === "confession") buttons.push(button("confess-new", "Confess ♡", ButtonStyle.Primary));
   buttons.push(reportButton(kind, messageId));
   return [new ActionRowBuilder().addComponents(...buttons)];
+}
+
+function buildPollDescription(question, options, counts = []) {
+  return "**" + question + "**\n\n" + options.map((option, index) =>
+    CONFESSION_REACTIONS[index] + "  " + option + " — **" + (counts[index] ?? 0) + "**",
+  ).join("\n") + "\n\n*Choose one option. You can change your vote anytime ♡*";
+}
+
+export function buildPollVoteComponents(messageId, options, counts = []) {
+  if (!/^[0-9]{17,20}$/.test(messageId ?? "") || !Array.isArray(options) || options.length < 2 || options.length > 4) {
+    throw new Error("Invalid poll vote components.");
+  }
+  const voteRow = new ActionRowBuilder().addComponents(...options.map((option, index) =>
+    new ButtonBuilder()
+      .setCustomId(PREFIX + "poll-vote:" + messageId + ":" + index)
+      .setLabel((index + 1) + " · " + String(option).slice(0, 55) + " (" + (counts[index] ?? 0) + ")")
+      .setStyle(ButtonStyle.Secondary),
+  ));
+  return [voteRow, new ActionRowBuilder().addComponents(
+    replyButton("poll", messageId),
+    reportButton("poll", messageId),
+  )];
 }
 
 export function buildConfessionsPanelPayload() {
@@ -259,7 +281,7 @@ export function attachCommunitySystem(client, { store, stickyPanels, settings, s
   }
   client.on(Events.InteractionCreate, (interaction) => {
     if (interaction.isButton() && interaction.customId.startsWith(PREFIX)) {
-      void handleCommunityButton(interaction).catch(async (error) => {
+      void handleCommunityButton(interaction, store).catch(async (error) => {
         console.error(`[community] interaction failed: ${error.message}`);
         await replyEphemeral(interaction, "Something went wrong. Please try again.");
       });
@@ -341,8 +363,28 @@ async function upsertPanel(client, channelId, title, payload, { pinOnCreate = tr
   return message;
 }
 
-async function handleCommunityButton(interaction) {
+async function handleCommunityButton(interaction, store) {
   const id = interaction.customId.slice(PREFIX.length);
+  if (id.startsWith("poll-vote:")) {
+    const [, messageId, optionText] = id.split(":");
+    const optionIndex = Number(optionText);
+    if (!interaction.inGuild() || interaction.channelId !== CONFESSIONS_CHANNEL_ID ||
+        interaction.message?.id !== messageId || !Number.isInteger(optionIndex)) {
+      return replyEphemeral(interaction, "This poll option is no longer available.");
+    }
+    const poll = store.getPollResults(interaction.guildId, messageId);
+    if (!poll || optionIndex < 0 || optionIndex >= poll.options.length) {
+      return replyEphemeral(interaction, "This poll is no longer available.");
+    }
+    const updated = store.votePoll(interaction.guildId, messageId, interaction.user.id, optionIndex);
+    const embed = EmbedBuilder.from(interaction.message.embeds[0])
+      .setDescription(buildPollDescription(updated.question, updated.options, updated.counts));
+    await interaction.message.edit({
+      embeds: [embed],
+      components: buildPollVoteComponents(messageId, updated.options, updated.counts),
+    });
+    return replyEphemeral(interaction, "Your vote has been saved. You can change it by choosing another option ♡");
+  }
   if (id === "suggestion-start") {
     if (!interaction.inGuild() || interaction.channelId !== SUGGESTIONS_CHANNEL_ID) {
       return replyEphemeral(interaction, "Please use the Suggestions channel.");
@@ -411,7 +453,7 @@ async function handleCommunityButton(interaction) {
     if (!validReplyKind(kind) || !/^\d{17,20}$/.test(messageId ?? "")) {
       return replyEphemeral(interaction, "This reply button is invalid.");
     }
-    const expectedChannel = kind === "confession" ? CONFESSIONS_CHANNEL_ID : LOVE_LETTERS_CHANNEL_ID;
+    const expectedChannel = kind === "letter" ? LOVE_LETTERS_CHANNEL_ID : CONFESSIONS_CHANNEL_ID;
     if (!interaction.inGuild() || interaction.channelId !== expectedChannel) {
       return replyEphemeral(interaction, "Please reply from the original post.");
     }
@@ -543,7 +585,7 @@ function buildLoveLetterModal(mode, recipientId) {
 function buildReplyModal(kind, mode, messageId) {
   const modal = new ModalBuilder()
     .setCustomId(`${PREFIX}reply:${kind}:${mode}:${messageId}`)
-    .setTitle(kind === "confession" ? "Reply to Confession" : "Reply to Love Letter");
+    .setTitle(kind === "confession" ? "Reply to Confession" : kind === "poll" ? "Discuss Poll" : "Reply to Love Letter");
   const input = new TextInputBuilder()
     .setCustomId("body")
     .setLabel("Your reply")
@@ -610,7 +652,7 @@ async function handleCommunityModal(interaction, { store, settings, suggestionSt
   const reportKind = reportParts[1];
   const expectedChannel = isReport ? reportChannelForKind(reportKind)
     : isSuggestion ? SUGGESTIONS_CHANNEL_ID
-      : isConfession || isPoll || id.startsWith("reply:confession:")
+      : isConfession || isPoll || id.startsWith("reply:confession:") || id.startsWith("reply:poll:")
         ? CONFESSIONS_CHANNEL_ID
         : isLetter || id.startsWith("reply:letter:") ? LOVE_LETTERS_CHANNEL_ID : null;
   const threadReplyParts = isThreadReply ? id.split(":") : [];
@@ -673,7 +715,7 @@ async function handleCommunityModal(interaction, { store, settings, suggestionSt
     const embed = new EmbedBuilder()
       .setColor(COLOR)
       .setTitle(formatEmbedTitle("Poll"))
-      .setDescription(`**${question}**\n\n${options.map((option, index) => `${CONFESSION_REACTIONS[index]}  ${option}`).join("\n")}\n\n*React to vote!*`);
+      .setDescription(buildPollDescription(question, options));
     if (mode === "named") {
       embed.setAuthor({
         name: interaction.member?.displayName ?? interaction.user.username,
@@ -683,13 +725,13 @@ async function handleCommunityModal(interaction, { store, settings, suggestionSt
     const message = await channel.send({
       content: recipientId ? `<@${recipientId}> ♡` : undefined,
       embeds: [embed],
-      components: [new ActionRowBuilder().addComponents(reportButton("poll", "0"))],
       allowedMentions: { parse: [], users: recipientId ? [recipientId] : [] },
     });
-    await message.edit({ components: [new ActionRowBuilder().addComponents(reportButton("poll", message.id))] });
-    for (let index = 0; index < options.length; index += 1) {
-      await message.react(CONFESSION_REACTIONS[index]);
-    }
+    const poll = store.createPoll(interaction.guildId, message.id, question, options);
+    await message.edit({
+      components: buildPollVoteComponents(message.id, poll.options, poll.options.map(() => 0)),
+    });
+    await ensureCommunityPostThread(message, "poll");
     return interaction.editReply("Your poll has been published ♡");
   }
 
@@ -726,6 +768,7 @@ async function handleCommunityModal(interaction, { store, settings, suggestionSt
       allowedMentions,
     });
     await message.edit({ components: buildCommunityPostComponents("confession", message.id) });
+    await ensureCommunityPostThread(message, "confession");
     return interaction.editReply("Your confession has been published ♡");
   }
 
@@ -753,6 +796,7 @@ async function handleCommunityModal(interaction, { store, settings, suggestionSt
       allowedMentions: { parse: [], users: [...new Set(mentions)] },
     });
     await message.edit({ components: buildCommunityPostComponents("letter", message.id) });
+    await ensureCommunityPostThread(message, "letter");
     return interaction.editReply("Your love letter has been published ♡");
   }
 
@@ -801,61 +845,39 @@ export function formatReplyDescription(body, replyName, targetName) {
   return body;
 }
 
+async function ensureCommunityPostThread(parent, kind) {
+  const marker = /sugar-thread:([0-9]{17,20})/.exec(parent.embeds?.[0]?.footer?.text ?? "");
+  let thread = marker ? await parent.guild.channels.fetch(marker[1]).catch(() => null) : parent.thread;
+  if (!thread && parent.hasThread) {
+    thread = await parent.channel.threads.fetch({ message: parent.id }).catch(() => null);
+  }
+  if (!thread) {
+    const title = parent.embeds?.[0]?.title ?? kind;
+    thread = await parent.startThread({
+      name: (kind + " · " + title).slice(0, 100),
+      autoArchiveDuration: 1440,
+      reason: "Create the single discussion thread for this community post",
+    });
+  }
+  if (thread.archived) await thread.setArchived(false).catch(() => {});
+  const embed = EmbedBuilder.from(parent.embeds[0]).setFooter({ text: "sugar-thread:" + thread.id });
+  await parent.edit({ embeds: [embed] });
+  return thread;
+}
+
 async function publishThreadReply(interaction, channel, kind, mode, parentId) {
   try {
     const parent = await channel.messages.fetch(parentId).catch(() => null);
-    if (!parent) return interaction.editReply("The original post could not be found.");
     const expectedReplyId = `${PREFIX}reply:${kind}:${parentId}`;
-    const hasMatchingReplyButton = parent.components.some((row) =>
+    const hasMatchingReplyButton = parent?.components?.some((row) =>
       row.components.some((component) => component.customId === expectedReplyId),
     );
-    if (parent.author?.id !== interaction.client.user.id || !hasMatchingReplyButton || !parent.embeds.length) {
+    if (!parent || parent.author?.id !== interaction.client.user.id || !hasMatchingReplyButton || !parent.embeds.length) {
       return interaction.editReply("This message is not a replyable community post.");
     }
-    const serial = /#\(?([0-9]{3})\)?/.exec(parent.embeds[0].title ?? "")?.[1];
-    if (!serial) return interaction.editReply("The original post number could not be identified.");
-    const topic = `sugar-community-replies:${kind}:${parentId}`;
-    let repliesChannel = interaction.guild.channels.cache.find((item) =>
-      item.type === ChannelType.GuildText && item.topic === topic,
-    );
-    if (!repliesChannel) {
-      await interaction.guild.channels.fetch();
-      repliesChannel = interaction.guild.channels.cache.find((item) =>
-        item.type === ChannelType.GuildText && item.topic === topic,
-      );
-    }
-    if (!repliesChannel) {
-      const permissionOverwrites = [
-        {
-          id: interaction.guild.roles.everyone.id,
-          allow: [
-            PermissionFlagsBits.ViewChannel,
-            PermissionFlagsBits.SendMessages,
-            PermissionFlagsBits.ReadMessageHistory,
-          ],
-        },
-        {
-          id: interaction.client.user.id,
-          allow: [
-            PermissionFlagsBits.ViewChannel,
-            PermissionFlagsBits.SendMessages,
-            PermissionFlagsBits.ReadMessageHistory,
-            PermissionFlagsBits.EmbedLinks,
-            PermissionFlagsBits.ManageMessages,
-          ],
-        },
-      ];
-      repliesChannel = await interaction.guild.channels.create({
-        name: buildCommunityRepliesChannelName(kind, serial),
-        type: ChannelType.GuildText,
-        ...(channel.parentId ? { parent: channel.parentId } : {}),
-        topic,
-        permissionOverwrites,
-        reason: `Create public replies for ${kind} #${serial}`,
-      });
-    }
-    const replyBody = cleanText(interaction.fields.getTextInputValue("body"), 1800);
-    if (!replyBody) return interaction.editReply("Please write a reply before submitting.");
+    const thread = await ensureCommunityPostThread(parent, kind);
+    const body = cleanText(interaction.fields.getTextInputValue("body"), 1800);
+    if (!body) return interaction.editReply("Please write a reply before submitting.");
     const replyName = mode === "named"
       ? (interaction.member?.displayName ?? interaction.user.globalName ?? interaction.user.username)
       : null;
@@ -863,30 +885,13 @@ async function publishThreadReply(interaction, channel, kind, mode, parentId) {
     const embed = new EmbedBuilder()
       .setColor(COLOR)
       .setTitle(formatEmbedTitle(mode === "anonymous" ? "Anonymous Reply" : "Reply"))
-      .setDescription(formatReplyDescription(replyBody, replyName, parentName));
-    if (replyName) {
-      embed.setAuthor({
-        name: replyName,
-        iconURL: interaction.user.displayAvatarURL(),
-      });
-    }
-    const reply = await repliesChannel.send({
-      embeds: [embed],
-      components: buildCommunityThreadReplyComponents(kind, "0"),
-      allowedMentions: { parse: [] },
-    });
-    await reply.edit({
-      components: buildCommunityThreadReplyComponents(kind, reply.id),
-    }).catch((error) => {
-      console.error(`[community] reply report button update failed (reply=${reply.id}):`, error);
-    });
-    return interaction.editReply(`Your reply has been added: <#${repliesChannel.id}> ♡`);
+      .setDescription(formatReplyDescription(body, replyName, parentName));
+    if (replyName) embed.setAuthor({ name: replyName, iconURL: interaction.user.displayAvatarURL() });
+    await thread.send({ embeds: [embed], allowedMentions: { parse: [] } });
+    return interaction.editReply("Your reply has been added to the post's thread ♡");
   } catch (error) {
-    console.error(`[community] public reply channel failed (guild=${interaction.guildId}, channel=${channel.id}, parent=${parentId}, code=${error?.code ?? "unknown"}):`, error);
-    if (error?.code === 50013) {
-      return interaction.editReply("Sugar needs Manage Channels and permission to send messages in public replies channels. Please ask a moderator to check Sugar's permissions.");
-    }
-    return interaction.editReply("Sugar couldn't open the public replies channel or send your reply. Please try again or ask a moderator to check Sugar's permissions.");
+    console.error(`[community] post thread reply failed (guild=${interaction.guildId}, channel=${channel.id}, parent=${parentId}):`, error);
+    return interaction.editReply("Sugar couldn't add your reply to this post's thread. Please try again or ask a moderator to check thread permissions.");
   }
 }
 
@@ -932,7 +937,7 @@ function isPublicRepliesChannel(channel, kind) {
 }
 
 export function buildCommunityRepliesChannelName(kind, serial) {
-  if (!validReplyKind(kind) || !/^\d{3}$/.test(String(serial ?? ""))) {
+  if (!["confession", "letter"].includes(kind) || !/^\d{3}$/.test(String(serial ?? ""))) {
     throw new Error("Invalid community replies channel name.");
   }
   const label = kind === "confession"
@@ -1225,7 +1230,7 @@ export function buildReportNotificationPayload(embed) {
 }
 
 function validReplyKind(kind) {
-  return kind === "confession" || kind === "letter";
+  return kind === "confession" || kind === "letter" || kind === "poll";
 }
 
 function cleanText(value, maxLength) {

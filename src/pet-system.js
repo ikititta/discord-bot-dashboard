@@ -20,7 +20,8 @@ const PET_SPECIES = {
   guinea: "guinea pig", "guinea pig": "guinea pig", "guinea-pig": "guinea pig", turtle: "turtle", fox: "fox", ferret: "ferret",
 };
 const PET_SPECIES_OPTIONS = [...new Set(Object.values(PET_SPECIES))];
-const SHOP = { treat: 10, toy: 25 };
+const SHOP = { treat: 10, toy: 25, potion: 60 };
+const MEMBER_ROLE_ID = "1568188534836428812";
 
 export class PetStore {
   constructor(dataDir) {
@@ -52,6 +53,22 @@ export class PetStore {
   }
 }
 
+export function migratePetWallet(profile) {
+  if (!profile || profile.walletVersion === 1) return profile;
+  const additional = Array.isArray(profile.additionalPets) ? profile.additionalPets : [];
+  const primaryCoins = Number.isFinite(Number(profile.coins)) ? Math.max(0, Number(profile.coins)) : 100;
+  const legacyAdditionalCoins = additional.reduce((total, pet) => total + Math.max(0, Number(pet?.coins) || 0), 0);
+  profile.coins = primaryCoins + legacyAdditionalCoins;
+  for (const pet of additional) if (pet && typeof pet === "object") pet.coins = 0;
+  profile.walletVersion = 1;
+  return profile;
+}
+export function canAdoptPet(profile, vip) {
+  if (!profile) return true;
+  if (!vip) return false;
+  const count = 1 + (profile.additionalPets?.length ?? 0);
+  return count < Math.max(1, Number(profile.slots) || 1);
+}
 function normalizePetChannelLabel(value) {
   const label = String(value ?? "member").normalize("NFKC").toLowerCase()
     .replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-+|-+$/g, "").slice(0, 42).replace(/-+$/g, "");
@@ -69,13 +86,13 @@ function buildPetEmbed() {
     .setDescription("Adopt your own little companion and watch them grow ♡\n\n" +
       "Open your private pet room, then type `!pet adopt` to start the interactive adoption. " +
       "Choose a species from the selector. Everyone gets a unique, randomly designed pet; VIP members can customise its name, colour, breed, appearance and personality before adopting.\n\n" +
-      "Care for your pet, earn XP and coins, unlock stories, and collect more companions with VIP slots.")
+      "Care for your pet, earn XP and coins, unlock stories and reaction GIFs through bonding, and collect more companions with VIP slots. Earn coins with daily rewards and meaningful server activity.")
     .setFooter({ text: "Your pet and progress are saved ♡ · Adoption starts with !pet adopt" });
 }
 function buildPetCommandsEmbed() {
   return new EmbedBuilder().setColor(COLOR).setTitle("୨୧ 𝓟𝓮𝓽 𝓡𝓸𝓸𝓶 · 𝓒𝓸𝓶𝓶𝓪𝓷𝓭𝓼 ♡")
     .setDescription("**Adoption · Everyone**\n`!pet adopt` — open the adoption embed and choose a species: cat, dog, hamster, rabbit, fish, bird, guinea pig, turtle, fox or ferret.\nNon-VIP pets receive a unique random design. VIP members can customise before adopting.\n\n" +
-      "**Care & play · Everyone**\n`!pet` · `!pet stats` · `!pet feed` · `!pet play` · `!pet cuddle` · `!pet talk` · `!pet story`\n`!pet shop` · `!pet buy <treat|toy>` · `!pet inventory` · `!pet select <number>`\n\n" +
+      "**Care & play · Everyone**\n`!pet` · `!pet stats` · `!pet feed` · `!pet play` · `!pet cuddle` · `!pet talk` · `!pet story`\n`!pet shop` · `!pet buy <treat|toy|potion>` · `!pet use <item>` · `!pet daily` · `!pet gif` · `!pet inventory` · `!pet select <number>`\n\n" +
       "**VIP customisation**\nChoose your pet’s name, colour, breed, appearance and personality in the adoption form. Existing pets can also be edited with `!pet name <name>`, `!pet color <color>`, `!pet breed <breed>`, `!pet appearance <details>` and `!pet personality <traits>`.\n\n" +
       "**VIP extras**\n`!pet room` · `!pet outfit <name>` · `!pet rare` · `!pet slots` · `!pet minigame`")
     .setFooter({ text: "Use these commands in your private pet room ♡" });
@@ -219,11 +236,12 @@ function makePet(species = "cat") {
     name: "Mochi",
     species,
     visualIdentity: createPetVisualIdentity(),
-    level: 1, xp: 0, hunger: 70, happiness: 70, coins: 100,
+    level: 1, xp: 0, hunger: 70, happiness: 70, bond: 0, coins: 100, walletVersion: 1,
+    lastNeedsAt: Date.now(),
     inventory: [], room: "cozy room", outfit: "default", slots: 1, additionalPets: [], activePetIndex: 0,
-    lastMinigame: null,
+    lastMinigame: null, lastDailyReward: null,
     dialogueCount: 0,
-    storyUnlocks: [],
+    storyUnlocks: [], gifUnlocks: [],
   };
 }
 function queuePetArtwork(message, store, profile, pet) {
@@ -248,10 +266,57 @@ function queuePetArtwork(message, store, profile, pet) {
   });
 }
 
-function status(pet) {
+export function applyNeedsDecay(pet, now = Date.now()) {
+  const last = Number(pet.lastNeedsAt) || now;
+  const elapsedMs = Math.min(72 * 3_600_000, Math.max(0, now - last));
+  const hungerProgress = (Number(pet.hungerDecayRemainderMs) || 0) + elapsedMs;
+  const happinessProgress = (Number(pet.happinessDecayRemainderMs) || 0) + elapsedMs;
+  const hungerLoss = Math.floor(hungerProgress / (3 * 3_600_000));
+  const happinessLoss = Math.floor(happinessProgress / (12 * 3_600_000));
+  pet.hunger = Math.max(0, (Number(pet.hunger) || 0) - hungerLoss);
+  pet.happiness = Math.max(0, (Number(pet.happiness) || 0) - happinessLoss);
+  pet.hungerDecayRemainderMs = hungerProgress % (3 * 3_600_000);
+  pet.happinessDecayRemainderMs = happinessProgress % (12 * 3_600_000);
+  pet.lastNeedsAt = now;
+}
+
+export function chileDateKey(date = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Santiago", year: "numeric", month: "2-digit", day: "2-digit",
+  }).formatToParts(date);
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return values.year + "-" + values.month + "-" + values.day;
+}
+
+export function refreshPetUnlocks(pet) {
+  const thresholds = [{ bond: 10, id: "happy" }, { bond: 25, id: "dance" }, { bond: 50, id: "sleep" }];
+  pet.gifUnlocks ??= [];
+  for (const item of thresholds) if ((pet.bond ?? 0) >= item.bond && !pet.gifUnlocks.includes(item.id)) pet.gifUnlocks.push(item.id);
+}
+
+async function sendPetGif(message, pet, category) {
+  const unlocks = pet.gifUnlocks ?? [];
+  const selected = category || unlocks[0];
+  if (!selected || !["happy", "dance", "sleep"].includes(selected) || !unlocks.includes(selected)) {
+    return message.reply("That reaction is still locked. Build your bond with play, cuddles and conversations to unlock more ♡");
+  }
+  const response = await fetch("https://nekos.best/api/v2/" + selected, {
+    headers: { "User-Agent": "SugarDiscordBot/1.0" },
+    signal: AbortSignal.timeout(8_000),
+  });
+  if (!response.ok) throw new Error("Pet reaction GIF service returned HTTP " + response.status + ".");
+  const payload = await response.json();
+  const url = new URL(payload?.results?.[0]?.url ?? "");
+  if (url.protocol !== "https:" || url.hostname !== "nekos.best" || !url.pathname.endsWith(".gif")) {
+    throw new Error("Pet reaction GIF service returned an invalid GIF URL.");
+  }
+  const embed = new EmbedBuilder().setColor(COLOR).setDescription(pet.name + " shares a little " + selected + " moment with you ♡").setImage(url.toString());
+  return message.reply({ embeds: [embed], allowedMentions: { repliedUser: false } });
+}
+function status(pet, walletCoins = pet.coins) {
   return `**${pet.name}** the ${pet.species} · Level ${pet.level}
 ♡ Hunger: ${pet.hunger}/100 · Happiness: ${pet.happiness}/100
-♡ Coins: ${pet.coins} · XP: ${pet.xp}
+♡ Bond: ${pet.bond ?? 0} · Coins: ${walletCoins} · XP: ${pet.xp}
 ♡ Room: ${pet.room} · Outfit: ${pet.outfit}`;
 }
 async function refreshPetsPanel(guild, store, client) {
@@ -273,11 +338,16 @@ async function runPetCommand(message, store, client) {
   let profile = store.get(guildId, userId);
   const vip = isVip(message.member);
   let pet = profile ? (profile.activePetIndex > 0 ? profile.additionalPets?.[profile.activePetIndex - 1] : profile) : null;
+  if (profile) {
+    migratePetWallet(profile);
+    profile.coins ??= 100;
+    if (pet) { applyNeedsDecay(pet); refreshPetUnlocks(pet); }
+  }
   const reply = (content) => message.reply({ content, allowedMentions: { repliedUser: false } });
 
   if (action === "adopt") {
     if (profile && !vip) return reply("You already have a pet ♡ VIP members can unlock more pet slots.");
-    if (profile && 1 + (profile.additionalPets?.length ?? 0) >= (profile.slots ?? 1)) return reply("All your pet slots are full. Use `!pet slots` to unlock another VIP slot ♡");
+    if (profile && !canAdoptPet(profile, vip)) return reply("All your pet slots are full. Use `!pet slots` to unlock another VIP slot ♡");
     return message.reply({ embeds: [buildAdoptionEmbed(null, vip)], components: [buildSpeciesSelect(userId)], allowedMentions: { repliedUser: false } });
   }
   if (!pet) return reply("You don't have a pet yet. Choose a species with `!pet adopt` ♡");
@@ -289,7 +359,7 @@ async function runPetCommand(message, store, client) {
     profile.activePetIndex = index - 1;
     store.save(guildId, userId, profile);
     pet = index === 1 ? profile : profile.additionalPets[index - 2];
-    return reply("Now caring for " + pet.name + " ♡\n" + status(pet));
+    return reply("Now caring for " + pet.name + " ♡\n" + status(pet, profile.coins));
   }
   if (action === "view" || action === "status") {
     pet.id ??= randomUUID();
@@ -300,12 +370,12 @@ async function runPetCommand(message, store, client) {
     if (artPath && fs.existsSync(artPath)) {
       return message.reply({ content: status(pet), files: [artPath], allowedMentions: { repliedUser: false } });
     }
-    return reply(status(pet) + (pet.visualIdentity?.artStatus === "generating" ? "\n♡ Your unique artwork is being created..." : ""));
+    return reply(status(pet, profile.coins) + (pet.visualIdentity?.artStatus === "generating" ? "\n♡ Your unique artwork is being created..." : ""));
   }
 
   if (action === "stats") {
     const pets = [profile, ...(profile.additionalPets ?? [])].filter(Boolean);
-    return reply(`**${message.author.username}'s Pet Stats ♡**\nPets owned: ${pets.length}\nActive pet: ${pet.name}\nLevel: ${pet.level}\nXP: ${pet.xp}\nHunger: ${pet.hunger}/100\nHappiness: ${pet.happiness}/100\nCoins: ${pet.coins}\nDialogues: ${pet.dialogueCount ?? 0}\nStories unlocked: ${(pet.storyUnlocks ?? []).length}`);
+    return reply(`**${message.author.username}'s Pet Stats ♡**\nPets owned: ${pets.length}\nActive pet: ${pet.name}\nLevel: ${pet.level}\nXP: ${pet.xp}\nHunger: ${pet.hunger}/100\nHappiness: ${pet.happiness}/100\nCoins: ${profile.coins}\nBond: ${pet.bond ?? 0}\nDialogues: ${pet.dialogueCount ?? 0}\nStories unlocked: ${(pet.storyUnlocks ?? []).length}`);
   }
   if (action === "talk") {
     const lines = {
@@ -319,6 +389,13 @@ async function runPetCommand(message, store, client) {
     };
     const personalityText = String(pet.visualIdentity?.personality ?? "gentle").toLowerCase();
     const personality = Object.keys(lines).find((trait) => personalityText.includes(trait)) ?? "gentle";
+    const bondDialogue = (pet.bond ?? 0) >= 30
+      ? [`${pet.name} whispers, "I know your footsteps. I always hope it's you."`, `${pet.name} curls close. "You're my safest place."`]
+      : (pet.bond ?? 0) >= 15
+        ? [`${pet.name} nudges you. "I saved my favourite moment of the day for you."`, `${pet.name} says, "I think we're becoming family."`]
+        : (pet.bond ?? 0) >= 5
+          ? [`${pet.name} looks delighted. "I remember you. You're my person!"`]
+          : [];
     const unlockedDialogue = pet.level >= 10
       ? [`${pet.name} whispers, "No matter how far we go, you're my favorite part of every story."`, `${pet.name} looks at you with a knowing smile. "Remember our very first day together?"`]
       : pet.level >= 5
@@ -326,12 +403,17 @@ async function runPetCommand(message, store, client) {
         : pet.level >= 3
           ? [`${pet.name} has a new little secret to share: "I saved a special place in my heart for you."`, `${pet.name} asks if you'll go on another adventure soon.`]
           : [];
-    const line = choose([...lines[personality], ...unlockedDialogue]);
+    const line = choose([...lines[personality], ...unlockedDialogue, ...bondDialogue]);
     pet.dialogueCount = (pet.dialogueCount ?? 0) + 1;
     pet.happiness = Math.min(100, pet.happiness + 2);
+    pet.bond = Math.min(100, (pet.bond ?? 0) + 2);
+    if (pet.bond >= 10 && !pet.gifUnlocks?.includes("happy")) pet.gifUnlocks = [...(pet.gifUnlocks ?? []), "happy"];
+    if (pet.bond >= 25 && !pet.gifUnlocks?.includes("dance")) pet.gifUnlocks = [...(pet.gifUnlocks ?? []), "dance"];
+    if (pet.bond >= 50 && !pet.gifUnlocks?.includes("sleep")) pet.gifUnlocks = [...(pet.gifUnlocks ?? []), "sleep"];
     store.save(guildId, userId, profile);
     return reply(line + " ♡");
   }
+  if (action === "gif") return sendPetGif(message, pet, argument.toLowerCase() || null);
   if (action === "story") {
     const thresholds = [{ level: 3, id: "first-adventure", title: "A Little Adventure" }, { level: 5, id: "secret-garden", title: "The Secret Garden" }, { level: 10, id: "starlight-promise", title: "A Starlight Promise" }];
     const unlocked = thresholds.filter((item) => pet.level >= item.level);
@@ -362,23 +444,51 @@ async function runPetCommand(message, store, client) {
     return reply("Your pet's identity has been updated ♡ I'll create artwork matching the new design if image generation is enabled.");
   }
 
-  if (action === "feed") {
+  if (action === "daily") {
+    const today = chileDateKey();
+    if (profile.lastDailyReward === today) return reply("You already collected today's reward ♡ Come back tomorrow.");
+    const reward = vip ? 25 : 20;
+    profile.lastDailyReward = today;
+    profile.coins += reward;
+    store.save(guildId, userId, profile);
+    return reply("Daily care bonus: +" + reward + " coins ♡ Your balance is " + profile.coins + ".");
+  } else if (action === "feed") {
     if (pet.hunger >= 100) return reply("Your pet is already full ♡");
-    if (pet.coins < SHOP.treat) return reply("You need 10 coins for a treat. Try a minigame when you're VIP ♡");
-    pet.coins -= SHOP.treat; pet.hunger = Math.min(100, pet.hunger + 25); pet.xp += 2;
+    if (profile.coins < SHOP.treat) return reply("You need 10 coins for a treat. Earn coins with daily rewards and server activity ♡");
+    profile.coins -= SHOP.treat; pet.hunger = Math.min(100, pet.hunger + 25); pet.xp += 2; pet.bond = Math.min(100, (pet.bond ?? 0) + 1);
   } else if (action === "play") {
     pet.happiness = Math.min(100, pet.happiness + 20); pet.hunger = Math.max(0, pet.hunger - 8); pet.xp += 8;
+    pet.bond = Math.min(100, (pet.bond ?? 0) + 5);
   } else if (action === "cuddle") {
     pet.happiness = Math.min(100, pet.happiness + 12); pet.xp += 3;
+    pet.bond = Math.min(100, (pet.bond ?? 0) + 3);
   } else if (action === "shop") {
-    return reply("**Pet shop ♡**\n`!pet buy treat` — 10 coins\n`!pet buy toy` — 25 coins");
+    return reply("**Pet shop ♡**\n`!pet buy treat` — 10 coins\n`!pet buy toy` — 25 coins\n`!pet buy potion` — 60 coins (fills hunger completely)\nUse `!pet use <item>` to use an item.");
   } else if (action === "buy") {
-    const price = SHOP[argument.toLowerCase()];
-    if (!price) return reply("Choose `treat` or `toy` ♡");
-    if (pet.coins < price) return reply("You don't have enough coins yet ♡");
-    pet.coins -= price; pet.inventory.push(argument.toLowerCase());
+    const item = argument.toLowerCase();
+    const price = SHOP[item];
+    if (!price) return reply("Choose `treat`, `toy` or `potion` ♡");
+    if (profile.coins < price) return reply("You don't have enough coins yet ♡");
+    profile.coins -= price; pet.inventory ??= []; pet.inventory.push(item);
+  } else if (action === "use") {
+    const item = argument.toLowerCase();
+    pet.inventory ??= [];
+    const index = pet.inventory.indexOf(item);
+    if (index < 0) return reply("You don't have that item in your inventory ♡");
+    if (item === "potion") {
+      pet.hunger = 100;
+    } else if (item === "treat") {
+      pet.hunger = Math.min(100, pet.hunger + 25);
+      pet.bond = Math.min(100, (pet.bond ?? 0) + 2);
+    } else if (item === "toy") {
+      pet.happiness = Math.min(100, pet.happiness + 20);
+      pet.hunger = Math.max(0, pet.hunger - 2);
+      pet.bond = Math.min(100, (pet.bond ?? 0) + 4);
+    } else return reply("That item cannot be used yet ♡");
+    pet.inventory.splice(index, 1);
+    pet.xp += 2;
   } else if (action === "inventory") {
-    return reply(pet.inventory.length ? "Your inventory: " + pet.inventory.join(", ") : "Your inventory is empty ♡");
+    return reply(pet.inventory?.length ? "Your inventory: " + pet.inventory.join(", ") : "Your inventory is empty ♡");
   } else if (["room", "outfit", "rare", "slots", "minigame"].includes(action)) {
     if (!vip) return reply("That pet feature is VIP-only ♡ Your pet and progress are still yours.");
     if (action === "room") pet.room = "VIP dream room";
@@ -391,23 +501,26 @@ async function runPetCommand(message, store, client) {
       pet.xp += 15;
     }
     if (action === "slots") {
-      profile.slots = Math.min(3, profile.slots + 1);
+      const currentSlots = Math.max(1, Number(profile.slots) || 1);
+      if (currentSlots >= 3) return reply("You already have the maximum of 3 VIP pet slots ♡");
+      profile.slots = currentSlots + 1;
       store.save(guildId, userId, profile);
       return reply(`VIP pet slots: ${profile.slots}/3 ♡ Use !pet adopt to fill your new slot.`);
     }
     if (action === "minigame") {
-      const today = new Date().toISOString().slice(0, 10);
+      const today = chileDateKey();
       if (pet.lastMinigame === today) return reply("You already played today's minigame. Come back tomorrow ♡");
-      pet.lastMinigame = today; pet.coins += 30; pet.xp += 10;
+      pet.lastMinigame = today; profile.coins += 30; pet.xp += 10;
     }
   } else {
     return reply("Try `!pet adopt`, `stats`, `feed`, `play`, `talk`, `story`, `shop`, `inventory`, or `select` ♡");
   }
 
   while (pet.xp >= pet.level * 25) { pet.xp -= pet.level * 25; pet.level += 1; }
+  refreshPetUnlocks(pet);
   store.save(guildId, userId, profile);
   await refreshPetsPanel(message.guild, store, client);
-  return reply("Done ♡\n" + status(pet));
+  return reply("Done ♡\n" + status(pet, profile.coins));
 }
 export function attachPetSystem(client, store) {
   if (!store) throw new Error("The virtual-pet store is required.");
@@ -428,11 +541,12 @@ export function attachPetSystem(client, store) {
       const guild = interaction.guild, user = interaction.user, vip = isVip(interaction.member);
       if (!guild || !PET_SPECIES_OPTIONS.includes(species)) throw new Error("Invalid pet adoption request.");
       let profile = store.get(guild.id, user.id);
-      const activePet = profile ? (profile.activePetIndex > 0 ? profile.additionalPets?.[profile.activePetIndex - 1] : profile) : null;
-      if (activePet && !vip) throw new Error("You already have a pet ♡ VIP members can unlock more pet slots.");
+      if (profile) migratePetWallet(profile);
       const count = profile ? 1 + (profile.additionalPets?.length ?? 0) : 0;
-      if (profile && count >= (profile.slots ?? 1)) throw new Error("All your pet slots are full. Use `!pet slots` to unlock another VIP slot ♡");
+      if (profile && !vip) throw new Error("You already have a pet ♡ VIP members can unlock more pet slots.");
+      if (profile && !canAdoptPet(profile, vip)) throw new Error("All your pet slots are full. Use `!pet slots` to unlock another VIP slot ♡");
       const companion = makePet(species);
+      if (profile) companion.coins = 0;
       if (vip) {
         if (customization.name) companion.name = customization.name.slice(0, 24);
         if (customization.color) companion.visualIdentity.palette = customization.color.slice(0, 40);
@@ -470,7 +584,7 @@ export function attachPetSystem(client, store) {
           breed: interaction.fields.getTextInputValue("pet_breed").trim(), appearance: interaction.fields.getTextInputValue("pet_appearance").trim(),
           personality: interaction.fields.getTextInputValue("pet_personality").trim(),
         });
-        return interaction.reply({ content: "Welcome home, **" + companion.name + "** the " + companion.species + "! Your custom companion is being created ♡\n" + status(companion), ephemeral: true });
+        return interaction.reply({ content: "Welcome home, **" + companion.name + "** the " + companion.species + "! Your custom companion is being created ♡\n" + status(companion, store.get(interaction.guild.id, interaction.user.id)?.coins ?? companion.coins), ephemeral: true });
       } catch (error) { return interaction.reply({ content: error.message, ephemeral: true }); }
     }
 
@@ -492,7 +606,7 @@ export function attachPetSystem(client, store) {
         try {
           const companion = await createAdoptedPet(species);
           const vip = isVip(interaction.member);
-          return interaction.update({ embeds: [buildAdoptionEmbed(species, vip).setDescription("You adopted **" + companion.name + "** the " + companion.species + "!\n\n" + (vip ? "Your companion is ready to meet you." : "Sugar chose a unique random design for you. VIP members can customise every detail of future companions.") + " ♡\n\n" + status(companion))], components: [] });
+          return interaction.update({ embeds: [buildAdoptionEmbed(species, vip).setDescription("You adopted **" + companion.name + "** the " + companion.species + "!\n\n" + (vip ? "Your companion is ready to meet you." : "Sugar chose a unique random design for you. VIP members can customise every detail of future companions.") + " ♡\n\n" + status(companion, store.get(interaction.guild.id, interaction.user.id)?.coins ?? companion.coins))], components: [] });
         } catch (error) { return interaction.reply({ content: error.message, ephemeral: true }); }
       }
     }
@@ -537,6 +651,24 @@ export function attachPetSystem(client, store) {
       console.error("[pets] could not open pet channel: " + error.message);
       if (!interaction.replied) await interaction.reply({ content: "I couldn’t open your pet room. Please try again ♡", ephemeral: true }).catch(() => {});
     }
+  });
+    client.on(Events.MessageCreate, async (message) => {
+    if (!message.guild || message.guild.id !== "1567093019377930363" || message.author?.bot || message.webhookId ||
+        !message.member?.roles?.cache?.has(MEMBER_ROLE_ID) || message.channel?.type !== ChannelType.GuildText) return;
+    const content = String(message.content ?? "").trim();
+    if (content.length < 12 || content.startsWith("!")) return;
+    if (/^Sugar personal pet room for [0-9]{17,20}$/.test(message.channel.topic ?? "")) return;
+    const profile = store.get(message.guild.id, message.author.id);
+    if (!profile) return;
+    const now = Date.now();
+    const today = chileDateKey(new Date(now));
+    profile.activity ??= { day: today, lastMessageAt: 0, earnedToday: 0 };
+    if (profile.activity.day !== today) profile.activity = { day: today, lastMessageAt: 0, earnedToday: 0 };
+    if (now - (Number(profile.activity.lastMessageAt) || 0) < 60_000 || profile.activity.earnedToday >= 20) return;
+    profile.coins = (Number(profile.coins) || 0) + 1;
+    profile.activity.lastMessageAt = now;
+    profile.activity.earnedToday += 1;
+    store.save(message.guild.id, message.author.id, profile);
   });
   client.on(Events.MessageCreate, async (message) => {
     if (!message.guild || message.author?.bot || message.channel?.type !== ChannelType.GuildText) return;
