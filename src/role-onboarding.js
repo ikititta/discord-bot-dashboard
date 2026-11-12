@@ -99,21 +99,17 @@ export async function restrictUnderageMember(guild, member) {
   }
 
   const ageRole = await findOrCreateAgeReviewRole(guild);
-  // Configure Support first, before assigning the role that hides other channels.
-  await support.permissionOverwrites.edit(ageRole, {
-    ViewChannel: true,
-    ReadMessageHistory: true,
-    SendMessages: false,
-  }, "Ensure Support remains accessible to members who selected 18-");
+  // Install Support access and all channel restrictions before assigning the role.
+  // The moment the role is added, the member can see Support and nothing else.
+  await ensureAgeReviewVisibility(guild, ageRole);
 
+  if (!member.roles.cache.has(ageRole.id)) {
+    await member.roles.add(ageRole, "Member self-declared an age under 18");
+  }
   const memberRole = findMemberRole(guild);
   if (memberRole && member.roles.cache.has(memberRole.id)) {
     await member.roles.remove(memberRole, "Member selected 18-; remove full server access");
   }
-  if (!member.roles.cache.has(ageRole.id)) {
-    await member.roles.add(ageRole, "Member self-declared an age under 18");
-  }
-  await ensureAgeReviewVisibility(guild, ageRole);
 
   const notice = new EmbedBuilder().setColor(COLOR)
     .setTitle("୨୧ Access Restricted ♡")
