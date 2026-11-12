@@ -14,7 +14,7 @@ const BUTTON_ID = "sugar-pets:open";
 const PET_SPECIES = {
   cat: "cat", dog: "dog", puppy: "dog", kitten: "cat", hamster: "hamster",
   rabbit: "rabbit", bunny: "rabbit", fish: "fish", bird: "bird",
-  guinea: "guinea pig", turtle: "turtle", fox: "fox", ferret: "ferret",
+  guinea: "guinea pig", "guinea pig": "guinea pig", "guinea-pig": "guinea pig", turtle: "turtle", fox: "fox", ferret: "ferret",
 };
 const PET_SPECIES_LABELS = Object.keys(PET_SPECIES).join(", ");
 const SHOP = { treat: 10, toy: 25 };
@@ -70,7 +70,7 @@ function buildPetEmbed() {
 }
 function buildPetCommandsEmbed() {
   return new EmbedBuilder().setColor(COLOR).setTitle("୨୧ 𝓟𝓮𝓽 𝓡𝓸𝓸𝓶 · 𝓒𝓸𝓶𝓶𝓪𝓷𝓭𝓼 ♡")
-    .setDescription("**Everyone**\n`!pet adopt` · `!pet` · `!pet feed` · `!pet play` · `!pet cuddle`\n`!pet shop` · `!pet buy treat/toy` · `!pet inventory`\n`!pet rename <name>` · `!pet select <number>`\n\n**VIP extras**\n`!pet room` · `!pet outfit <name>` · `!pet rare` · `!pet slots` · `!pet minigame")
+    .setDescription("**Everyone**\\n`!pet adopt <species>` · `!pet` · `!pet stats`\\n`!pet feed` · `!pet play` · `!pet cuddle` · `!pet talk` · `!pet story`\\n`!pet shop` · `!pet buy treat/toy` · `!pet inventory` · `!pet select <number>`\\n\\n**VIP customization**\\n`!pet name <name>` · `!pet color <color>` · `!pet breed <breed>`\\n`!pet appearance <details>` · `!pet personality <traits>`\\n\\n**VIP extras**\\n`!pet room` · `!pet outfit <name>` · `!pet rare` · `!pet slots` · `!pet minigame`")
     .setFooter({ text: "Use these commands in your private pet room ♡" });
 }
 
