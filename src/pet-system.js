@@ -258,16 +258,24 @@ function queuePetArtwork(message, store, profile, pet) {
 
 export function applyNeedsDecay(pet, now = Date.now()) {
   const last = Number(pet.lastNeedsAt) || now;
-  const elapsedHours = Math.min(72, Math.max(0, (now - last) / 3_600_000));
-  pet.hunger = Math.max(0, Math.round((Number(pet.hunger) || 0) - elapsedHours / 3));
-  pet.happiness = Math.max(0, Math.round((Number(pet.happiness) || 0) - elapsedHours / 12));
+  const elapsedMs = Math.min(72 * 3_600_000, Math.max(0, now - last));
+  const hungerProgress = (Number(pet.hungerDecayRemainderMs) || 0) + elapsedMs;
+  const happinessProgress = (Number(pet.happinessDecayRemainderMs) || 0) + elapsedMs;
+  const hungerLoss = Math.floor(hungerProgress / (3 * 3_600_000));
+  const happinessLoss = Math.floor(happinessProgress / (12 * 3_600_000));
+  pet.hunger = Math.max(0, (Number(pet.hunger) || 0) - hungerLoss);
+  pet.happiness = Math.max(0, (Number(pet.happiness) || 0) - happinessLoss);
+  pet.hungerDecayRemainderMs = hungerProgress % (3 * 3_600_000);
+  pet.happinessDecayRemainderMs = happinessProgress % (12 * 3_600_000);
   pet.lastNeedsAt = now;
 }
 
 export function chileDateKey(date = new Date()) {
-  return new Intl.DateTimeFormat("en-CA", {
+  const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone: "America/Santiago", year: "numeric", month: "2-digit", day: "2-digit",
-  }).format(date);
+  }).formatToParts(date);
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return values.year + "-" + values.month + "-" + values.day;
 }
 
 export function refreshPetUnlocks(pet) {
