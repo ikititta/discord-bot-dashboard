@@ -124,6 +124,33 @@ function buildPetEmbed() {
       "Care for your pet, earn XP and coins, unlock stories and reaction GIFs through bonding, and collect more companions with VIP slots. Earn coins with daily rewards and meaningful server activity.")
     .setFooter({ text: "Your pet and progress are saved ♡ · Adoption starts with !pet adopt" });
 }
+function buildPetRoomWelcomeEmbed(profile, pet, vip = false) {
+  const description = pet
+    ? status(pet, profile.coins, vip) + "\\n\\nThis is your little private corner together. Your companion was adopted in **#🐾｜୨୧ ・𝓹𝓮𝓽𝓼** and all their progress is saved here ♡"
+    : "Your private pet corner is ready ♡ Adopt and choose your companion in **#🐾｜୨୧ ・𝓹𝓮𝓽𝓼** first. Once you have adopted them, their profile and information will appear here.";
+  return new EmbedBuilder().setColor(COLOR).setTitle("୨୧ 𝓦𝓮𝓵𝓬𝓸𝓶𝓮 𝓱𝓸𝓶𝓮 ♡").setDescription(description)
+    .setFooter({ text: "A little home for you and your companion ♡" });
+}
+const PET_HELP_CATEGORIES = {
+  care: { label: "Care & bonding", title: "୨୧ 𝓒𝓪𝓻𝓮 & 𝓑𝓸𝓷𝓭𝓲𝓷𝓰 ♡", body: "`!pet` · `!pet stats` · `!pet feed` · `!pet play` · `!pet cuddle` · `!pet talk` · `!pet story` · `!pet gif [happy|dance|sleep]`\\n\\nFeed, play, cuddle and talk to care for your companion, build your bond and unlock stories and GIFs." },
+  coins: { label: "Coins & items", title: "୨୧ 𝓒𝓸𝓲𝓷𝓼 & 𝓘𝓽𝓮𝓶𝓼 ♡", body: "`!pet daily` · `!pet shop` · `!pet buy <treat|toy|potion>` · `!pet use <item>` · `!pet inventory`\\n\\nEarn daily coins, buy treats, toys and potions. Your wallet is shared by all your pets." },
+  manage: { label: "My pets", title: "୨୧ 𝓜𝔂 𝓟𝓮𝓽𝓼 ♡", body: "`!pet select <number>` · `!pet stats`\\n\\nChoose which companion is active and check their individual stats. Adoption and species selection happen in the pets channel." },
+  customize: { label: "Customisation", title: "୨୧ 𝓒𝓾𝓼𝓽𝓸𝓶𝓲𝓼𝓪𝓽𝓲𝓸𝓷 ♡", body: "`!pet name <name>` · `!pet color <color>` · `!pet breed <breed>` · `!pet appearance <details>` · `!pet personality <traits>`\\n\\nVIP members can customise their companion's identity." },
+  vip: { label: "VIP features", title: "୨୧ 𝓥𝓘𝓟 𝓕𝓮𝓪𝓽𝓾𝓻𝓮𝓼 ♡", body: "`!pet delete` · `!pet room` · `!pet outfit <name>` · `!pet slots` · `!pet minigame`\\n\\nVIP unlocks extra species, customisation, additional pet slots and pet deletion." },
+};
+function buildPetStickyPayload(ownerId) {
+  const row = new ActionRowBuilder().addComponents(
+    ...Object.entries(PET_HELP_CATEGORIES).map(([key, item]) =>
+      new ButtonBuilder().setCustomId("sugar-pets:help:" + ownerId + ":" + key).setLabel(item.label).setStyle(ButtonStyle.Secondary)),
+  );
+  return { embeds: [new EmbedBuilder().setColor(COLOR).setTitle("୨୧ 𝓟𝓮𝓽 𝓗𝓮𝓵𝓹 ♡")
+    .setDescription("Choose a category to see the commands for your companion ♡")], components: [row] };
+}
+function buildPetCategoryEmbed(category) {
+  const item = PET_HELP_CATEGORIES[category];
+  return new EmbedBuilder().setColor(COLOR).setTitle(item.title).setDescription(item.body)
+    .setFooter({ text: "Use these commands in your private pet room ♡" });
+}
 function buildPetCommandsEmbed() {
   return new EmbedBuilder().setColor(COLOR).setTitle("୨୧ 𝓟𝓮𝓽 𝓡𝓸𝓸𝓶 · 𝓒𝓸𝓶𝓶𝓪𝓷𝓭𝓼 ♡")
     .setDescription(
@@ -683,6 +710,13 @@ export function attachPetSystem(client, store) {
       return companion;
     };
 
+    if (interaction.isButton?.() && interaction.customId.startsWith("sugar-pets:help:")) {
+      const [, , ownerId, category] = interaction.customId.split(":");
+      if (!owned(ownerId)) return interaction.reply({ content: "This pet help menu belongs to someone else ♡", ephemeral: true });
+      if (!PET_HELP_CATEGORIES[category]) return interaction.reply({ content: "That help category is unavailable ♡", ephemeral: true });
+      return interaction.reply({ embeds: [buildPetCategoryEmbed(category)], ephemeral: true });
+    }
+
     if (interaction.isStringSelectMenu?.() && interaction.customId.startsWith("sugar-pets:delete-select:")) {
       const ownerId = interaction.customId.split(":")[2];
       if (!owned(ownerId)) return interaction.reply({ content: "This pet menu belongs to someone else ♡", ephemeral: true });
@@ -799,17 +833,16 @@ export function attachPetSystem(client, store) {
         const firstPet = ownerProfile ? (ownerProfile.activePetIndex > 0 ? ownerProfile.additionalPets?.[ownerProfile.activePetIndex - 1] : ownerProfile) : null;
         await petChannel.send({
           content: `Welcome <@${interaction.user.id}>! Your private pet corner is ready ♡`,
-          embeds: [
-            new EmbedBuilder().setColor(COLOR).setTitle("୨୧ 𝓦𝓮𝓵𝓬𝓸𝓶𝓮 𝓱𝓸𝓶𝓮 ♡")
-              .setDescription(firstPet ? status(firstPet, ownerProfile.coins, isVip(interaction.member)) : "Your room is ready! Adopt your first companion with `!pet adopt` ♡"),
-            buildPetCommandsEmbed(),
-          ],
+          embeds: [buildPetRoomWelcomeEmbed(ownerProfile, firstPet, isVip(interaction.member))],
           allowedMentions: { users: [interaction.user.id] },
         });
+        await petChannel.send(buildPetStickyPayload(interaction.user.id));
       }
-      const roomMessages = await petChannel.messages.fetch({ limit: 20 });
-      const commandsEmbed = roomMessages.find((message) => message.author?.id === client.user.id && message.embeds.some((embed) => embed.title === "୨୧ 𝓟𝓮𝓽 𝓡𝓸𝓸𝓶 · 𝓒𝓸𝓶𝓶𝓪𝓷𝓭𝓼 ♡"));
-      if (commandsEmbed) await commandsEmbed.edit({ embeds: [buildPetCommandsEmbed()] }); else await petChannel.send({ embeds: [buildPetCommandsEmbed()] });
+      const roomMessages = await petChannel.messages.fetch({ limit: 50 });
+      const legacyCommands = roomMessages.find((message) => message.author?.id === client.user.id && message.embeds.some((embed) => embed.title === "୨୧ 𝓟𝓮𝓽 𝓡𝓸𝓸𝓶 · 𝓒𝓸𝓶𝓶𝓪𝓷𝓭𝓼 ♡"));
+      if (legacyCommands) await legacyCommands.delete().catch(() => {});
+      const sticky = roomMessages.find((message) => message.author?.id === client.user.id && message.embeds.some((embed) => embed.title === "୨୧ 𝓟𝓮𝓽 𝓗𝓮𝓵𝓹 ♡"));
+      if (!sticky) await petChannel.send(buildPetStickyPayload(interaction.user.id));
       await petChannel.permissionOverwrites.edit(interaction.user.id, { AddReactions: false });
       await petChannel.permissionOverwrites.edit(client.user.id, { AddReactions: false });
       await interaction.reply({ content: `Your pet room is ready: <#${petChannel.id}> ♡`, ephemeral: true });
@@ -819,6 +852,22 @@ export function attachPetSystem(client, store) {
     }
   });
     client.on(Events.MessageCreate, async (message) => {
+    if (!message.guild || message.author?.bot || message.webhookId ||
+        message.channel?.type !== ChannelType.GuildText ||
+        !/^Sugar personal pet room for [0-9]{17,20}$/.test(message.channel.topic ?? "")) return;
+    const ownerId = message.channel.topic.match(/^Sugar personal pet room for ([0-9]{17,20})$/)?.[1];
+    if (message.author.id !== ownerId) return;
+    try {
+      const recent = await message.channel.messages.fetch({ limit: 30 });
+      const previous = recent.find((item) => item.author?.id === client.user.id &&
+        item.embeds.some((embed) => embed.title === "୨୧ 𝓟𝓮𝓽 𝓗𝓮𝓵𝓹 ♡"));
+      if (previous) await previous.delete().catch(() => {});
+      await message.channel.send(buildPetStickyPayload(ownerId));
+    } catch (error) {
+      console.error("[pets] sticky help refresh failed: " + error.message);
+    }
+  });
+  client.on(Events.MessageCreate, async (message) => {
     if (!message.guild || message.guild.id !== "1567093019377930363" || message.author?.bot || message.webhookId ||
         !message.member?.roles?.cache?.has(MEMBER_ROLE_ID) || message.channel?.type !== ChannelType.GuildText) return;
     const content = String(message.content ?? "").trim();
