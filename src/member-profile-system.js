@@ -2,7 +2,7 @@ import { EmbedBuilder, Events } from "discord.js";
 
 const COLOR = 0xffd9ff;
 
-function petSummary(profile) {
+export function petSummary(profile) {
   if (!profile) return "No pet adopted yet ♡";
   const pet = profile.activePetIndex > 0
     ? profile.additionalPets?.[profile.activePetIndex - 1]
@@ -11,10 +11,10 @@ function petSummary(profile) {
   return [
     `**${pet.name}** the ${pet.species}`,
     `Level ${Number(pet.level) || 1} · ${Number(pet.xp) || 0} XP`,
-    `Hunger ${Number(pet.hunger) || 0}/100 · Happiness ${Number(pet.happiness) || 0}/100`,
+    `Hunger ${Number(pet.hunger) || 0}/100 · Happiness ${Number(pet.happiness) || 0}/100 · Bond ${Number(pet.bond) || 0}/100`,
     `Color: ${pet.visualIdentity?.palette ?? "not customized"} · Personality: ${pet.visualIdentity?.personality ?? "not set"}`,
     `Breed: ${pet.visualIdentity?.breed ?? "not specified"}`,
-    `Coins: ${Number(pet.coins) || 0} · Pets owned: ${1 + (profile.additionalPets?.length ?? 0)}`,
+    `Coins: ${Number.isFinite(Number(profile.coins)) ? Number(profile.coins) : Number(pet.coins) || 0} · Pets owned: ${1 + (profile.additionalPets?.length ?? 0)}`,
   ].join("\n");
 }
 
