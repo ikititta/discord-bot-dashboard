@@ -35,9 +35,10 @@ test("blocks non-VIP promotions outside the assigned channel", () => {
 });
 
 test("allows promotion links only for VIPs inside the assigned channel", () => {
-  const vip = { name: "VIP" };
-  assert.equal(detectMessageViolation(message({ content: "Buy now https://example.com", channel: "promotions", roles: [vip] })), null);
-  assert.equal(detectMessageViolation(message({ content: "Buy now https://example.com", channel: "general", roles: [vip] })), "unauthorized promotion");
+  const vip = { id: "1568188640113463437", name: "Member" };
+  const roles = [vip];
+  assert.equal(detectMessageViolation(message({ content: "Buy now https://example.com", channel: "promotions", roles })), null);
+  assert.equal(detectMessageViolation(message({ content: "Buy now https://example.com", channel: "general", roles })), "unauthorized promotion");
   assert.equal(detectMessageViolation(message({ content: "Buy now https://example.com", channel: "promotions" })), "unauthorized promotion");
 });
 
@@ -54,4 +55,12 @@ test("persists three strikes and caps the counter", () => {
   } finally {
     fs.rmSync(directory, { recursive: true, force: true });
   }
+});
+
+
+test("VIP promotion exemption uses the configured VIP role ID, not a role name", () => {
+  const byNameOnly = { name: "VIP" };
+  const byId = { id: "1568188640113463437", name: "Member" };
+  assert.equal(detectMessageViolation(message({ content: "Buy now", channel: "promotions", roles: [byNameOnly] })), "unauthorized promotion");
+  assert.equal(detectMessageViolation(message({ content: "Buy now", channel: "promotions", roles: [byId] })), null);
 });
