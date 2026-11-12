@@ -781,7 +781,7 @@ export function attachPetSystem(client, store) {
         message.channel?.type !== ChannelType.GuildText ||
         !/^!pet(?:\s|$)/i.test(String(message.content ?? "").trim())) return;
     const isPrivatePetRoom = isUsersPetRoom(message.channel, message.author.id);
-    const isAdoptionCommand = /^!pet\\s+adopt(?:\\s|$)/i.test(String(message.content ?? "").trim());
+    const isAdoptionCommand = /^!pet\s+adopt(?:\s|$)/i.test(String(message.content ?? "").trim());
     const isAdoptionChannel = PET_ADOPTION_CHANNEL_IDS.has(message.channel.id);
     if (!isPrivatePetRoom && !(isAdoptionChannel && isAdoptionCommand)) return;
     try { await runPetCommand(message, store, client); }
