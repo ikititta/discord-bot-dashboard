@@ -168,8 +168,10 @@ async function ensurePetsChannel(guild, client, store) {
 }
 
 export async function ensurePetCategoryPosition(guild, onError = console.warn) {
-  const category = guild.channels.cache.get(PET_ROOMS_CATEGORY_ID);
-  const reference = guild.channels.cache.get(PET_CATEGORY_BELOW_ID);
+  const category = guild.channels.cache.get(PET_ROOMS_CATEGORY_ID) ??
+    await guild.channels.fetch(PET_ROOMS_CATEGORY_ID).catch(() => null);
+  const reference = guild.channels.cache.get(PET_CATEGORY_BELOW_ID) ??
+    await guild.channels.fetch(PET_CATEGORY_BELOW_ID).catch(() => null);
   if (category?.type !== ChannelType.GuildCategory || reference?.type !== ChannelType.GuildCategory) {
     onError("[pets] pet-room category positioning skipped: one or both configured categories are missing.");
     return false;
