@@ -51,10 +51,9 @@ Solo commands: `!cry`, `!laugh`, `!dance`, `!sleep`, `!happy`, `!blush`, `!smug`
 
 - Every action message explicitly mentions the member who used the command and, for two-person actions, the mentioned target. Only those member IDs can be notified. Messages use clear wording such as `<@actor> has hugged <@target>!`; solo actions mention only the person who used the command.
 - `!funhelp` explains two-person commands, solo commands, statistics, and VIP access.
-- `!stats` shows a member own basic statistics.
-- `!vip stats` shows the caller full statistics for VIP members.
-- `!vip stats @member` lets VIP members view another member full statistics. VIP unlocks full reports and member lookups; non-VIP members can still use `!stats` for their own summary.
-- `!rape` and `!fuck` are intentionally unavailable; Sugar responds with a consent reminder.
+- `!stats`, `!fun stats`, and `!vip stats` are VIP-only and show the caller's complete fun report.
+- `!vip stats @member` lets VIP members view another member's complete statistics.
+- `!fuck @member` is a VIP-only two-person NSFW GIF command. `!rape` remains unavailable.
 - The GIF adapter uses Gifukai for supported SFW actions and Nekos.best as the general SFW fallback. `!fuck` is separate: it uses PurrBot API’s dedicated `/img/nsfw/fuck/gif` endpoint and accepts only GIF URLs hosted in that explicit NSFW category. It never falls back to a SFW kiss or reaction GIF. `!spank` remains a playful, non-explicit slap reaction.
 
 Fun-command statistics are stored atomically in `fun-command-state.json` under the existing persistent data directory. The store validates its schema and bounds retained guild/member/partner records.
