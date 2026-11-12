@@ -222,6 +222,10 @@ export function buildFunActionText(actorId, targetId, definition) {
     : "<@" + actorId + "> " + definition.text + "!";
 }
 
+export function isFunHelpCommand(name, args = "") {
+  return name === "funhelp" || (name === "fun" && String(args).trim().toLowerCase() === "help");
+}
+
 export function buildFunHelpEmbed() {
   return new EmbedBuilder()
     .setColor(COLOR)
@@ -408,6 +412,10 @@ export function attachFunCommands(client, { store, fetchImpl = fetch, token, app
       }
       if (name === "nsfw-on" || name === "nsfw-off") {
         await safeReply(message, { content: "All two-person fun interactions are automatic now. No approval settings are needed ♡" });
+        return;
+      }
+      if (isFunHelpCommand(name, args)) {
+        await safeReply(message, { embeds: [buildFunHelpEmbed()] });
         return;
       }
       if (name === "stats" || name === "vip" || name === "fun") {
