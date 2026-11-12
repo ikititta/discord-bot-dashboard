@@ -13,6 +13,7 @@ const VIP_ROLE_ID = "1568188640113463437";
 const CHANNEL_NAME = "🐾｜୨୧ ・𝓹𝓮𝓽𝓼";
 export const PET_ADOPTION_CHANNEL_IDS = new Set(["1570257241511170150", "1570263323159695482"]);
 export const PET_ROOMS_CATEGORY_ID = "1568179038625857576";
+export const PET_PANEL_CHANNEL_ID = "1570223501317513408";
 export const PET_CATEGORY_BELOW_ID = "1570223501317513408";
 const BUTTON_ID = "sugar-pets:open";
 const PET_SPECIES = {
@@ -236,9 +237,10 @@ function panelPayload() {
 async function ensurePetsChannel(guild, client, store) {
   // This is an existing server-managed channel. Never recreate it if it is
   // moved or renamed; only maintain the panel when the configured channel exists.
-  const channel = guild.channels.cache.find((item) =>
-    item.type === ChannelType.GuildText && item.name === CHANNEL_NAME,
-  );
+  // Use the configured channel ID, not its display name: the channel may
+  // be renamed without preventing Sugar from refreshing the existing panel.
+  const channel = guild.channels.cache.get(PET_PANEL_CHANNEL_ID) ??
+    await guild.channels.fetch(PET_PANEL_CHANNEL_ID).catch(() => null);
   if (!channel) {
     console.warn(`[pets] existing pets channel was not found in guild ${guild.id}; no channel was created.`);
     return null;
