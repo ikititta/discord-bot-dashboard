@@ -167,16 +167,16 @@ test("access, rules, and guide panels contain the required confirmations and upd
   assert.equal(guide.embeds[0].data.title, `୨୧ ${toRoyalBold("Kittisugar Guide!")} ♡`);
   assert.match(guideText, /A little guide of Kittisugar/);
   assert.doesNotMatch(guideText, /\n\n(?:## )?୨୧/);
-  for (const title of ["Start", "Community", "Help", "Commands", "Sugar AI"]) {
+  for (const title of ["Start", "Community", "Help", "Commands & Help", "Sugar AI"]) {
     assert.ok(guideText.includes(`## ୨୧ ${toRoyalBold(title)}`), `missing large guide heading: ${title}`);
   }
   assert.equal((guideText.match(/• <#\d{18}>/g) ?? []).length, 13);
   assert.ok(guideText.includes(`## ୨୧ ${toRoyalBold("Start")}\n\n• <#100000000000000000>\nRead the welcome message`));
-  assert.ok(guideText.includes("`/delete amount:` — delete your own recent messages."));
-  assert.ok(guideText.includes("`/vip-delete amount:` — VIP message cleanup."));
-  assert.ok(guideText.includes("`/mod-delete amount: [member:]` — moderator cleanup."));
-  assert.match(guideText, /!profile \[@member\]/);
-  assert.match(guideText, /!rep stats \[@member\]/);
+  assert.ok(guideText.includes("<#1570257241511170150>"));
+  assert.ok(guideText.includes("`!profile [@member]` — view a member profile."));
+  assert.ok(guideText.includes("`!pet adopt` — open the pet adoption menu."));
+  assert.doesNotMatch(guideText, /delete amount:/);
+  assert.doesNotMatch(guideText, /!rep stats/);
   assert.match(guideText, /!pet adopt` — open the interactive adoption embed/);
   assert.match(guideText, /Non-VIP members receive a unique random design/);
   assert.match(guideText, /VIP members can customise name, colour, breed, appearance and personality/);
@@ -188,8 +188,8 @@ test("access, rules, and guide panels contain the required confirmations and upd
   assert.match(guideText, /selfies/);
   assert.match(guideText, /Introduce yourself/);
   assert.match(guideText, /virtual pet/);
-  assert.ok(guideText.includes("`!quote` — reply to a message with !quote to create an image quote."));
-  assert.ok(guideText.includes("`/priv-chat create|add|remove|rename|leave|delete|commands` — manage your private chat."));
+  assert.doesNotMatch(guideText, /!pet daily/);
+  assert.doesNotMatch(guideText, /!funhelp/);
   assert.match(guideText, /show or hide channels/i);
   assert.match(guide.embeds[0].data.footer.text, /Quick guide/);
   assert.doesNotMatch(guideText, /pinned in #dashboard/);
