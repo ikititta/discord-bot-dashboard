@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 import {
   buildCommandsPanelPayload,
+  buildCommandsThreadGuidePayload,
   COMMANDS_CHANNEL_NAME,
   COMMANDS_THREAD_NAME,
   isCommandsThread,
@@ -11,8 +12,14 @@ import {
 test("commands board is designed to live in Reputation and creates a thread from its embed", () => {
   const payload = buildCommandsPanelPayload();
   assert.equal(payload.embeds.length, 1);
-  assert.match(payload.embeds[0].data.description, /!funhelp/);
-  assert.match(payload.embeds[0].data.description, /!rep/);
+  assert.match(payload.embeds[0].data.description, /All reputation commands are listed inside the thread/);
+  assert.doesNotMatch(payload.embeds[0].data.description, /!fun|!rep/);
+  const guide = buildCommandsThreadGuidePayload();
+  const guideText = guide.embeds[0].data.description;
+  for (const command of ["!rep", "!rep @member", "!rep stats", "!rep stats @member", "!rep top", "!rep comments [@member]"]) {
+    assert.ok(guideText.includes(command), `missing reputation command: ${command}`);
+  }
+  assert.doesNotMatch(guideText, /!fun|!pet/);
   assert.equal(COMMANDS_CHANNEL_NAME, "reputation");
   assert.equal(COMMANDS_THREAD_NAME, "💬 𝗰𝗼𝗺𝗺𝗮𝗻𝗱𝘀");
 });
