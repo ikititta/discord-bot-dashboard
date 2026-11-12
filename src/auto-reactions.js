@@ -6,6 +6,7 @@ import {
 } from "./ticket-system.js";
 
 export const AUTO_REACTIONS = ["😊", "😭", "😔", "💀", "💗"];
+export const AUTO_REACTIONS_CHANNEL_ID = "1567093021298794658";
 
 const EXCLUDED_CHANNEL_IDS = new Set([
   "1569930648804925522",
@@ -22,6 +23,7 @@ const STICKY_PANEL_KEYS = ["confessions", "love-letters", "suggestions"];
 
 export function shouldAutoReactToMessage(message, { stickyPanels } = {}) {
   if (!message?.guild || !message.author || message.author.bot || message.webhookId) return false;
+  if (message.channelId !== AUTO_REACTIONS_CHANNEL_ID) return false;
   if (message.system || message.channel?.isTextBased?.() === false) return false;
 
   const channel = message.channel;
