@@ -349,7 +349,7 @@ async function runPetCommand(message, store, client) {
     if (action === "slots") {
       profile.slots = Math.min(3, profile.slots + 1);
       store.save(guildId, userId, profile);
-      return reply(`VIP pet slots: ${profile.slots}/3 ♡ Use `!pet adopt <species>` to fill your new slot.`);
+      return reply(`VIP pet slots: ${profile.slots}/3 ♡ Use !pet adopt <species> to fill your new slot.`);
     }
     if (action === "minigame") {
       const today = new Date().toISOString().slice(0, 10);
