@@ -32,7 +32,10 @@ function roleDisplayName(label) {
 
 function findDisplayRole(guild, label) {
   const expected = normalizeRoleName(label);
-  return guild.roles.cache.find((role) => normalizeRoleName(role.name) === expected) ?? null;
+  const cache = guild.roles.cache;
+  if (typeof cache.find === "function") return cache.find((role) => normalizeRoleName(role.name) === expected) ?? null;
+  if (typeof cache.values === "function") return [...cache.values()].find((role) => normalizeRoleName(role.name) === expected) ?? null;
+  return null;
 }
 
 function findNewRole(guild) {
