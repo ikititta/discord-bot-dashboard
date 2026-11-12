@@ -103,14 +103,7 @@ export function isCommandsThread(message) {
 
 const stickyRefreshes = new Map();
 
-export function attachCommandsChannel(client) {
-  const setup = (guild) => ensureCommandsBoard(guild, client).catch((error) =>
-    console.error(`[commands] setup failed in ${guild.id}: ${error.message}`),
-  );
-  client.once(Events.ClientReady, () => {
-    for (const guild of client.guilds.cache.values()) void setup(guild);
-  });
-  client.on(Events.GuildCreate, (guild) => void setup(guild));
+export function attachCommandsThreadSticky(client) {
   client.on(Events.MessageCreate, (message) => {
     if (!isCommandsThread(message) || message.author?.bot || message.webhookId) return;
     const threadId = message.channel.id;
@@ -129,4 +122,15 @@ export function attachCommandsChannel(client) {
     stickyRefreshes.set(threadId, next);
     void next.finally(() => { if (stickyRefreshes.get(threadId) === next) stickyRefreshes.delete(threadId); });
   });
+}
+
+export function attachCommandsChannel(client) {
+  const setup = (guild) => ensureCommandsBoard(guild, client).catch((error) =>
+    console.error(`[commands] setup failed in ${guild.id}: ${error.message}`),
+  );
+  client.once(Events.ClientReady, () => {
+    for (const guild of client.guilds.cache.values()) void setup(guild);
+  });
+  client.on(Events.GuildCreate, (guild) => void setup(guild));
+  attachCommandsThreadSticky(client);
 }
