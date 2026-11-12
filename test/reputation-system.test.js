@@ -113,5 +113,6 @@ test("reputation panel exposes only English positive and negative vote buttons",
   const buttons = payload.components.flatMap((row) => row.toJSON().components);
   assert.deepEqual(buttons.map((button) => button.label), ["Give Positive", "Give Negative"]);
   assert.deepEqual(buttons.map((button) => button.style), [3, 4]);
-  assert.doesNotMatch(payload.embeds[0].data.description, /Leave a Comment|Dar positiva|Dar negativa/i);
+  assert.doesNotMatch(payload.embeds[0].data.description, /Leave a Comment|Dar positiva|Dar negativa|!rep/i);
+  assert.match(payload.embeds[0].data.description, /All reputation commands are listed in the Commands thread/);
 });
