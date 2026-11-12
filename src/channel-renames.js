@@ -41,6 +41,20 @@ function protectGuild(guild, onBlocked = console.warn) {
 
   const manager = guild.channels;
   if (!patchedManagers.has(manager) && typeof manager.create === "function") {
+    if (typeof manager.edit === "function") {
+      const edit = manager.edit.bind(manager);
+      Object.defineProperty(manager, "edit", {
+        configurable: false,
+        writable: false,
+        value: async (channelId, options, ...args) => {
+          if (options && Object.prototype.hasOwnProperty.call(options, "name")) {
+            onBlocked(`[bot] blocked automatic channel rename through manager.edit() for ${channelId}`);
+            return manager.cache.get?.(channelId) ?? null;
+          }
+          return edit(channelId, options, ...args);
+        },
+      });
+    }
     const create = manager.create.bind(manager);
     Object.defineProperty(manager, "create", {
       configurable: false,
