@@ -4,6 +4,10 @@ import assert from "node:assert/strict";
 import {
   buildCommandsPanelPayload,
   buildCommandsCategoryEmbed,
+  buildModerationCommandsEmbed,
+  buildModerationCommandsPanelPayload,
+  MODERATION_COMMANDS_CHANNEL_ID,
+  MODERATION_PANEL_TITLE,
   COMMANDS_CATEGORY_ID,
   COMMANDS_CHANNEL_NAME,
   COMMANDS_CHANNEL_TOPIC,
@@ -24,7 +28,7 @@ test("commands panel contains interactive category buttons and is explicitly not
   const ids = payload.components.flatMap((row) => row.components.map((button) => button.data.custom_id));
   assert.deepEqual(ids, [
     "sugar-commands:fun", "sugar-commands:pets", "sugar-commands:community",
-    "sugar-commands:private", "sugar-commands:profile", "sugar-commands:moderation",
+    "sugar-commands:private", "sugar-commands:profile",
   ]);
 });
 
@@ -35,11 +39,24 @@ test("each category exposes current command syntax and access requirements", () 
     community: ["!rep", "one active vote per person", "one conversation thread"],
     private: ["/priv-chat create", "/priv-chat rename", "/priv-chat delete"],
     profile: ["!profile", "!quote", "/fun help"],
-    moderation: ["/mod-delete", "moderator permissions"],
   };
   for (const [category, phrases] of Object.entries(cases)) {
     const embed = buildCommandsCategoryEmbed(category);
     for (const phrase of phrases) assert.ok(embed.data.description.includes(phrase), category + " missing " + phrase);
   }
   assert.throws(() => buildCommandsCategoryEmbed("unknown"), /Unknown commands category/);
+});
+
+test("moderation commands are isolated in their dedicated channel panel", () => {
+  assert.equal(MODERATION_COMMANDS_CHANNEL_ID, "1570277294868660264");
+  const payload = buildModerationCommandsPanelPayload();
+  assert.equal(payload.embeds.length, 1);
+  assert.equal(payload.embeds[0].data.title, MODERATION_PANEL_TITLE);
+  assert.equal(payload.components.length, 1);
+  assert.equal(payload.components[0].components.length, 1);
+  assert.equal(payload.components[0].components[0].data.custom_id, "sugar-moderation-commands");
+  const embed = buildModerationCommandsEmbed();
+  for (const phrase of ["/delete", "/vip-delete", "/mod-delete", "Automatic protection", "10-minute timeout"]) {
+    assert.ok(embed.data.description.includes(phrase), "moderation guide missing " + phrase);
+  }
 });
