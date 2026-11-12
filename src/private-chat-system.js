@@ -206,6 +206,21 @@ async function initializePrivateChatLobby(client, { token, applicationId, store,
   } catch (error) {
     console.error(`[private-chats] could not update existing private-chat panels: ${error.message}`);
   }
+
+  // The user's explicitly requested test chat is the only existing private chat
+  // migrated to the corrected prefix; other existing channel names stay untouched.
+  for (const chat of store.listGuild(lobby.guildId).filter((item) => item.displayName.trim().toLowerCase() === "test")) {
+    try {
+      const channel = await client.channels.fetch(chat.channelId);
+      if (!channel || channel.type !== ChannelType.GuildText) continue;
+      const expectedName = formatPrivateChatChannelName(chat.displayName);
+      if (channel.name !== expectedName) {
+        await renamePrivateChatChannel(channel, expectedName, "Apply the corrected private-chat test channel format");
+      }
+    } catch (error) {
+      console.error(`[private-chats] could not update the test chat name in ${chat.channelId}: ${error.message}`);
+    }
+  }
 }
 
 async function ensureLobbyGuide(lobby, client, store) {
