@@ -1,74 +1,118 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { protectChannelNames, renameMatchingChannels } from "../src/channel-renames.js";
+import {
+  protectChannelNames,
+  protectNewChannel,
+  renameMatchingChannels,
+  renamePrivateChatChannel,
+} from "../src/channel-renames.js";
 
-const PROTECTED_IDS = [
-  "1569548753319362690",
-  "1569573843469865071",
-  "1569574031991119882",
-];
-
-test("blocks setName for the three protected channels and leaves other channels renameable", async () => {
-  const renamed = [];
-  const warnings = [];
-  const channels = PROTECTED_IDS.map((id) => ({
-    id,
-    name: `channel-${id}`,
-    setName: async (name) => {
-      renamed.push({ id, name });
+function makeGuild(channels = []) {
+  const cache = new Map(channels.map((channel) => [channel.id, channel]));
+  const manager = {
+    cache: {
+      values: () => cache.values(),
+      find: (predicate) => [...cache.values()].find(predicate),
     },
-  }));
-  const ordinary = {
-    id: "123",
-    name: "transcriptions",
-    setName: async (name) => {
-      ordinary.name = name;
-      renamed.push({ id: ordinary.id, name });
+    create: async (options) => {
+      const channel = {
+        id: String(cache.size + 1),
+        name: options.name,
+        topic: options.topic,
+        type: options.type,
+        setName: async (name) => { channel.name = name; return channel; },
+      };
+      cache.set(channel.id, channel);
+      return channel;
     },
   };
-  const guilds = new Map([["guild", { channels: { cache: new Map([...channels, ordinary].map((channel) => [channel.id, channel])) } }]]);
+  return { id: "guild-1", channels: manager };
+}
 
-  assert.equal(protectChannelNames(guilds, (message) => warnings.push(message)), 3);
-  for (const channel of channels) await channel.setName("changed-name");
-  await ordinary.setName("ordinary-renamed");
-
-  assert.deepEqual(renamed, [{ id: "123", name: "ordinary-renamed" }]);
-  assert.equal(warnings.length, 3);
-  assert.ok(channels.every((channel) => channel.name !== "changed-name"));
-});
-
-test("protection is idempotent and does not alter unrelated channels", () => {
-  const protectedChannel = { id: PROTECTED_IDS[0], name: "keep-me", setName: async () => {} };
-  const ordinary = { id: "456", name: "ordinary", setName: async () => {} };
-  const guilds = new Map([["guild", { channels: { cache: new Map([[protectedChannel.id, protectedChannel], [ordinary.id, ordinary]]) } }]]);
-
-  assert.equal(protectChannelNames(guilds), 1);
-  assert.equal(protectChannelNames(guilds), 0);
-  assert.equal(protectedChannel.name, "keep-me");
-  assert.equal(ordinary.name, "ordinary");
-});
-
-test("renames only channels whose current name exactly matches and skips protected IDs", async () => {
+test("blocks Sugar renaming every existing channel, including the three previously protected IDs", async () => {
   const renamed = [];
-  const matching = { id: "1", name: "transcriptions", setName: async (name) => renamed.push(name) };
-  const protectedChannel = { id: PROTECTED_IDS[1], name: "transcriptions", setName: async () => assert.fail("must not rename") };
-  const other = { id: "2", name: "transcription", setName: async () => assert.fail("must not rename") };
-  const guilds = new Map([["guild", { channels: { cache: new Map([[matching.id, matching], [protectedChannel.id, protectedChannel], [other.id, other]]) } }]]);
+  const warnings = [];
+  const channels = [
+    "1569548753319362690",
+    "1569573843469865071",
+    "1569574031991119882",
+    "ordinary-channel",
+  ].map((id) => ({
+    id,
+    name: `channel-${id}`,
+    setName: async (name) => { renamed.push({ id, name }); },
+  }));
+  const guild = makeGuild(channels);
+  assert.equal(protectChannelNames(new Map([[guild.id, guild]]), (message) => warnings.push(message)), 4);
 
-  await renameMatchingChannels(guilds, "transcriptions", "📝｜୨୧•𝓽𝓻𝓪𝓷𝓼𝓬𝓻𝓲𝓹𝓽𝓲𝓸𝓷𝓼");
-
-  assert.deepEqual(renamed, ["📝｜୨୧•𝓽𝓻𝓪𝓷𝓼𝓬𝓻𝓲𝓹𝓽𝓲𝓸𝓷𝓼"]);
+  for (const channel of channels) await channel.setName("changed-name");
+  assert.deepEqual(renamed, []);
+  assert.equal(warnings.length, 4);
 });
 
-test("does not stop other channel renames when Discord rejects one", async () => {
-  const errors = [];
-  const good = { id: "2", name: "transcriptions", setName: async () => {} };
-  const bad = { id: "1", name: "transcriptions", setName: async () => { throw new Error("Missing Permissions"); } };
-  const guilds = new Map([["guild", { channels: { cache: new Map([["1", bad], ["2", good]]) } }]]);
+test("protection is idempotent and applies to channels created after startup", async () => {
+  const existing = { id: "1", name: "existing", setName: async () => {} };
+  const guild = makeGuild([existing]);
+  assert.equal(protectChannelNames(new Map([[guild.id, guild]])), 1);
+  assert.equal(protectChannelNames(new Map([[guild.id, guild]])), 0);
 
-  await renameMatchingChannels(guilds, "transcriptions", "📝｜୨୧•𝓽𝓻𝓪𝓷𝓼𝓬𝓻𝓲𝓹𝓽𝓲𝓸𝓷𝓼", (message) => errors.push(message));
+  const created = { id: "2", name: "new", setName: async () => assert.fail("new channel must be protected") };
+  assert.equal(protectNewChannel(created), true);
+  await created.setName("not-allowed");
+  assert.equal(created.name, "new");
+});
 
-  assert.equal(errors.length, 1);
-  assert.match(errors[0], /Missing Permissions/);
+test("only the private-chat owner rename helper can use the original rename method", async () => {
+  const channel = { id: "private", name: "old", setName: async (name) => { channel.name = name; return channel; } };
+  const guild = makeGuild([channel]);
+  protectChannelNames(new Map([[guild.id, guild]]));
+  await channel.setName("blocked");
+  assert.equal(channel.name, "old");
+
+  await renamePrivateChatChannel(channel, "owner-renamed", "Private chat owner renamed the channel");
+  assert.equal(channel.name, "owner-renamed");
+});
+
+test("legacy bulk rename helper refuses all automated renames", async () => {
+  const warnings = [];
+  const channel = { id: "1", name: "transcriptions", setName: async () => assert.fail("must not rename") };
+  const guild = makeGuild([channel]);
+  const blocked = await renameMatchingChannels(new Map([[guild.id, guild]]), "transcriptions", "new-name", (message) => warnings.push(message));
+  assert.equal(blocked, 1);
+  assert.equal(channel.name, "transcriptions");
+  assert.equal(warnings.length, 1);
+});
+
+test("channel creation with a stable topic reuses an existing channel and serializes concurrent creation", async () => {
+  let creates = 0;
+  const cache = new Map();
+  const manager = {
+    cache: {
+      values: () => cache.values(),
+      find: (predicate) => [...cache.values()].find(predicate),
+    },
+    create: async (options) => {
+      creates += 1;
+      await new Promise((resolve) => setTimeout(resolve, 5));
+      const channel = {
+        id: String(creates),
+        name: options.name,
+        topic: options.topic,
+        type: options.type,
+        setName: async () => channel,
+      };
+      cache.set(channel.id, channel);
+      return channel;
+    },
+  };
+  const guild = { id: "dedupe-guild", channels: manager };
+  protectChannelNames(new Map([[guild.id, guild]]));
+
+  const options = { name: "one-room", topic: "stable:room:123", type: 0 };
+  const [first, second] = await Promise.all([manager.create(options), manager.create(options)]);
+  assert.equal(creates, 1);
+  assert.equal(first.id, second.id);
+  assert.equal((await manager.create(options)).id, first.id);
+  assert.equal(creates, 1);
 });
