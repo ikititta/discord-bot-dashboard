@@ -128,6 +128,13 @@ export function findNsfwHiddenRole(guild) {
   return guild.roles.cache.get(NSFW_HIDDEN_ROLE_ID) ?? null;
 }
 
+export const GENDER_ROLE_IDS = Object.freeze({
+  female: "1569638102949953567",
+  male: "1569807000278269983",
+  trans: "1569807011217145948",
+  "non-binary": "1569807020809396455",
+});
+
 export const GENDER_OPTIONS = [
   ["female", "Female"],
   ["male", "Male"],
@@ -241,11 +248,11 @@ async function getOrCreateRole(guild, name, color) {
   });
 }
 
-async function replaceCategoryRole(member, category, selectedRole) {
+async function replaceCategoryRole(member, category, selectedRole, managedRoleIds = []) {
   const prefix = `${category}-`;
   await member.roles.add(selectedRole, `Set Kittisugar ${category} self-role`);
   const oldRoles = member.roles.cache.filter((role) =>
-    role.id !== selectedRole.id && String(role.name).toLowerCase().startsWith(prefix),
+    role.id !== selectedRole.id && (managedRoleIds.includes(role.id) || String(role.name).toLowerCase().startsWith(prefix)),
   );
   if (oldRoles.size) {
     await member.roles.remove([...oldRoles.values()], `Replace previous Kittisugar ${category} self-role`);
@@ -253,6 +260,14 @@ async function replaceCategoryRole(member, category, selectedRole) {
 }
 
 async function applyChoice(member, category, value) {
+  if (category === "gender") {
+    const roleId = GENDER_ROLE_IDS[String(value)];
+    const role = roleId ? member.guild.roles.cache.get(roleId) : null;
+    if (!role) throw new Error(`The configured gender role ${roleId ?? value} was not found.`);
+    await replaceCategoryRole(member, "gender", role, Object.values(GENDER_ROLE_IDS));
+    return;
+  }
+
   if (category === "nsfw") {
     const hiddenRole = findNsfwHiddenRole(member.guild);
     if (!hiddenRole) throw new Error(`The NSFW visibility role ${NSFW_HIDDEN_ROLE_ID} was not found.`);
