@@ -720,7 +720,7 @@ export function attachPetSystem(client, store) {
         if (customization.name) companion.name = customization.name.slice(0, 24);
         if (customization.color) companion.visualIdentity.palette = customization.color.slice(0, 40);
         if (customization.breed) companion.visualIdentity.breed = customization.breed.slice(0, 40);
-        if (customization.appearance) companion.visualIdentity.appearance = customization.appearance.slice(0, 60);
+        if (customization.appearance) companion.visualIdentity.appearance = customization.appearance.slice(0, 180);
         if (customization.personality) companion.visualIdentity.personality = customization.personality.slice(0, 60);
       } else companion.name = choose(["Mochi", "Mimi", "Mallow", "Peaches", "Pudding", "Boba", "Cookie", "Tofu"]);
       if (!profile) profile = companion;
