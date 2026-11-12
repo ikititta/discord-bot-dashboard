@@ -623,6 +623,40 @@ export function attachPetSystem(client, store) {
       return companion;
     };
 
+    if (interaction.isStringSelectMenu?.() && interaction.customId.startsWith("sugar-pets:delete-select:")) {
+      const ownerId = interaction.customId.split(":")[2];
+      if (!owned(ownerId)) return interaction.reply({ content: "This pet menu belongs to someone else ♡", ephemeral: true });
+      const petId = interaction.values?.[0];
+      const profile = store.get(interaction.guildId, ownerId);
+      const selected = profile && [profile, ...(profile.additionalPets ?? [])].find((pet) => pet?.id === petId);
+      if (!selected) return interaction.reply({ content: "That pet could not be found. Open !pet delete again ♡", ephemeral: true });
+      const row = new ActionRowBuilder().addComponents(new ButtonBuilder()
+        .setCustomId("sugar-pets:delete-confirm:" + ownerId + ":" + petId)
+        .setLabel("Yes, delete this pet").setStyle(ButtonStyle.Danger));
+      return interaction.reply({
+        content: "Are you sure you want to permanently delete **" + selected.name + "** the " + selected.species + "? This cannot be undone.",
+        components: [row], ephemeral: true,
+      });
+    }
+
+    if (interaction.isButton?.() && interaction.customId.startsWith("sugar-pets:delete-confirm:")) {
+      const [, , , ownerId, petId] = interaction.customId.split(":");
+      if (!owned(ownerId)) return interaction.reply({ content: "This confirmation belongs to someone else ♡", ephemeral: true });
+      const profile = store.get(interaction.guildId, ownerId);
+      if (!profile) return interaction.update({ content: "You no longer have any pets ♡", components: [] });
+      const result = removePetFromProfile(profile, petId);
+      if (!result.removed) return interaction.update({ content: "That pet was already removed. Open !pet delete to refresh the list ♡", components: [] });
+      if (result.empty) store.delete(interaction.guildId, ownerId);
+      else store.save(interaction.guildId, ownerId, profile);
+      await refreshPetsPanel(interaction.guild, store, client);
+      return interaction.update({
+        content: result.empty
+          ? "**" + result.removed.name + "** was deleted. You have no pets left; use !pet adopt whenever you want a new companion ♡"
+          : "**" + result.removed.name + "** was deleted. You have " + result.remaining + " pet(s) remaining ♡",
+        components: [],
+      });
+    }
+
     if (interaction.isStringSelectMenu?.() && interaction.customId.startsWith("sugar-pets:species:")) {
       const ownerId = interaction.customId.split(":")[2];
       if (!owned(ownerId)) return interaction.reply({ content: "This adoption menu belongs to someone else ♡", ephemeral: true });
