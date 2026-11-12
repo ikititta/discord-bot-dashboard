@@ -859,7 +859,7 @@ export async function createPrivateChat(interaction, client, store, displayName,
   const guild = interaction.guild;
   if (!guild) throw new Error("Private chats can only be created inside the server.");
   await fetchGuildMembers(guild, inviteeIds);
-  const category = await findGeneralCategory(guild);
+  const category = await findPrivateChatsCategory(guild);
   const permissionOverwrites = buildPrivateChatPermissionOverwrites({
     everyoneId: guild.roles.everyone.id,
     ownerId: interaction.user.id,
@@ -921,27 +921,27 @@ export async function createPrivateChat(interaction, client, store, displayName,
   return channel;
 }
 
-async function findGeneralCategory(guild) {
-  let categories = findGeneralCategories(guild);
+export async function findPrivateChatsCategory(guild) {
+  let categories = findPrivateChatsCategories(guild);
   if (!categories.length) {
     await guild.channels.fetch();
-    categories = findGeneralCategories(guild);
+    categories = findPrivateChatsCategories(guild);
   }
   if (categories.length !== 1) {
     throw new Error(
       categories.length
-        ? "There is more than one category named General. Rename the duplicates so private chats have one destination."
-        : "I could not find the General category. Create it first, then try again.",
+        ? "There is more than one category named Private Chats. Rename the duplicates so private chats have one destination."
+        : "I could not find the Private Chats category. Create it first, then try again.",
     );
   }
   return categories[0];
 }
 
-function findGeneralCategories(guild) {
+function findPrivateChatsCategories(guild) {
   return [...guild.channels.cache.values()].filter(
     (channel) =>
       channel.type === ChannelType.GuildCategory &&
-      normalizeCategoryName(channel.name) === "general",
+      normalizeCategoryName(channel.name) === "privatechats",
   );
 }
 
