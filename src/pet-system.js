@@ -64,7 +64,7 @@ function isVip(member) {
 function buildPetEmbed() {
   return new EmbedBuilder().setColor(COLOR).setTitle("୨୧ 𝓥𝓲𝓻𝓽𝓾𝓪𝓵 𝓟𝓮𝓽𝓼 ♡")
     .setDescription("Adopt a little companion, take care of them, and watch them grow ♡\n\n" +
-      "Create your private pet room to see the commands and care for your pet. " +
+      "Create your private pet room to see the commands and care for your pet. Choose your species when adopting. " +
       "Everyone can adopt a pet; VIP members get extra perks and exclusive features.")
     .setFooter({ text: "Your pet progress is saved ♡" });
 }
@@ -236,7 +236,7 @@ async function runPetCommand(message, store, client) {
     await refreshPetsPanel(message.guild, store, client);
     return reply(`You adopted **${pet.name}** the ${pet.species}! Welcome home ♡\n${status(pet)}`);
   }
-  if (!pet) return reply("You don't have a pet yet. Use `!pet adopt` to meet your new friend ♡");
+  if (!pet) return reply("You don't have a pet yet. Choose a species with `!pet adopt <species>` ♡");
 
   if (action === "select") {
     const index = Number(argument);
@@ -436,8 +436,12 @@ export function attachPetSystem(client, store) {
         });
       }
       const roomMessages = await petChannel.messages.fetch({ limit: 20 });
-      const hasCommands = roomMessages.some((message) => message.author?.id === client.user.id && message.embeds.some((embed) => embed.title === "୨୧ 𝓟𝓮𝓽 𝓡𝓸𝓸𝓶 · 𝓒𝓸𝓶𝓶𝓪𝓷𝓭𝓼 ♡"));
-      if (!hasCommands) await petChannel.send({ embeds: [buildPetCommandsEmbed()] });
+      const commandsEmbed = roomMessages.find((message) =>
+        message.author?.id === client.user.id &&
+        message.embeds.some((embed) => embed.title === "୨୧ 𝓟𝓮𝓽 𝓡𝓸𝓸𝓶 · 𝓒𝓸𝓶𝓶𝓪𝓷𝓭𝓼 ♡"),
+      );
+      if (commandsEmbed) await commandsEmbed.edit({ embeds: [buildPetCommandsEmbed()] });
+      else await petChannel.send({ embeds: [buildPetCommandsEmbed()] });
       await petChannel.permissionOverwrites.edit(interaction.user.id, { AddReactions: false });
       await petChannel.permissionOverwrites.edit(client.user.id, { AddReactions: false });
       await interaction.reply({ content: `Your pet room is ready: <#${petChannel.id}> ♡`, ephemeral: true });
