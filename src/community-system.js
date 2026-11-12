@@ -1079,8 +1079,16 @@ async function handleSuggestionReaction(reaction, user, { suggestionStore, setti
   const emoji = reaction.emoji.name;
   const direction = emoji === "⬆️" ? "up" : emoji === "⬇️" ? "down" : null;
   if (direction && suggestionStore) {
-    if (added) suggestionStore.setVote(message.id, user.id, direction);
-    else suggestionStore.removeVote(message.id, user.id, direction);
+    if (added) {
+      suggestionStore.setVote(message.id, user.id, direction);
+      const oppositeEmoji = direction === "up" ? "⬇️" : "⬆️";
+      const opposite = message.reactions.cache.find((item) => item.emoji.name === oppositeEmoji);
+      if (opposite) await opposite.users.remove(user.id).catch((error) => {
+        console.warn(`[community] could not remove a member's previous suggestion vote: ${error.message}`);
+      });
+    } else {
+      suggestionStore.removeVote(message.id, user.id, direction);
+    }
     return;
   }
   if (emoji === "⚠️" && added) await sendSuggestionReactionReport(message, user, settings);
