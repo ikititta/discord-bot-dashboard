@@ -27,7 +27,7 @@ test("commands panel contains interactive category buttons and is explicitly not
   const ids = payload.components.flatMap((row) => row.components.map((button) => button.data.custom_id));
   assert.deepEqual(ids, [
     "sugar-commands:fun", "sugar-commands:pets", "sugar-commands:community",
-    "sugar-commands:private", "sugar-commands:staff", "sugar-commands:profile",
+    "sugar-commands:private", "sugar-commands:profile",
   ]);
 });
 
@@ -38,7 +38,6 @@ test("each category exposes current command syntax and access requirements", () 
     community: ["!rep", "one active vote per person", "one conversation thread"],
     private: ["/priv-chat create", "/priv-chat rename", "/priv-chat delete"],
     profile: ["!profile", "!quote", "/fun help"],
-    staff: ["/mod-delete", "authorised moderator role", "1570277294868660264"],
   };
   for (const [category, phrases] of Object.entries(cases)) {
     const embed = buildCommandsCategoryEmbed(category);
@@ -47,12 +46,15 @@ test("each category exposes current command syntax and access requirements", () 
   assert.throws(() => buildCommandsCategoryEmbed("unknown"), /Unknown commands category/);
 });
 
-test("staff tools category is in commands and only mod-delete is posted in its channel", () => {
+test("moderation is kept out of normal commands and only mod-delete is posted in its channel", () => {
   assert.equal(MODERATION_COMMANDS_CHANNEL_ID, "1570277294868660264");
   const payload = buildModerationCommandsPanelPayload();
   assert.equal(payload.embeds.length, 1);
   assert.equal(payload.components, undefined);
   assert.equal(payload.embeds[0].data.title, MODERATION_PANEL_TITLE);
+  assert.match(payload.embeds[0].data.title, /Moderation/);
+  const normalIds = buildCommandsPanelPayload().components.flatMap((row) => row.components.map((button) => button.data.custom_id));
+  assert.ok(!normalIds.some((id) => id.includes("staff") || id.includes("moderation")));
   for (const phrase of ["/mod-delete", "100 recent messages", "authorised moderators"]) {
     assert.ok(payload.embeds[0].data.description.toLowerCase().includes(phrase.toLowerCase()));
   }
