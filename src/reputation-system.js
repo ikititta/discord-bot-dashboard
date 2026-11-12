@@ -1,4 +1,3 @@
-import { ensureCommandsBoard } from "./commands-channel.js";
 import fs from "node:fs";
 import path from "node:path";
 import {
@@ -185,7 +184,6 @@ async function setup(guild, client, store) {
     }, "Allow Sugar to maintain welcome and reputation panels");
   }
   await ensureStickyReputationPanels(reputation, client, store, guild);
-  await ensureCommandsBoard(guild, client);
   return { welcomes, reputation };
 }
 function warningPayload(targetId) {
