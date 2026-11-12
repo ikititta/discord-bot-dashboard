@@ -17,7 +17,7 @@ const categories = {
       "**VIP-only**\n`!fuck @member`\n\n" +
       "**Solo**\n`!cry` · `!laugh` · `!dance` · `!sleep` · `!happy` · `!blush` · `!smug` · `!wave` · `!facepalm` · `!wink` · `!shrug` · `!smile` · `!pout`\n\n" +
       "**Relationships**\n`!couple @member` · `!propose @member` · `!marry @member` · `!breakup` · `!divorce`\n\n" +
-      "**Stats & help**\n`!funhelp` · `/fun help` · `!stats` (VIP) · `!vip stats [@member]` (VIP)\n\nAll fun and relationship interactions require the Member role. `!fuck` is VIP-only.",
+      "**Stats & help**\n`!funhelp` · `/fun help` · `!stats` / `!fun stats` (VIP) · `!vip stats [@member]` (VIP)\n\nAll fun and relationship interactions require the Member role. `!fuck` is VIP-only.",
   },
   pets: {
     label: "Pets",
@@ -58,7 +58,7 @@ const categories = {
     label: "Moderation",
     emoji: "🛡️",
     description:
-      "`/mod-delete` — moderation message deletion tools (moderator permissions required).\n\n" +
+      "`/delete amount:` — delete your own recent messages.\n`/vip-delete amount:` — VIP message cleanup.\n`/mod-delete amount: [member:]` — moderator cleanup (moderator permissions required).\n\n" +
       "Ticket panels, access verification and moderation actions are operated through their buttons and selectors in the relevant server channels. These are interactive controls, not text commands.",
   },
 };
