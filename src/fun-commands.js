@@ -236,7 +236,7 @@ export function buildFunHelpEmbed() {
   return new EmbedBuilder()
     .setColor(COLOR)
     .setTitle("Sugar Fun Commands Guide ♡")
-    .setDescription("Use these commands in Kittisugar. Every fun command requires the Member role (18+ verification). Two-person commands need a member mention; solo commands do not.")
+    .setDescription("Use these commands in Kittisugar. Every fun command requires the Member role. Two-person commands need a member mention; solo commands do not.")
     .addFields(
       { name: "Relationships", value: "!couple @member · !propose @member · !marry @member · !breakup · !divorce. The other member must accept proposals." },
       { name: "Two-person commands", value: "!hug @member · !slap @member · !bonk @member · !spank @member · !kiss @member · !fuck @member · !cuddle @member · !pat @member · !poke @member · !bite @member · !kick @member · !kill @member (VIP; 30-second timeout) · !highfive @member · !handhold @member" },
@@ -304,7 +304,7 @@ async function handleFunAction(message, store, name, args, fetchImpl) {
     }
     targetMember = await message.guild.members.fetch(targetUser.id).catch(() => null);
     if (!targetMember || !isVerifiedAdult(targetMember)) {
-      await safeReply(message, { content: "That member must complete Kittisugar's 18+ verification first." });
+      await safeReply(message, { content: "That member needs the Member role first." });
       return true;
     }
     targetRole = normalizeFunRole(targetMember);
@@ -446,7 +446,7 @@ export function attachFunCommands(client, { store, fetchImpl = fetch, token, app
       }
       if (!getFunCommandDefinition(name)) return;
       if (!isVerifiedAdult(message.member)) {
-        await safeReply(message, { content: "Fun commands are available after completing Kittisugar's 18+ verification ♡" });
+        await safeReply(message, { content: "Fun commands require the Member role ♡" });
         return;
       }
       await handleFunAction(message, store, name, args, fetchImpl);
