@@ -76,7 +76,7 @@ function buildPetEmbed() {
 function buildPetCommandsEmbed() {
   return new EmbedBuilder().setColor(COLOR).setTitle("୨୧ 𝓟𝓮𝓽 𝓡𝓸𝓸𝓶 · 𝓒𝓸𝓶𝓶𝓪𝓷𝓭𝓼 ♡")
     .setDescription("**Adoption · Everyone**\n`!pet adopt` — open the adoption embed and choose a species: cat, dog, hamster, rabbit, fish, bird, guinea pig, turtle, fox or ferret.\nNon-VIP pets receive a unique random design. VIP members can customise before adopting.\n\n" +
-      "**Care & play · Everyone**\n`!pet` · `!pet stats` · `!pet feed` · `!pet play` · `!pet cuddle` · `!pet talk` · `!pet story`\n`!pet shop` · `!pet buy <treat|toy>` · `!pet inventory` · `!pet select <number>`\n\n" +
+      "**Care & play · Everyone**\n`!pet` · `!pet stats` · `!pet feed` · `!pet play` · `!pet cuddle` · `!pet talk` · `!pet story`\n`!pet shop` · `!pet buy <treat|toy|potion>` · `!pet use <item>` · `!pet daily` · `!pet gif` · `!pet inventory` · `!pet select <number>`\n\n" +
       "**VIP customisation**\nChoose your pet’s name, colour, breed, appearance and personality in the adoption form. Existing pets can also be edited with `!pet name <name>`, `!pet color <color>`, `!pet breed <breed>`, `!pet appearance <details>` and `!pet personality <traits>`.\n\n" +
       "**VIP extras**\n`!pet room` · `!pet outfit <name>` · `!pet rare` · `!pet slots` · `!pet minigame`")
     .setFooter({ text: "Use these commands in your private pet room ♡" });
@@ -264,6 +264,31 @@ function chileDateKey(date = new Date()) {
   }).format(date);
 }
 
+function refreshPetUnlocks(pet) {
+  const thresholds = [{ bond: 10, id: "happy" }, { bond: 25, id: "dance" }, { bond: 50, id: "sleep" }];
+  pet.gifUnlocks ??= [];
+  for (const item of thresholds) if ((pet.bond ?? 0) >= item.bond && !pet.gifUnlocks.includes(item.id)) pet.gifUnlocks.push(item.id);
+}
+
+async function sendPetGif(message, pet, category) {
+  const unlocks = pet.gifUnlocks ?? [];
+  const selected = category || unlocks[0];
+  if (!selected || !["happy", "dance", "sleep"].includes(selected) || !unlocks.includes(selected)) {
+    return message.reply("That reaction is still locked. Build your bond with play, cuddles and conversations to unlock more ♡");
+  }
+  const response = await fetch("https://nekos.best/api/v2/" + selected, {
+    headers: { "User-Agent": "SugarDiscordBot/1.0" },
+    signal: AbortSignal.timeout(8_000),
+  });
+  if (!response.ok) throw new Error("Pet reaction GIF service returned HTTP " + response.status + ".");
+  const payload = await response.json();
+  const url = new URL(payload?.results?.[0]?.url ?? "");
+  if (url.protocol !== "https:" || url.hostname !== "nekos.best" || !url.pathname.endsWith(".gif")) {
+    throw new Error("Pet reaction GIF service returned an invalid GIF URL.");
+  }
+  const embed = new EmbedBuilder().setColor(COLOR).setDescription(pet.name + " shares a little " + selected + " moment with you ♡").setImage(url.toString());
+  return message.reply({ embeds: [embed], allowedMentions: { repliedUser: false } });
+}
 function status(pet, walletCoins = pet.coins) {
   return `**${pet.name}** the ${pet.species} · Level ${pet.level}
 ♡ Hunger: ${pet.hunger}/100 · Happiness: ${pet.happiness}/100
@@ -291,7 +316,7 @@ async function runPetCommand(message, store, client) {
   let pet = profile ? (profile.activePetIndex > 0 ? profile.additionalPets?.[profile.activePetIndex - 1] : profile) : null;
   if (profile) {
     profile.coins ??= 100;
-    if (pet) applyNeedsDecay(pet);
+    if (pet) { applyNeedsDecay(pet); refreshPetUnlocks(pet); }
   }
   const reply = (content) => message.reply({ content, allowedMentions: { repliedUser: false } });
 
@@ -363,6 +388,7 @@ async function runPetCommand(message, store, client) {
     store.save(guildId, userId, profile);
     return reply(line + " ♡");
   }
+  if (action === "gif") return sendPetGif(message, pet, argument.toLowerCase() || null);
   if (action === "story") {
     const thresholds = [{ level: 3, id: "first-adventure", title: "A Little Adventure" }, { level: 5, id: "secret-garden", title: "The Secret Garden" }, { level: 10, id: "starlight-promise", title: "A Starlight Promise" }];
     const unlocked = thresholds.filter((item) => pet.level >= item.level);
@@ -450,14 +476,14 @@ async function runPetCommand(message, store, client) {
       pet.xp += 15;
     }
     if (action === "slots") {
-      profile.slots = Math.min(3, profile.slots + 1);
+      profile.slots = Math.min(3, Math.max(1, Number(profile.slots) || 1) + 1);
       store.save(guildId, userId, profile);
       return reply(`VIP pet slots: ${profile.slots}/3 ♡ Use !pet adopt to fill your new slot.`);
     }
     if (action === "minigame") {
-      const today = new Date().toISOString().slice(0, 10);
+      const today = chileDateKey();
       if (pet.lastMinigame === today) return reply("You already played today's minigame. Come back tomorrow ♡");
-      pet.lastMinigame = today; pet.coins += 30; pet.xp += 10;
+      pet.lastMinigame = today; profile.coins += 30; pet.xp += 10;
     }
   } else {
     return reply("Try `!pet adopt`, `stats`, `feed`, `play`, `talk`, `story`, `shop`, `inventory`, or `select` ♡");
@@ -597,7 +623,25 @@ export function attachPetSystem(client, store) {
       if (!interaction.replied) await interaction.reply({ content: "I couldn’t open your pet room. Please try again ♡", ephemeral: true }).catch(() => {});
     }
   });
-  client.on(Events.MessageCreate, async (message) => {\n    if (!message.guild || message.guild.id !== "1567093019377930363" || message.author?.bot || message.webhookId ||\n        !message.member?.roles?.cache?.has(MEMBER_ROLE_ID) || message.channel?.type !== ChannelType.GuildText) return;\n    const content = String(message.content ?? "").trim();\n    if (content.length < 12 || content.startsWith("!") || /^([\p{P}\p{S}\s])+$ /u.test(content)) return;\n    if (/^Sugar personal pet room for [0-9]{17,20}$/.test(message.channel.topic ?? "")) return;\n    const profile = store.get(message.guild.id, message.author.id);\n    if (!profile) return;\n    const now = Date.now();\n    const today = chileDateKey(new Date(now));\n    profile.activity ??= { day: today, lastMessageAt: 0, earnedToday: 0 };\n    if (profile.activity.day !== today) profile.activity = { day: today, lastMessageAt: 0, earnedToday: 0 };\n    if (now - (Number(profile.activity.lastMessageAt) || 0) < 60_000 || profile.activity.earnedToday >= 20) return;\n    profile.coins = (Number(profile.coins) || 0) + 1;\n    profile.activity.lastMessageAt = now;\n    profile.activity.earnedToday += 1;\n    store.save(message.guild.id, message.author.id, profile);\n  });\n  client.on(Events.MessageCreate, async (message) => {
+    client.on(Events.MessageCreate, async (message) => {
+    if (!message.guild || message.guild.id !== "1567093019377930363" || message.author?.bot || message.webhookId ||
+        !message.member?.roles?.cache?.has(MEMBER_ROLE_ID) || message.channel?.type !== ChannelType.GuildText) return;
+    const content = String(message.content ?? "").trim();
+    if (content.length < 12 || content.startsWith("!")) return;
+    if (/^Sugar personal pet room for [0-9]{17,20}$/.test(message.channel.topic ?? "")) return;
+    const profile = store.get(message.guild.id, message.author.id);
+    if (!profile) return;
+    const now = Date.now();
+    const today = chileDateKey(new Date(now));
+    profile.activity ??= { day: today, lastMessageAt: 0, earnedToday: 0 };
+    if (profile.activity.day !== today) profile.activity = { day: today, lastMessageAt: 0, earnedToday: 0 };
+    if (now - (Number(profile.activity.lastMessageAt) || 0) < 60_000 || profile.activity.earnedToday >= 20) return;
+    profile.coins = (Number(profile.coins) || 0) + 1;
+    profile.activity.lastMessageAt = now;
+    profile.activity.earnedToday += 1;
+    store.save(message.guild.id, message.author.id, profile);
+  });
+  client.on(Events.MessageCreate, async (message) => {
     if (!message.guild || message.author?.bot || message.channel?.type !== ChannelType.GuildText) return;
     const ownerId = /^Sugar personal pet room for (\d{17,20})$/.exec(message.channel.topic ?? "")?.[1];
     if (!ownerId || ownerId !== message.author.id || !/^!pet(?:\s|$)/i.test(message.content.trim())) return;
