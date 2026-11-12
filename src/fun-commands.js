@@ -1,4 +1,5 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, Events, REST, Routes, SlashCommandBuilder } from "discord.js";
+import { extractAddressedCommand } from "./command-address.js";
 
 const KITTISUGAR_GUILD_ID = "1567093019377930363";
 
@@ -393,7 +394,9 @@ export function attachFunCommands(client, { store, fetchImpl = fetch, token, app
   client.on(Events.MessageCreate, async (message) => {
     if (!message.guild || message.guild.id !== KITTISUGAR_GUILD_ID ||
         message.author?.bot || message.webhookId || !message.member) return;
-    const match = /^!([a-z-]+)(?:\s+([\s\S]*))?$/i.exec(String(message.content ?? "").trim());
+    const commandText = extractAddressedCommand(message, client.user);
+    if (!commandText) return;
+    const match = /^!([a-z-]+)(?:\s+([\s\S]*))?$/i.exec(commandText);
     if (!match) return;
 
     const name = match[1].toLowerCase();
