@@ -14,7 +14,7 @@ const CHANNEL_NAME = "🐾｜୨୧ ・𝓹𝓮𝓽𝓼";
 export const PET_ADOPTION_CHANNEL_IDS = new Set(["1570257241511170150", "1570263323159695482"]);
 export const PET_ROOMS_CATEGORY_ID = "1568179038625857576";
 export const PET_PANEL_CHANNEL_ID = "1570223501317513408";
-export const PET_CATEGORY_BELOW_ID = "1570223501317513408";
+export const PET_CATEGORY_BELOW_ID = "";
 const BUTTON_ID = "sugar-pets:open";
 const PET_SPECIES = {
   cat: "cat", kitten: "cat", dog: "dog", puppy: "dog",
@@ -252,11 +252,15 @@ async function ensurePetsChannel(guild, client, store) {
     ViewChannel: true, SendMessages: true, EmbedLinks: true, ReadMessageHistory: true,
     ManageMessages: true, AddReactions: false,
   }, "Allow Sugar to maintain the pets panel without reactions");
-  const recent = await channel.messages.fetch({ limit: 50 });
-  const old = recent.find((message) => message.author?.id === client.user.id &&
+  const recent = await channel.messages.fetch({ limit: 100 });
+  const oldPanels = recent.filter((message) => message.author?.id === client.user.id &&
     message.embeds.some((embed) => embed.title === "୨୧ 𝓥𝓲𝓻𝓽𝓾𝓪𝓵 𝓟𝓮𝓽𝓼 ♡"));
-  if (old) await old.edit(panelPayload());
-  else await channel.send(panelPayload());
+  if (oldPanels.size) {
+    // Refresh every matching legacy panel so no stale two-button copy remains.
+    await Promise.all([...oldPanels.values()].map((message) => message.edit(panelPayload())));
+  } else {
+    await channel.send(panelPayload());
+  }
   return channel;
 }
 
@@ -265,8 +269,8 @@ export async function ensurePetCategoryPosition(guild, onError = console.warn) {
     await guild.channels.fetch(PET_ROOMS_CATEGORY_ID).catch(() => null);
   const reference = guild.channels.cache.get(PET_CATEGORY_BELOW_ID) ??
     await guild.channels.fetch(PET_CATEGORY_BELOW_ID).catch(() => null);
-  if (category?.type !== ChannelType.GuildCategory || reference?.type !== ChannelType.GuildCategory) {
-    onError("[pets] pet-room category positioning skipped: one or both configured categories are missing.");
+  if (!PET_CATEGORY_BELOW_ID || category?.type !== ChannelType.GuildCategory || reference?.type !== ChannelType.GuildCategory) {
+    onError("[pets] pet-room category positioning skipped: no valid reference category is configured.");
     return false;
   }
   if (category.position > reference.position) return false;
@@ -655,13 +659,12 @@ export function attachPetSystem(client, store) {
   if (!store) throw new Error("The virtual-pet store is required.");
   client.once(Events.ClientReady, async () => {
     for (const guild of client.guilds.cache.values()) {
-      await ensurePetCategoryPosition(guild);
       try { await ensurePetsChannel(guild, client, store); }
       catch (error) { console.error("[pets] channel setup failed: " + error.message); }
     }
   });
   client.on(Events.GuildCreate, (guild) => {
-    void ensurePetCategoryPosition(guild).then(() => ensurePetsChannel(guild, client, store))
+    void ensurePetsChannel(guild, client, store)
       .catch((error) => console.error("[pets] channel setup failed: " + error.message));
   });
   client.on(Events.InteractionCreate, async (interaction) => {
