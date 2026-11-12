@@ -6,6 +6,7 @@ import {
   COLOR_OPTIONS,
   GENDER_OPTIONS,
   SEXUALITY_OPTIONS,
+  GENDER_ROLE_IDS,
   buildSelfRolesPanelPayload,
   roleNameForSelection,
   findNsfwHiddenRole,
@@ -136,4 +137,14 @@ test("18- restriction fails safely when Support is missing", async () => {
   };
   await assert.rejects(restrictUnderageMember(guild, member), /Support channel/);
   assert.equal(roleCreated, false);
+});
+
+
+test("onboarding and fun commands share the exact configured Discord gender role IDs", () => {
+  assert.deepEqual(GENDER_ROLE_IDS, {
+    female: "1569638102949953567",
+    male: "1569807000278269983",
+    trans: "1569807011217145948",
+    "non-binary": "1569807020809396455",
+  });
 });
