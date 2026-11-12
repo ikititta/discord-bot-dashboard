@@ -776,6 +776,7 @@ export function attachPetSystem(client, store) {
       const [, , ownerId, encodedSpecies] = interaction.customId.split(":");
       if (!owned(ownerId)) return interaction.reply({ content: "This customisation form belongs to someone else ♡", ephemeral: true });
       if (!isVip(interaction.member)) return interaction.reply({ content: "Full pet customisation is a VIP feature ♡ Your pet can still receive a random design.", ephemeral: true });
+      await interaction.deferReply({ ephemeral: true });
       try {
         const companion = await createAdoptedPet(decodeURIComponent(encodedSpecies || ""), {
           name: interaction.fields.getTextInputValue("pet_name").trim(), gender: interaction.fields.getTextInputValue("pet_gender").trim(), color: interaction.fields.getTextInputValue("pet_color").trim(),
@@ -783,8 +784,8 @@ export function attachPetSystem(client, store) {
           appearance: interaction.fields.getTextInputValue("pet_details").trim(),
           personality: interaction.fields.getTextInputValue("pet_details").trim(),
         });
-        return interaction.reply({ content: "Welcome home, **" + companion.name + "** the " + companion.species + "! Your custom companion is being created ♡\n" + status(companion, store.get(interaction.guild.id, interaction.user.id)?.coins ?? companion.coins), ephemeral: true });
-      } catch (error) { return interaction.reply({ content: error.message, ephemeral: true }); }
+        return interaction.editReply({ content: "Welcome home, **" + companion.name + "** the " + companion.species + "! Your custom companion is being created ♡\n" + status(companion, store.get(interaction.guild.id, interaction.user.id)?.coins ?? companion.coins) });
+      } catch (error) { return interaction.editReply({ content: error.message }); }
     }
 
     if (interaction.isButton?.() && (interaction.customId === "sugar-pets:global-top" || interaction.customId.startsWith("sugar-pets:adopt:") || interaction.customId.startsWith("sugar-pets:customize:"))) {
@@ -802,15 +803,17 @@ export function attachPetSystem(client, store) {
         return interaction.showModal(buildAdoptionModal(ownerId, species));
       }
       if (action === "adopt") {
+        await interaction.deferUpdate();
         try {
           const companion = await createAdoptedPet(species);
           const vip = isVip(interaction.member);
-          return interaction.update({ embeds: [buildAdoptionEmbed(species, vip).setDescription("You adopted **" + companion.name + "** the " + companion.species + "!\n\n" + (vip ? "Your companion is ready to meet you." : "Sugar chose a unique random design for you. VIP members can customise every detail of future companions.") + " ♡\n\n" + status(companion, store.get(interaction.guild.id, interaction.user.id)?.coins ?? companion.coins))], components: [] });
-        } catch (error) { return interaction.reply({ content: error.message, ephemeral: true }); }
+          return interaction.editReply({ embeds: [buildAdoptionEmbed(species, vip).setDescription("You adopted **" + companion.name + "** the " + companion.species + "!\n\n" + (vip ? "Your companion is ready to meet you." : "Sugar chose a unique random design for you. VIP members can customise every detail of future companions.") + " ♡\n\n" + status(companion, store.get(interaction.guild.id, interaction.user.id)?.coins ?? companion.coins))], components: [] });
+        } catch (error) { return interaction.editReply({ content: error.message, embeds: [], components: [] }); }
       }
     }
 
     if (!interaction.isButton?.() || interaction.customId !== BUTTON_ID) return;
+    await interaction.deferReply({ ephemeral: true });
     try {
       const guild = interaction.guild;
       if (!guild) return interaction.reply({ content: "Pet rooms are only available inside a server ♡", ephemeral: true });
@@ -852,18 +855,17 @@ export function attachPetSystem(client, store) {
       const activePet = ownerProfile ? (ownerProfile.activePetIndex > 0 ? ownerProfile.additionalPets?.[ownerProfile.activePetIndex - 1] : ownerProfile) : null;
       const welcome = roomMessages.find((message) => message.author?.id === client.user.id &&
         message.embeds.some((embed) => embed.title === "୨୧ 𝓦𝓮𝓵𝓬𝓸𝓶𝓮 𝓱𝓸𝓶𝓮 ♡"));
-      if (welcome) await welcome.edit({ embeds: [buildPetRoomWelcomeEmbed(ownerProfile, activePet, isVip(interaction.member))] });
-      else await petChannel.send({ embeds: [buildPetRoomWelcomeEmbed(ownerProfile, activePet, isVip(interaction.member))] });
+      if (!welcome) await petChannel.send({ embeds: [buildPetRoomWelcomeEmbed(ownerProfile, activePet, isVip(interaction.member))] });
       const legacyCommands = roomMessages.find((message) => message.author?.id === client.user.id && message.embeds.some((embed) => embed.title === "୨୧ 𝓟𝓮𝓽 𝓡𝓸𝓸𝓶 · 𝓒𝓸𝓶𝓶𝓪𝓷𝓭𝓼 ♡"));
       if (legacyCommands) await legacyCommands.delete().catch(() => {});
       const sticky = roomMessages.find((message) => message.author?.id === client.user.id && message.embeds.some((embed) => embed.title === "୨୧ 𝓟𝓮𝓽 𝓗𝓮𝓵𝓹 ♡"));
       if (!sticky) await petChannel.send(buildPetStickyPayload(interaction.user.id));
       await petChannel.permissionOverwrites.edit(interaction.user.id, { AddReactions: false });
       await petChannel.permissionOverwrites.edit(client.user.id, { AddReactions: false });
-      await interaction.reply({ content: `Your pet room is ready: <#${petChannel.id}> ♡`, ephemeral: true });
+      await interaction.editReply({ content: `Your pet room is ready: <#${petChannel.id}> ♡` });
     } catch (error) {
       console.error("[pets] could not open pet channel: " + error.message);
-      if (!interaction.replied) await interaction.reply({ content: "I couldn’t open your pet room. Please try again ♡", ephemeral: true }).catch(() => {});
+      await interaction.editReply({ content: "I couldn’t open your pet room. Please try again ♡" }).catch(() => {});
     }
   });
     client.on(Events.MessageCreate, async (message) => {
