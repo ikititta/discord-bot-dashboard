@@ -201,7 +201,7 @@ export function buildGuidePayload(guild) {
       "`/priv-chat create|add|remove|rename|leave|delete|commands` — manage your private chat.\n" +
       "`!profile [@member]` — view a complete member profile and saved stats.\n" +
       "`!rep [@member]` · `!rep stats [@member]` · `!rep top` · `!rep comments [@member]` — reputation tools.\n" +
-      "`!pet adopt` — open the interactive adoption embed and choose a species. Non-VIP members receive a unique random design; VIP members can customise companions and unlock up to three slots. One pet per member by default.\n" +
+      "`!pet adopt` — open the interactive adoption embed and choose a species. Non-VIP members receive a unique random design; VIP members can customise name, colour, breed, appearance and personality, and unlock up to three slots. One pet per member by default.\n" +
       "`!pet stats` · `!pet feed` · `!pet play` · `!pet cuddle` · `!pet talk` · `!pet story` · `!pet gif [happy|dance|sleep]` — care, bond and unlock reactions.\n" +
       "`!pet daily` · `!pet shop` · `!pet buy <treat|toy|potion>` · `!pet use <item>` · `!pet inventory` · `!pet select <number>` — shared coins and items. Potions refill hunger completely.\n" +
       "VIP pet customisation: `!pet name`, `!pet color`, `!pet breed`, `!pet appearance`, `!pet personality`. VIP extras: `!pet room`, `!pet outfit`, `!pet rare`, `!pet slots`, `!pet minigame`.\n" +
