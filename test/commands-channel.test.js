@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import {
   buildCommandsPanelPayload,
   buildCommandsThreadGuidePayload,
+  COMMANDS_CHANNEL_ID,
   COMMANDS_CHANNEL_NAME,
   COMMANDS_THREAD_NAME,
   isCommandsThread,
@@ -29,11 +30,11 @@ test("only the commands thread under Reputation is accepted for rep commands", (
     guild: {},
     channel: {
       name: COMMANDS_THREAD_NAME,
-      parent: { name: "reputation" },
+      parentId: COMMANDS_CHANNEL_ID,
       isThread: () => true,
     },
   };
   assert.equal(isCommandsThread(message), true);
-  assert.equal(isCommandsThread({ ...message, channel: { ...message.channel, parent: { name: "general" } } }), false);
+  assert.equal(isCommandsThread({ ...message, channel: { ...message.channel, parentId: "different-channel-id" } }), false);
   assert.equal(isCommandsThread({ ...message, channel: { ...message.channel, isThread: () => false } }), false);
 });
