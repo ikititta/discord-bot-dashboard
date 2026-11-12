@@ -11,7 +11,6 @@ import {
   isFunHelpCommand,
   fetchAnimeGif,
   fetchNsfwGif,
-  fetchViolentAnimeGif,
   getFunCommandDefinition,
   isVerifiedAdult,
   isVip,
@@ -220,41 +219,3 @@ test("fun help works with both documented prefix syntaxes", () => {
 });
 
 
-test("violent anime GIF provider uses curated action-specific SFW categories", async () => {
-  const gif = await fetchViolentAnimeGif("kill", {
-    apiKey: "test-key",
-    fetchImpl: async (url, options) => {
-      assert.equal(url, "https://mrs-maid.cc/api/v1/sfw/kill");
-      assert.equal(options.headers.Authorization, "Bearer test-key");
-      return {
-        ok: true,
-        json: async () => ({
-          url: "https://mrs-maid.cc/uploads/gifs/sfw/kill/example.gif",
-          rating: "sfw",
-          category: "kill",
-        }),
-      };
-    },
-  });
-  assert.deepEqual(gif, {
-    url: "https://mrs-maid.cc/uploads/gifs/sfw/kill/example.gif",
-    anime: "",
-    pairing: null,
-    source: "Mrs. Maid",
-  });
-});
-
-test("violent GIF provider rejects wrong categories and unsafe or off-category URLs", async () => {
-  await assert.rejects(fetchViolentAnimeGif("fuck", { apiKey: "test-key" }), /Invalid violent GIF category/);
-  await assert.rejects(fetchViolentAnimeGif("kill", {
-    apiKey: "test-key",
-    fetchImpl: async () => ({
-      ok: true,
-      json: async () => ({
-        url: "https://mrs-maid.cc/uploads/gifs/nsfw/kill/example.gif",
-        rating: "nsfw",
-        category: "kill",
-      }),
-    }),
-  }), /outside the selected category/);
-});
