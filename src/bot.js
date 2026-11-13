@@ -101,6 +101,18 @@ export function createBot({
     );
   }
 
+  let goodbyeChannelId;
+  client.once(Events.ClientReady, () => {
+    const guild = client.guilds.cache.get("1567093019377930363");
+    if (guild) {
+      void ensureGoodbyeChannel(guild).then((channel) => {
+        goodbyeChannelId = channel?.id;
+      }).catch((error) => {
+        console.error(`[goodbye] could not create/find channel: ${error.message}`);
+      });
+    }
+  });
+
   client.on(Events.GuildMemberAdd, async (member) => {
     const config = settings.get(member.guild.id);
     await log(client, config.logChannelId, {
@@ -213,6 +225,81 @@ export function createBot({
       description: `${member.user?.tag ?? member.id}`,
       footer: `${member.guild.memberCount} members`,
     });
+
+    if (member.guild.id === "1567093019377930363" && member.user) {
+      try {
+        const channel = goodbyeChannelId
+          ? await client.channels.fetch(goodbyeChannelId).catch(() => null)
+          : await ensureGoodbyeChannel(member.guild);
+        if (channel?.isTextBased()) {
+          const width = 1200;
+          const height = 480;
+          const canvas = createCanvas(width, height);
+          const ctx = canvas.getContext("2d");
+          const backgroundUrl =
+            member.guild.bannerURL({ extension: "png", size: 2048 }) ??
+            member.guild.iconURL({ extension: "png", size: 1024 });
+          if (backgroundUrl) {
+            const background = await loadImage(backgroundUrl);
+            const scale = Math.max(width / background.width, height / background.height);
+            const cropWidth = width / scale;
+            const cropHeight = height / scale;
+            ctx.drawImage(background, (background.width - cropWidth) / 2, (background.height - cropHeight) / 2, cropWidth, cropHeight, 0, 0, width, height);
+          } else {
+            const gradient = ctx.createLinearGradient(0, 0, width, height);
+            gradient.addColorStop(0, "#3d2945");
+            gradient.addColorStop(1, "#b77eaa");
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, width, height);
+          }
+          const veil = ctx.createLinearGradient(0, 0, width, 0);
+          veil.addColorStop(0, "rgba(20, 12, 25, 0.72)");
+          veil.addColorStop(0.58, "rgba(20, 12, 25, 0.35)");
+          veil.addColorStop(1, "rgba(20, 12, 25, 0.12)");
+          ctx.fillStyle = veil;
+          ctx.fillRect(0, 0, width, height);
+
+          const avatar = await loadImage(member.user.displayAvatarURL({ extension: "png", size: 512 }));
+          const avatarSize = 184;
+          const avatarX = 112;
+          const avatarY = 148;
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(avatarX + avatarSize / 2, avatarY + avatarSize / 2, avatarSize / 2 + 9, 0, Math.PI * 2);
+          ctx.fillStyle = "rgba(255,255,255,0.96)";
+          ctx.fill();
+          ctx.beginPath();
+          ctx.arc(avatarX + avatarSize / 2, avatarY + avatarSize / 2, avatarSize / 2, 0, Math.PI * 2);
+          ctx.clip();
+          ctx.drawImage(avatar, avatarX, avatarY, avatarSize, avatarSize);
+          ctx.restore();
+
+          const displayName = member.user.globalName ?? member.user.username;
+          ctx.textAlign = "left";
+          ctx.textBaseline = "alphabetic";
+          ctx.shadowColor = "rgba(0,0,0,0.35)";
+          ctx.shadowBlur = 12;
+          ctx.fillStyle = "#ffffff";
+          ctx.font = "bold 30px sans-serif";
+          ctx.fillText("KITTISUGAR  🥀", 350, 174);
+          ctx.font = "bold 66px sans-serif";
+          ctx.fillText("GOODBYE", 350, 258);
+          ctx.font = "bold 40px sans-serif";
+          ctx.fillText(displayName.slice(0, 24), 350, 318);
+          ctx.font = "28px sans-serif";
+          ctx.fillText("we'll miss you ♡", 350, 374);
+
+          const attachment = new AttachmentBuilder(await canvas.encode("png"), { name: "kittisugar-goodbye.png" });
+          const goodbye = new EmbedBuilder()
+            .setColor(0xffffff)
+            .setImage("attachment://kittisugar-goodbye.png")
+            .setFooter({ text: `${member.guild.memberCount} members` });
+          await channel.send({ files: [attachment], embeds: [goodbye], allowedMentions: { parse: [] } });
+        }
+      } catch (error) {
+        console.error(`[goodbye] could not send goodbye for ${member.id}: ${error.message}`);
+      }
+    }
   });
 
   client.on(Events.MessageDelete, async (message) => {
@@ -298,6 +385,23 @@ export function createBot({
   });
 
   return client;
+}
+
+async function ensureGoodbyeChannel(guild) {
+  const channels = await guild.channels.fetch();
+  const existing = channels.find(
+    (channel) => channel?.type === ChannelType.GuildText && channel.name === "goodbye",
+  );
+  if (existing) return existing;
+
+  const welcomeChannel = await guild.channels.fetch("1569909644590321737").catch(() => null);
+  return guild.channels.create({
+    name: "goodbye",
+    type: ChannelType.GuildText,
+    ...(welcomeChannel?.parentId ? { parent: welcomeChannel.parentId } : {}),
+    topic: "Goodbye messages for members leaving Kittisugar.",
+    reason: "Create the matching Kittisugar goodbye channel.",
+  });
 }
 
 /**
