@@ -46,6 +46,10 @@ test("fun commands use the existing Kittisugar gender role IDs only", () => {
   assert.equal(isVipOnlyFunCommand("kill"), true);
   assert.equal(isVipOnlyFunCommand("masturbate"), true);
   assert.equal(isVipOnlyFunCommand("oral"), true);
+  assert.equal(resolveOralNsfwGifCategory("female"), "pussylick");
+  assert.equal(resolveOralNsfwGifCategory("male"), "blowjob");
+  assert.equal(resolveOralNsfwGifCategory("trans"), null);
+  assert.equal(resolveOralNsfwGifCategory("neutral"), null);
   assert.equal(isVipOnlyFunCommand("anal"), true);
   assert.equal(isVipOnlyFunCommand("tease"), true);
   assert.equal(isVipOnlyFunCommand("seduce"), true);
@@ -123,6 +127,7 @@ test("paired and solo commands enforce the correct mention mode", () => {
   assert.equal(getFunCommandDefinition("fuck").needsTarget, true);
   assert.equal(getFunCommandDefinition("masturbate").needsTarget, true);
   assert.equal(getFunCommandDefinition("oral").needsTarget, true);
+  assert.equal(getFunCommandDefinition("oral").nsfwGif, "blowjob");
   assert.equal(getFunCommandDefinition("anal").needsTarget, true);
   assert.equal(getFunCommandDefinition("tease").needsTarget, true);
   assert.equal(getFunCommandDefinition("seduce").needsTarget, true);
@@ -260,7 +265,7 @@ test("fun help works with both documented prefix syntaxes", () => {
 
 
 test("VIP NSFW commands use their matching PurrBot categories", async () => {
-  for (const category of ["solo", "solo_male", "blowjob", "anal"]) {
+  for (const category of ["solo", "solo_male", "blowjob", "pussylick", "anal"]) {
     const gif = await fetchPurrbotNsfwGif(category, {
       fetchImpl: async (url) => {
         assert.equal(url, "https://api.purrbot.site/v2/img/nsfw/" + category + "/gif");
