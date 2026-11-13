@@ -81,8 +81,8 @@ test("fun help explains command types, stats, and VIP access", () => {
   const embed = buildFunHelpEmbed();
   assert.match(embed.data.title, /Fun Commands Guide/);
   const fields = embed.data.fields.map((field) => field.name + " " + field.value).join("\\n");
-  assert.match(fields, /!stats/);
-  assert.match(fields, /!vip stats @member/);
+  assert.match(fields, /\/stats — privately view your complete stats/);
+  assert.match(fields, /\/vip stats — privately view your report/);
   assert.match(fields, /VIP unlocks !fuck, !kill \(30-second timeout\), complete statistics/);
   assert.doesNotMatch(fields, /Everyone can view their own basic stats/);
   assert.match(fields, /Two-person commands/);
