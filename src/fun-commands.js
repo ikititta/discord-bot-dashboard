@@ -252,11 +252,50 @@ export async function fetchPurrbotSfwGif(category, { fetchImpl = fetch } = {}) {
 }
 
 
+export function resolveNsfwGifSearchTags(actorRole, targetRole, actorDominance = null, targetDominance = null) {
+  if (actorRole === "female" && targetRole === "female") return [["animated", "yuri"]];
+  if (actorRole === "male" && targetRole === "male") return [["animated", "yaoi"]];
+  const pair = resolveDominancePair(actorDominance, targetDominance);
+  const dominantRole = pair.mode === "directional" ? (pair.dominant === "actor" ? actorRole : targetRole) : null;
+  if ((actorRole === "female" && targetRole === "male") || (actorRole === "male" && targetRole === "female")) {
+    if (dominantRole === "female") return [["animated", "cowgirl"], ["animated", "reverse_cowgirl"]];
+    if (dominantRole === "male") return [["animated", "doggystyle"], ["animated", "missionary"]];
+    return [["animated", "hetero"]];
+  }
+  return [];
+}
+
+async function fetchTaggedNsfwGif(tags, fetchImpl) {
+  const url = new URL("https://api.rule34.xxx/index.php");
+  for (const [key, value] of Object.entries({page:"dapi",s:"post",q:"index",json:"1",limit:"100",tags:tags.join(" ")})) url.searchParams.set(key,value);
+  const response = await fetchImpl(url.toString(), {
+    headers: { "User-Agent": "SugarDiscordBot/1.0 (https://github.com/ikititta/discord-bot-dashboard)" },
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+  });
+  if (!response.ok) throw new Error(`Tagged NSFW GIF service returned HTTP ${response.status}.`);
+  const payload = await response.json();
+  const posts = Array.isArray(payload) ? payload : Array.isArray(payload?.post) ? payload.post : [];
+  const gifs = posts.filter((post) => {
+    try {
+      const media = new URL(post?.file_url ?? "");
+      return media.protocol === "https:" && (media.hostname === "rule34.xxx" || media.hostname.endsWith(".rule34.xxx")) && media.pathname.toLowerCase().endsWith(".gif");
+    } catch { return false; }
+  });
+  if (!gifs.length) return null;
+  const post = gifs[Math.floor(Math.random() * gifs.length)];
+  return { url: new URL(post.file_url).toString(), anime: "", pairing: tags.slice(1).join("+"), source: "Rule34 tagged GIF search" };
+}
+
 export async function fetchNsfwGif({ fetchImpl = fetch, actorRole = "neutral", targetRole = null, actorDominance = null, targetDominance = null } = {}) {
-  // The current provider cannot filter the top/bottom position. Keep GIFs
-  // available rather than suppressing every directional pairing; dominance
-  // still resolves in resolveDominancePair, but this generic GIF is not
-  // guaranteed to depict that exact position.
+  const searches = resolveNsfwGifSearchTags(actorRole, targetRole, actorDominance, targetDominance);
+  for (const tags of searches) {
+    try {
+      const tagged = await fetchTaggedNsfwGif(tags, fetchImpl);
+      if (tagged) return tagged;
+    } catch (error) {
+      console.warn(`[fun] tagged GIF lookup failed for ${tags.join(" ")}: ${error.message}`);
+    }
+  }
   const category = resolveNsfwGifCategory(actorRole, targetRole, actorDominance, targetDominance);
   const response = await fetchImpl(PURRBOT_API_BASE + "/img/nsfw/" + category + "/gif", {
     headers: { "User-Agent": "SugarDiscordBot/1.0 (https://github.com/ikititta/discord-bot-dashboard)" },
@@ -266,10 +305,8 @@ export async function fetchNsfwGif({ fetchImpl = fetch, actorRole = "neutral", t
   const payload = await response.json();
   if (payload?.error !== false) throw new Error("NSFW GIF service did not return a valid result.");
   const gifUrl = validatedGifUrl(payload?.link, "cdn.purrbot.site");
-  if (!gifUrl.pathname.startsWith("/nsfw/" + category + "/gif/")) {
-    throw new Error("NSFW GIF service returned content outside the selected " + category + " category.");
-  }
-  return { url: gifUrl.toString(), anime: "", pairing: category, source: "PurrBot NSFW" };
+  if (!gifUrl.pathname.startsWith("/nsfw/" + category + "/gif/")) throw new Error("NSFW GIF service returned content outside the selected " + category + " category.");
+  return { url: gifUrl.toString(), anime: "", pairing: category, source: "PurrBot NSFW fallback" };
 }
 
 export async function fetchAnimeGif(category, {
