@@ -422,7 +422,13 @@ async function handleRelationshipCommand(message, store, name, fetchImpl) {
     const type = name === "couple" ? "couple" : "marriage";
     const proposal = store.createRelationshipProposal({ guildId: message.guild.id, proposerId: message.author.id, targetId: target.id, type });
     if (proposal.error) { await safeReply(message, { content: proposal.error === "already_in_relationship" ? "One of you is already in a relationship ♡" : "One of you already has a pending proposal." }); return; }
-    let gif = null;\n    try {\n      const category = name === "couple" ? "handhold" : "kiss";\n      gif = await fetchAnimeGif(category, { fetchImpl, actorRole: normalizeFunRole(message.member), targetRole: normalizeFunRole(member) });\n    } catch (error) { console.warn(`[fun] relationship GIF lookup failed for !${name}: ${error.message}`); }\n    const embed = gif ? new EmbedBuilder().setColor(COLOR).setImage(gif.url) : null;\n    await safeReply(message, { content: (type === "marriage" ? "💍 " : "💗 ") + "<@" + message.author.id + "> has proposed to <@" + target.id + ">!", ...(embed ? { embeds: [embed] } : {}), components: [relationshipRow(proposal.id)] }, [message.author.id, target.id]);
+    let gif = null;
+    try {
+      const category = name === "couple" ? "handhold" : "kiss";
+      gif = await fetchAnimeGif(category, { fetchImpl, actorRole: normalizeFunRole(message.member), targetRole: normalizeFunRole(member) });
+    } catch (error) { console.warn(`[fun] relationship GIF lookup failed for !${name}: ${error.message}`); }
+    const embed = gif ? new EmbedBuilder().setColor(COLOR).setImage(gif.url) : null;
+    await safeReply(message, { content: (type === "marriage" ? "💍 " : "💗 ") + "<@" + message.author.id + "> has proposed to <@" + target.id + ">!", ...(embed ? { embeds: [embed] } : {}), components: [relationshipRow(proposal.id)] }, [message.author.id, target.id]);
     return;
   }
   const expected = name === "divorce" ? "marriage" : "couple";
