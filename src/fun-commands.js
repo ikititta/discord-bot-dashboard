@@ -40,7 +40,7 @@ const TWO_PERSON_COMMANDS = Object.freeze({
   feet: { gif: "pat", text: "has given a playful foot kiss to" },
   kick: { gif: "kick", text: "has kicked" },
   shoot: { gif: "shoot", text: "has playfully shot" },
-  kill: { gif: "kill", text: "has dramatically defeated" },
+  kill: { gif: "kick", text: "has dramatically defeated" },
   highfive: { gif: "highfive", text: "has high-fived" },
   handhold: { gif: "handhold", text: "is holding hands with" },
 });
@@ -443,7 +443,12 @@ async function handleRelationshipCommand(message, store, name, fetchImpl) {
     let gif = null;
     try {
       const category = name === "couple" ? "handhold" : "kiss";
-      gif = await fetchAnimeGif(category, { fetchImpl, actorRole: normalizeFunRole(message.member), targetRole: normalizeFunRole(member) });
+      const style = store.getGifStyle?.(message.guild.id, message.author.id) ?? "anime";
+      if (style === "real") {
+        try { gif = await fetchRealGif(category + " romantic movie relationship reaction", { fetchImpl }); }
+        catch (error) { console.warn("[fun] real relationship GIF lookup failed; using anime: " + error.message); }
+      }
+      if (!gif) gif = await fetchAnimeGif(category, { fetchImpl, actorRole: normalizeFunRole(message.member), targetRole: normalizeFunRole(member) });
     } catch (error) { console.warn(`[fun] relationship GIF lookup failed for !${name}: ${error.message}`); }
     const embed = gif ? new EmbedBuilder().setColor(COLOR).setImage(gif.url) : null;
     await safeReply(message, { content: (type === "marriage" ? "💍 " : "💗 ") + "<@" + message.author.id + "> has proposed to <@" + target.id + ">!", ...(embed ? { embeds: [embed] } : {}), components: [relationshipRow(proposal.id)] }, [message.author.id, target.id]);
