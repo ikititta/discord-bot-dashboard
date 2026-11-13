@@ -108,6 +108,27 @@ export function createBot({
       description: `<@${member.id}> (${member.user.tag})`,
       footer: `${member.guild.memberCount} members`,
     });
+
+    // Kittisugar welcome card: member avatar as the author icon and the
+    // server banner as the large image. Discord controls embed text color.
+    if (member.guild.id === "1567093019377930363") {
+      try {
+        const channel = await client.channels.fetch("1569909644590321737");
+        if (channel?.isTextBased()) {
+          const avatar = member.user.displayAvatarURL({ extension: "png", size: 256 });
+          const banner = member.guild.bannerURL({ extension: "png", size: 2048 });
+          const welcome = new EmbedBuilder()
+            .setColor(0xffffff)
+            .setAuthor({ name: member.user.globalName ?? member.user.username, iconURL: avatar })
+            .setDescription(`Welcome to Kittisugar, <@${member.id}>! ♡`)
+            .setFooter({ text: `${member.guild.memberCount} members` });
+          if (banner) welcome.setImage(banner);
+          await channel.send({ embeds: [welcome], allowedMentions: { parse: [], users: [member.id] } });
+        }
+      } catch (error) {
+        console.error(`[welcome] could not send welcome for ${member.id}: ${error.message}`);
+      }
+    }
   });
 
   client.on(Events.GuildMemberRemove, async (member) => {
