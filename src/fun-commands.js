@@ -278,10 +278,10 @@ export function buildFunHelpEmbed() {
     .setDescription("Use these commands in Kittisugar. Every fun command requires the Member role. Two-person commands need a member mention; solo commands do not.")
     .addFields(
       { name: "Relationships", value: "!couple @member · !propose @member · !marry @member · !breakup · !divorce. The other member must accept proposals." },
-      { name: "Two-person commands", value: "!hug @member · !slap @member · !bonk @member · !spank @member · !kiss @member · !tease @member (VIP; text-only) · !seduce @member (VIP; text-only) · !fuck @member · !cuddle @member · !pat @member · !poke @member · !bite @member · !lick @member · !feet @member · !kick @member · !shoot @member · !masturbate @member (VIP; NSFW channel) · !oral @member (VIP; NSFW channel) · !anal @member (VIP; NSFW channel) · !kill @member (VIP; 30-second timeout) · !highfive @member · !handhold @member" },
+      { name: "Two-person commands", value: "!hug @member · !slap @member · !bonk @member · !spank @member · !kiss @member · !tease @member (VIP; text-only) · !seduce @member (VIP; text-only) · !fuck @member · !cuddle @member · !pat @member · !poke @member · !bite @member · !lick @member · !feet @member · !kick @member · !shoot @member · !masturbate @member (VIP; NSFW) · !oral @member (VIP; NSFW) · !anal @member (VIP; NSFW) · !kill @member (VIP; 30-second timeout) · !highfive @member · !handhold @member" },
       { name: "Solo commands", value: "!cry · !laugh · !dance · !sleep · !happy · !blush · !smug · !wave · !facepalm · !wink · !shrug · !smile · !pout" },
       { name: "Statistics", value: "/stats — privately view your complete stats (VIP).\n/vip stats — privately view your report or another member’s (VIP).\nStats count commands used, interactions received, and interaction partners." },
-      { name: "VIP", value: "VIP unlocks !fuck (existing gender-aware NSFW GIF behavior), !masturbate, !oral, and !anal (NSFW GIFs; age-restricted channels only), !tease and !seduce (text-only interactions), !kill (30-second timeout), private statistics, and other exclusive benefits. Use /stats or /vip stats; reports are visible only to the requester." },
+      { name: "VIP", value: "VIP unlocks !fuck (existing gender-aware NSFW GIF behavior), !masturbate, !oral, and !anal (NSFW GIFs), !tease and !seduce (text-only interactions), !kill (30-second timeout), private statistics, and other exclusive benefits. Use /stats or /vip stats; reports are visible only to the requester." },
     )
     .setFooter({ text: "Have fun in Kittisugar ♡" });
 }
@@ -344,10 +344,6 @@ async function handleFunAction(message, store, name, args, fetchImpl) {
     targetRole = normalizeFunRole(targetMember);
     if (name === "oral" && !resolveOralNsfwGifCategory(targetRole)) {
       await safeReply(message, { content: "I need the mentioned member to have a Female or Male role to choose the matching oral GIF ♡" });
-      return true;
-    }
-    if (["masturbate", "oral", "anal"].includes(name) && message.channel?.nsfw !== true) {
-      await safeReply(message, { content: "This NSFW command is only available in an age-restricted channel 🔞" });
       return true;
     }
     // VIP access for paired commands is satisfied when either participant is VIP.
