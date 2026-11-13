@@ -500,6 +500,19 @@ async function runPetCommand(message, store, client) {
   }
   const reply = (content) => message.reply({ content, allowedMentions: { repliedUser: false } });
 
+  if (action === "commands") {
+    const help = new EmbedBuilder().setColor(COLOR)
+      .setTitle("୨୧ 𝓟𝓮𝓽 𝓒𝓸𝓶𝓶𝓪𝓷𝓭𝓼 ♡")
+      .setDescription("Use your pet commands in either of these channels:\n\n🐾 **Pets:** <#1570223501317513408> — adopt your companion with `!pet adopt`.\n\n📖 **Commands:** <#1570257241511170150> — view the full Sugar command guide.\n\nYour personal pet-care commands (feed, play, talk, story, shop and more) belong in your private pet room ♡")
+      .setFooter({ text: "This private guide was sent just to you ♡" });
+    try {
+      await message.author.send({ embeds: [help] });
+      return reply("I sent you the private pet commands guide in DMs ♡");
+    } catch {
+      return reply("I could not DM you the pet guide. Please enable server DMs and try `!pet commands` again ♡");
+    }
+  }
+
   if (action === "adopt") {
     if (profile && !vip) return reply("You already have a pet ♡ VIP members can unlock more pet slots.");
     if (profile && !canAdoptPet(profile, vip)) return reply("All your pet slots are full. Use `!pet slots` to unlock another VIP slot ♡");
@@ -961,8 +974,14 @@ export function attachPetSystem(client, store) {
     if (!message.guild || message.author?.bot || message.webhookId ||
         message.channel?.type !== ChannelType.GuildText ||
         !/^!pet(?:\s|$)/i.test(String(message.content ?? "").trim())) return;
+    const commandContent = String(message.content ?? "").trim();
+    if (/^!pet\s+commands$/i.test(commandContent)) {
+      try { await runPetCommand(message, store, client); }
+      catch (error) { console.error("[pets] private command guide failed: " + error.message); }
+      return;
+    }
     const isPrivatePetRoom = isUsersPetRoom(message.channel, message.author.id);
-    const isAdoptionCommand = /^!pet\s+adopt(?:\s|$)/i.test(String(message.content ?? "").trim());
+    const isAdoptionCommand = /^!pet\s+adopt(?:\s|$)/i.test(commandContent);
     const isAdoptionChannel = PET_ADOPTION_CHANNEL_IDS.has(message.channel.id);
     if (!isPrivatePetRoom && !(isAdoptionChannel && isAdoptionCommand)) return;
     try { await runPetCommand(message, store, client); }
