@@ -7,6 +7,7 @@ import {
   buildFunActionText,
   buildFunStatsEmbed,
   fetchAnimeGif,
+  removeGifPreferencesChannel,
   fetchPurrbotSfwGif,
   fetchNsfwGif,
   fetchPurrbotNsfwGif,
@@ -273,4 +274,26 @@ test("VIP NSFW commands use their matching PurrBot categories", async () => {
     assert.equal(gif.source, "PurrBot NSFW");
   }
   await assert.rejects(fetchPurrbotNsfwGif("kiss"), /Invalid PurrBot NSFW GIF category/);
+});
+
+
+test("retired GIF preferences channel is deleted instead of recreated", async () => {
+  let deletedId = null;
+  const result = await removeGifPreferencesChannel({
+    channels: {
+      fetch: async (id) => ({
+        id,
+        delete: async () => { deletedId = id; },
+      }),
+    },
+  });
+  assert.equal(result, true);
+  assert.equal(deletedId, "1570873475038711973");
+});
+
+test("missing retired GIF preferences channel is treated as already removed", async () => {
+  const result = await removeGifPreferencesChannel({
+    channels: { fetch: async () => { throw Object.assign(new Error("Unknown Channel"), { code: 10003 }); } },
+  });
+  assert.equal(result, false);
 });
