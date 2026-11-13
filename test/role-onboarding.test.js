@@ -5,6 +5,7 @@ import {
   AGE_OPTIONS,
   COLOR_OPTIONS,
   DOMINANCE_OPTIONS,
+  SELF_ROLES_CHANNEL_ID,
   GENDER_OPTIONS,
   SEXUALITY_OPTIONS,
   GENDER_ROLE_IDS,
@@ -17,6 +18,7 @@ import {
 } from "../src/role-onboarding.js";
 
 test("self-role categories use the agreed gender and sexuality options", () => {
+  assert.equal(SELF_ROLES_CHANNEL_ID, "1569197643714789427");
   assert.deepEqual(GENDER_OPTIONS.map(([, label]) => label), ["Female", "Male", "Trans", "Non-binary"]);
   assert.deepEqual(SEXUALITY_OPTIONS.map(([, label]) => label), [
     "Straight",
