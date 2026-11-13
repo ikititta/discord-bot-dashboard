@@ -290,15 +290,22 @@ test("!fuck selects NSFW GIF categories from both members' gender roles", async 
   });
 });
 
-test("!fuck does not show a reversed GIF for a dominant woman and submissive man", async () => {
+test("!fuck keeps a generic GIF available for dominant/submissive pairings", async () => {
   const result = await fetchNsfwGif({
     actorRole: "female",
     targetRole: "male",
     actorDominance: 2,
     targetDominance: -2,
-    fetchImpl: async () => { throw new Error("must not request an unverified direction"); },
+    fetchImpl: async (url) => {
+      assert.equal(url, "https://api.purrbot.site/v2/img/nsfw/fuck/gif");
+      return {
+        ok: true,
+        json: async () => ({ link: "https://cdn.purrbot.site/nsfw/fuck/gif/fuck_001.gif", error: false }),
+      };
+    },
   });
-  assert.equal(result, null);
+  assert.equal(result.pairing, "fuck");
+  assert.equal(result.url, "https://cdn.purrbot.site/nsfw/fuck/gif/fuck_001.gif");
 });
 
 test("!fuck rejects SFW or wrong-gender GIF results instead of falling back", async () => {
