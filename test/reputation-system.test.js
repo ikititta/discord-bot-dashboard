@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 
-import { ReputationStore, buildTopEmbed, makePanelPayload, buildReputationCommandsEmbed, REPUTATION_COMMANDS_CHANNEL_ID } from "../src/reputation-system.js";
+import { ReputationStore, buildTopEmbed, makePanelPayload, buildReputationCommandsEmbed, REPUTATION_COMMANDS_CHANNEL_ID, REPUTATION_COMMANDS_TITLE } from "../src/reputation-system.js";
 
 function temporaryDirectory() {
   return fs.mkdtempSync(path.join(os.tmpdir(), "sugar-reputation-"));
@@ -108,7 +108,7 @@ test("top reputation shows separate positive and negative member lists", () => {
   }
 });
 
-test("reputation-only command channel lists every reputation command and no general commands", () => {\n  assert.equal(REPUTATION_COMMANDS_CHANNEL_ID, "1569930648804925522");\n  const description = buildReputationCommandsEmbed().data.description;\n  for (const command of ["!rep", "!rep @member", "!rep stats [@member]", "!rep comments [@member]", "!rep top", "Give Positive", "Give Negative"]) assert.ok(description.includes(command), "missing " + command);\n  assert.doesNotMatch(description, /!pet|!hug|!commands|\\/delete/);\n});\n\ntest("reputation panel exposes only English positive and negative vote buttons", () => {
+test("reputation-only command channel lists every reputation command and no general commands", () => {\n  assert.equal(REPUTATION_COMMANDS_CHANNEL_ID, "1569930648804925522");\n  assert.equal(REPUTATION_COMMANDS_TITLE, "୨୧ 𝓡𝓮𝓹𝓾𝓽𝓪𝓽𝓲𝓸𝓷 · 𝓒𝓸𝓶𝓶𝓪𝓷𝓭𝓼 ♡");\n  const description = buildReputationCommandsEmbed().data.description;\n  for (const command of ["!rep", "!rep @member", "!rep stats [@member]", "!rep comments [@member]", "!rep top", "Give Positive", "Give Negative"]) assert.ok(description.includes(command), "missing " + command);\n  assert.doesNotMatch(description, /!pet|!hug|!commands|\\/delete/);\n});\n\ntest("reputation panel exposes only English positive and negative vote buttons", () => {
   const payload = makePanelPayload();
   const buttons = payload.components.flatMap((row) => row.toJSON().components);
   assert.deepEqual(buttons.map((button) => button.label), ["Give Positive", "Give Negative"]);
