@@ -406,7 +406,7 @@ async function upsertPanel(client, channelId, title, payload, { pinOnCreate = tr
   if (!channel || channel.type !== ChannelType.GuildText) {
     throw new Error(`Community panel channel ${channelId} is not an accessible text channel.`);
   }
-  const recent = await channel.messages.fetch({ limit: 50 });
+  const recent = await channel.messages.fetch({ limit: 100 });
   const matches = [...recent.values()].filter((message) =>
     message.author?.id === client.user.id && message.embeds.some((embed) => [title, ...legacyTitles].includes(embed.title)),
   ).sort((a, b) => b.createdTimestamp - a.createdTimestamp);
