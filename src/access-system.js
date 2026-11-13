@@ -212,7 +212,10 @@ const CHANNEL_PURPOSES = {
   media: "Share images, videos, and other media with the community.",
   nsfw: "Adult-only discussion and media. Follow the server's NSFW rules and channel restrictions.",
   memes: "Share memes and funny content with the community.",
-  games: "Talk about games and find peopfunction isPrivateChatRoom(channel) {
+  games: "Talk about games and find people to play with.",
+};
+
+function isPrivateChatRoom(channel) {
   const name = normalizeName(channel.name);
   if (channel.id === PRIVATE_CHAT_LOBBY_CHANNEL_ID || name === "privatechatlobby" || name === "createprivatechat") return false;
   return channel.parentId === PRIVATE_CHAT_CATEGORY_ID ||
@@ -288,10 +291,6 @@ function buildServerMap(guild) {
     .setColor(COLOR)
     .setTitle(`${toRoyalBold(titles[index] ?? "Explore")} 🎀`)
     .setDescription(chunk.join("\n")));
-}
-ver channel directory needs ${embeds.length} embeds; Discord allows at most 9 directory embeds plus the guide intro.`);
-  }
-  return embeds;
 }
 
 const guideRefreshQueues = new Map();
