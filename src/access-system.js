@@ -195,6 +195,7 @@ const CHANNEL_PURPOSES = {
   confessions: "Submit an anonymous confession or create a poll using the buttons in the channel.",
   loveletters: "Send a sweet appreciation message or love letter to someone in the community.",
   suggestions: "Share suggestions and ideas to help improve Kittisugar.",
+  suggestences: "Share suggestions and ideas to help improve Kittisugar.",
   reputation: "Give or receive reputation, leave feedback, and browse member reputation with !rep.",
   quotes: "Share and browse memorable, funny, or meaningful quotes from the community.",
   selfies: "Share your selfies with the community.",
@@ -291,8 +292,11 @@ function buildServerMap(guild) {
 
     for (const channel of group.channels) {
       const line = `• <#${channel.id}> — ${describeChannel(channel)}`;
-      if (description.length + line.length + 1 > 3800) flush();
-      description += (description ? "\n" : "") + line;
+      if (description.length + line.length + 1 > 3800) {
+        flush();
+        description = heading;
+      }
+      description += "\n" + line;
     }
   }
   flush();
@@ -303,7 +307,20 @@ function buildServerMap(guild) {
   return embeds;
 }
 
-async function refreshGuildGuides(client, guild) {
+const guideRefreshQueues = new Map();
+
+function refreshGuildGuides(client, guild) {
+  const previous = guideRefreshQueues.get(guild.id) ?? Promise.resolve();
+  const current = previous
+    .catch(() => {})
+    .then(() => refreshGuildGuidesNow(client, guild));
+  guideRefreshQueues.set(guild.id, current);
+  return current.finally(() => {
+    if (guideRefreshQueues.get(guild.id) === current) guideRefreshQueues.delete(guild.id);
+  });
+}
+
+async function refreshGuildGuidesNow(client, guild) {
   const channelIds = new Set(GUIDE_CHANNEL_REFRESH_IDS);
   const dashboard = guild.channels.cache.find((channel) =>
     channel.type === ChannelType.GuildText && normalizeName(channel.name) === "dashboard",
