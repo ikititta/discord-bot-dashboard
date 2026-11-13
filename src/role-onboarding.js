@@ -427,7 +427,7 @@ export async function ensureSelfRolesChannel(guild, client) {
     ManageMessages: true,
   });
 
-  const recent = await channel.messages.fetch({ limit: 50 });
+  const recent = await channel.messages.fetch({ limit: 100 });
   const panelPayloads = buildSelfRolesPanelPayload();
   const legacyPanelTitle = `୨୧ ${toRoyalBold("Self Roles")} ♡`;
   const legacyPanels = [...recent.values()].filter((message) =>
