@@ -242,6 +242,13 @@ export async function fetchPurrbotSfwGif(category, { fetchImpl = fetch } = {}) {
 
 
 export async function fetchNsfwGif({ fetchImpl = fetch, actorRole = "neutral", targetRole = null, actorDominance = null, targetDominance = null } = {}) {
+  // PurrBot cannot filter mixed-gender GIFs by actor/target direction. Fail
+  // closed for the exact dominant-woman/submissive-man pairing rather than
+  // showing a GIF that depicts the woman being dominated.
+  const hasDominantWomanAndSubmissiveMan =
+    (actorRole === "female" && actorDominance === 2 && targetRole === "male" && targetDominance === -2) ||
+    (targetRole === "female" && targetDominance === 2 && actorRole === "male" && actorDominance === -2);
+  if (hasDominantWomanAndSubmissiveMan) return null;
   const category = resolveNsfwGifCategory(actorRole, targetRole, actorDominance, targetDominance);
   const response = await fetchImpl(PURRBOT_API_BASE + "/img/nsfw/" + category + "/gif", {
     headers: { "User-Agent": "SugarDiscordBot/1.0 (https://github.com/ikititta/discord-bot-dashboard)" },
