@@ -253,8 +253,9 @@ export async function fetchPurrbotSfwGif(category, { fetchImpl = fetch } = {}) {
 
 
 export function resolveNsfwGifSearchTags(actorRole, targetRole, actorDominance = null, targetDominance = null) {
-  if (actorRole === "female" && targetRole === "female") return [["animated", "yuri"]];
-  if (actorRole === "male" && targetRole === "male") return [["animated", "yaoi"]];
+  // Same-gender pairings use PurrBot's dedicated yuri/yaoi categories directly.
+  if (actorRole === "female" && targetRole === "female") return [];
+  if (actorRole === "male" && targetRole === "male") return [];
   const pair = resolveDominancePair(actorDominance, targetDominance);
   const dominantRole = pair.mode === "directional" ? (pair.dominant === "actor" ? actorRole : targetRole) : null;
   if ((actorRole === "female" && targetRole === "male") || (actorRole === "male" && targetRole === "female")) {
