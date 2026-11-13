@@ -276,19 +276,12 @@ function buildServerMap(guild) {
   );
   if (!lines.length) return [];
 
+  const embedCount = Math.min(3, Math.max(2, Math.ceil(lines.length / 12)));
+  const chunkSize = Math.ceil(lines.length / embedCount);
   const chunks = [];
-  let current = [];
-  let length = 0;
-  for (const line of lines) {
-    if (current.length && length + line.length + 1 > 3000 && chunks.length < 2) {
-      chunks.push(current);
-      current = [];
-      length = 0;
-    }
-    current.push(line);
-    length += line.length + 1;
+  for (let index = 0; index < lines.length; index += chunkSize) {
+    chunks.push(lines.slice(index, index + chunkSize));
   }
-  if (current.length) chunks.push(current);
 
   const titles = ["Getting Started", "Community", "Explore"];
   return chunks.map((chunk, index) => new EmbedBuilder()
