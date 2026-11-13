@@ -89,6 +89,10 @@ test("fun action messages mention the actor and target with clear past-tense wor
 
 test("paired and solo commands enforce the correct mention mode", () => {
   assert.equal(getFunCommandDefinition("slap").needsTarget, true);
+  for (const name of ["choke", "spit", "comfort", "noseboop"]) assert.equal(getFunCommandDefinition(name).needsTarget, true);
+  for (const name of ["scream", "sing", "think"]) assert.equal(getFunCommandDefinition(name).needsTarget, false);
+  assert.equal(isVipOnlyFunCommand("choke"), true);
+  assert.equal(isVipOnlyFunCommand("spit"), true);
   assert.equal(getFunCommandDefinition("spank").needsTarget, true);
   assert.equal(getFunCommandDefinition("spank").gif, "spank");
   assert.equal(getFunCommandDefinition("cry").needsTarget, false);
