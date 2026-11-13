@@ -181,6 +181,14 @@ export const SEXUALITY_OPTIONS = [
   ["prefer-not-to-say", "Prefer not to say"],
 ];
 
+export const DOMINANCE_OPTIONS = [
+  ["submissive", "Submissive"],
+  ["mostly-submissive", "Mostly Submissive"],
+  ["switch", "Switch"],
+  ["mostly-dominant", "Mostly Dominant"],
+  ["dominant", "Dominant"],
+];
+
 export const COLOR_OPTIONS = [
   ["red", "Red", 0xe74c3c],
   ["orange", "Orange", 0xe67e22],
@@ -200,6 +208,7 @@ const CATEGORY_OPTIONS = {
   gender: GENDER_OPTIONS,
   age: AGE_OPTIONS,
   sexuality: SEXUALITY_OPTIONS,
+  dominance: DOMINANCE_OPTIONS,
 };
 
 export function roleNameForSelection(category, value) {
@@ -245,6 +254,7 @@ export function buildSelfRolesPanelPayload() {
     ["gender", "Gender", "Choose your gender.", GENDER_OPTIONS],
     ["age", "Age", "Please select your age.", AGE_OPTIONS],
     ["sexuality", "Sexuality", "Select the option that best describes you.", SEXUALITY_OPTIONS],
+    ["dominance", "Interaction preference", "Choose how you usually prefer to interact. This helps Sugar match anime GIF pairings.", DOMINANCE_OPTIONS],
     ["color", "Chat color", "Choose one of the basic colors for your name.", COLOR_OPTIONS.map(([value, label]) => [value, label])],
     ["nsfw", "NSFW visibility", "Choose whether NSFW channels and forums should be visible to you.", [["show", "Show NSFW channels"], ["hide", "Hide NSFW channels"]]],
   ];
