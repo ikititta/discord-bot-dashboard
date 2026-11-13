@@ -20,6 +20,7 @@ import {
   normalizeFunDominance,
   resolveGifPairing,
   resolveNsfwGifCategory,
+  shouldPreferAnalGif,
   resolveMasturbateGifPairing,
   selectMasturbateGif,
 } from "../src/fun-commands.js";
@@ -234,15 +235,22 @@ test("!masturbate selects the exact actor-to-target curated pairing", () => {
   assert.equal(selectMasturbateGif("female","male",{catalog:{fm:["https://assets.example/no.png"]}}),null);
 });
 test("!fuck selects NSFW GIF categories from both members' gender roles", async () => {
-  assert.equal(resolveNsfwGifCategory("female", "female"), "yuri");
+  assert.equal(resolveNsfwGifCategory("female", "female"), "anal");
   assert.equal(resolveNsfwGifCategory("male", "male"), "yaoi");
   assert.equal(resolveNsfwGifCategory("female", "male"), "fuck");
+  assert.equal(shouldPreferAnalGif("female", "female"), true);
+  assert.equal(shouldPreferAnalGif("male", "female", -2, 2), true);
+  assert.equal(shouldPreferAnalGif("female", "male", 2, -2), true);
+  assert.equal(shouldPreferAnalGif("male", "female", -1, 2), false);
+  assert.equal(shouldPreferAnalGif("male", "female", -2, 1), false);
+  assert.equal(resolveNsfwGifCategory("male", "female", -2, 2), "anal");
+  assert.equal(resolveNsfwGifCategory("female", "male", 2, -2), "anal");
   assert.equal(resolveNsfwGifCategory("trans", "female"), "fuck");
   const gif = await fetchNsfwGif({
     actorRole: "female",
     targetRole: "female",
     fetchImpl: async (url) => {
-      assert.equal(url, "https://api.purrbot.site/v2/img/nsfw/yuri/gif");
+      assert.equal(url, "https://api.purrbot.site/v2/img/nsfw/anal/gif");
       return {
         ok: true,
         json: async () => ({ link: "https://cdn.purrbot.site/nsfw/yuri/gif/yuri_001.gif", error: false }),
@@ -252,7 +260,7 @@ test("!fuck selects NSFW GIF categories from both members' gender roles", async 
   assert.deepEqual(gif, {
     url: "https://cdn.purrbot.site/nsfw/yuri/gif/yuri_001.gif",
     anime: "",
-    pairing: "yuri",
+    pairing: "anal",
     source: "PurrBot NSFW",
   });
 });
@@ -261,8 +269,8 @@ test("!fuck rejects SFW or wrong-gender GIF results instead of falling back", as
   await assert.rejects(fetchNsfwGif({
     actorRole: "female",
     targetRole: "female",
-    fetchImpl: async () => ({ ok: true, json: async () => ({ link: "https://cdn.purrbot.site/nsfw/fuck/gif/fuck_001.gif", error: false }) }),
-  }), /outside the selected yuri category/);
+    fetchImpl: async () => ({ ok: true, json: async () => ({ link: "https://cdn.purrbot.site/nsfw/yuri/gif/yuri_001.gif", error: false }) }),
+  }), /outside the selected anal category/);
   await assert.rejects(fetchNsfwGif({
     fetchImpl: async () => ({ ok: true, json: async () => ({ link: "https://cdn.gifukai.com/kiss/test.gif", error: false }) }),
   }), /invalid GIF URL/);
