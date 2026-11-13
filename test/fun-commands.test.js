@@ -90,6 +90,8 @@ test("fun help explains command types, stats, and VIP access", () => {
   assert.match(fields, /Solo commands/);
   assert.doesNotMatch(embed.data.footer.text, /consent/i);
   assert.match(fields, /!fuck @member/);
+  assert.match(fields, /!lick @member/);
+  assert.match(fields, /!feet @member/);
   assert.doesNotMatch(fields, /NSFW preferences|!nsfw-on|!nsfw-off|approval/i);
 });
 
@@ -99,6 +101,9 @@ test("paired and solo commands enforce the correct mention mode", () => {
   assert.equal(getFunCommandDefinition("cry").needsTarget, false);
   assert.equal(getFunCommandDefinition("laugh").needsTarget, false);
   assert.equal(getFunCommandDefinition("kill").needsTarget, true);
+  assert.equal(getFunCommandDefinition("bite").needsTarget, true);
+  assert.equal(getFunCommandDefinition("lick").needsTarget, true);
+  assert.equal(getFunCommandDefinition("feet").needsTarget, true);
   assert.equal(getFunCommandDefinition("rape"), null);
   assert.equal(getFunCommandDefinition("fuck").needsTarget, true);
   assert.equal(getFunCommandDefinition("unknown"), null);
