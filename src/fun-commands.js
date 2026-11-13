@@ -25,7 +25,7 @@ const TWO_PERSON_COMMANDS = Object.freeze({
   anal: { gif: null, nsfwGif: "anal", text: "has initiated an anal NSFW interaction with" },
   hug: { gif: "hug", text: "has hugged" },
   kiss: { gif: "kiss", text: "has kissed" },
-  tease: { gif: null, text: "has playfully teased" },
+  tease: { gif: "wink", text: "has playfully teased" },
   seduce: { gif: "wink", text: "has tried to charm" },
   cuddle: { gif: "cuddle", text: "has cuddled" },
   pat: { gif: "pat", text: "has given a headpat to" },
@@ -109,9 +109,9 @@ export function buildFunStatsEmbed({ user, stats, full = false, received = false
     const allReceived = Object.entries(stats.received ?? {}).sort((a, b) => a[0].localeCompare(b[0]));
     if (allCommands.length) embed.addFields({ name: "Complete command history", value: allCommands.map(([command, count]) => "!" + command + " · " + count).join("\n").slice(0, 1024) });
     if (allReceived.length) embed.addFields({ name: "Complete received history", value: allReceived.map(([command, count]) => "!" + command + " · " + count).join("\n").slice(0, 1024) });
-    embed.setFooter({ text: "VIP stats · Type !funhelp for the command guide ♡" });
+    embed.setFooter({ text: "VIP stats · Type !commands for the command guide ♡" });
   } else {
-    embed.setFooter({ text: "Use !vip stats for your complete VIP report · !funhelp for help ♡" });
+    embed.setFooter({ text: "Use !vip stats for your complete VIP report · !commands for help ♡" });
   }
   return embed;
 }
@@ -267,25 +267,6 @@ export function buildFunActionText(actorId, targetId, definition) {
     : "<@" + actorId + "> " + definition.text + "!";
 }
 
-export function isFunHelpCommand(name, args = "") {
-  return name === "funhelp" || (name === "fun" && String(args).trim().toLowerCase() === "help");
-}
-
-export function buildFunHelpEmbed() {
-  return new EmbedBuilder()
-    .setColor(COLOR)
-    .setTitle("Sugar Fun Commands Guide ♡")
-    .setDescription("Use these commands in Kittisugar. Every fun command requires the Member role. Two-person commands need a member mention; solo commands do not.")
-    .addFields(
-      { name: "Relationships", value: "!couple @member · !propose @member · !marry @member · !breakup · !divorce. The other member must accept proposals." },
-      { name: "Two-person commands", value: "!hug @member · !slap @member · !bonk @member · !spank @member · !kiss @member · !tease @member (VIP; text-only) · !seduce @member (VIP; GIF) · !fuck @member · !cuddle @member · !pat @member · !poke @member · !bite @member · !lick @member · !feet @member · !kick @member · !shoot @member · !masturbate @member (VIP; NSFW) · !oral @member (VIP; NSFW) · !anal @member (VIP; NSFW) · !kill @member (VIP; 30-second timeout) · !highfive @member · !handhold @member" },
-      { name: "Solo commands", value: "!cry · !laugh · !dance · !sleep · !happy · !blush · !smug · !wave · !facepalm · !wink · !shrug · !smile · !pout" },
-      { name: "Statistics", value: "/stats — privately view your complete stats (VIP).\n/vip stats — privately view your report or another member’s (VIP).\nStats count commands used, interactions received, and interaction partners." },
-      { name: "VIP", value: "VIP unlocks !fuck (existing gender-aware NSFW GIF behavior), !masturbate, !oral, and !anal (NSFW GIFs), !tease (text-only interaction) and !seduce (anime GIF interaction), !kill (30-second timeout), private statistics, and other exclusive benefits. Use /stats or /vip stats; reports are visible only to the requester." },
-    )
-    .setFooter({ text: "Have fun in Kittisugar ♡" });
-}
-
 async function showStats(message, store, { targetMember, targetUser, full, received = false }) {
   const stats = store.getStats(message.guild.id, targetUser.id);
   const embed = buildFunStatsEmbed({ user: { ...targetUser, id: targetUser.id, displayName: displayName(targetMember, targetUser) }, stats, full, received, relationship: store.getRelationship(message.guild.id, targetUser.id), history: store.getRelationshipHistory(message.guild.id, targetUser.id) });
@@ -436,14 +417,13 @@ async function handleRelationshipCommand(message, store, name, fetchImpl) {
   const response = result.error === "no_relationship" ? "You do not have an active relationship." : result.error === "wrong_type" ? (name === "divorce" ? "You are not married." : "You are not dating. Use !divorce if you are married.") : (name === "divorce" ? "The marriage has ended ♡" : "The relationship has ended ♡");
   await safeReply(message, { content: response });
 }
-const FUN_HELP_COMMAND = new SlashCommandBuilder().setName("fun").setDescription("Fun commands").addSubcommand((sub) => sub.setName("help").setDescription("Show the fun command guide")).toJSON();
 const STATS_COMMAND = new SlashCommandBuilder().setName("stats").setDescription("Privately view your complete fun statistics").toJSON();
 const VIP_COMMAND = new SlashCommandBuilder().setName("vip").setDescription("VIP commands").addSubcommand((sub) => sub.setName("stats").setDescription("Privately view complete stats").addUserOption((option) => option.setName("member").setDescription("Member whose stats to view").setRequired(false))).toJSON();
 async function registerFunHelpCommand(token, applicationId) {
   const rest = new REST({ version: "10" }).setToken(token);
   const route = Routes.applicationGuildCommands(applicationId, KITTISUGAR_GUILD_ID);
   const current = await rest.get(route);
-  await rest.put(route, { body: [...current.filter((command) => !["fun", "stats", "vip"].includes(command.name)), FUN_HELP_COMMAND, STATS_COMMAND, VIP_COMMAND] });
+  await rest.put(route, { body: [...current.filter((command) => !["fun", "stats", "vip"].includes(command.name)), STATS_COMMAND, VIP_COMMAND] });
 }
 export function attachFunCommands(client, { store, fetchImpl = fetch, token, applicationId } = {}) {
   if (!store) throw new Error("The fun-command statistics store is required.");
@@ -502,10 +482,6 @@ export function attachFunCommands(client, { store, fetchImpl = fetch, token, app
       }
       if (name === "nsfw-on" || name === "nsfw-off") {
         await safeReply(message, { content: "All two-person fun interactions are automatic now. No approval settings are needed ♡" });
-        return;
-      }
-      if (isFunHelpCommand(name, args)) {
-        await safeReply(message, { embeds: [buildFunHelpEmbed()] });
         return;
       }
       if (name === "stats" || name === "vip" || name === "fun") {
