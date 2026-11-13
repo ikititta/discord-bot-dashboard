@@ -134,7 +134,7 @@ export const PET_HELP_CATEGORIES = {
   coins: { label: "Coins & items", title: "୨୧ 𝓒𝓸𝓲𝓷𝓼 & 𝓘𝓽𝓮𝓶𝓼 ♡", body: "`!pet daily` · `!pet shop` · `!pet buy <treat|toy|potion>` · `!pet use <item>` · `!pet inventory`\n\nCollect your daily coins, check shop prices, buy items, use them and view your inventory. Treat: 10 coins · Toy: 25 coins · Potion: 60 coins." },
   manage: { label: "My pets", title: "୨୧ 𝓜𝔂 𝓟𝓮𝓽𝓼 ♡", body: "`!pet adopt` · `!pet select <number>` · `!pet stats` · `!pet delete`\n\nAdopt in the pets channel, switch between companions and view their stats. Deleting a pet is VIP-only and requires confirmation." },
   customize: { label: "Customisation", title: "୨୧ 𝓒𝓾𝓼𝓽𝓸𝓶𝓲𝓼𝓪𝓽𝓲𝓸𝓷 ♡", body: "`!pet name <name>` · `!pet color <color>` · `!pet breed <breed>` · `!pet appearance <details>` · `!pet personality <traits>`\n\nVIP members can customise their companion's identity." },
-  vip: { label: "VIP features", title: "୨୧ 𝓥𝓘𝓟 𝓕𝓮𝓪𝓽𝓾𝓻𝓮𝓼 ♡", body: "`!pet room` · `!pet outfit <name>` · `!pet slots` · `!pet minigame` · `!pet delete`\n\nVIP unlocks extra species, additional pet slots, pet deletion, room and outfit features, and the daily minigame." },
+  vip: { label: "VIP features", title: "୨୧ 𝓥𝓘𝓟 𝓕𝓮𝓪𝓽𝓾𝓻𝓮𝓼 ♡", body: "`!pet room redesign` · `!pet room delete` · `!pet outfit <name>` · `!pet slots` · `!pet minigame` · `!pet delete`\n\nVIP unlocks extra species, additional pet slots, pet deletion, room and outfit features, and the daily minigame." },
 };
 function buildPetStickyPayload(ownerId) {
   const row = new ActionRowBuilder().addComponents(
@@ -227,7 +227,7 @@ function panelPayload() {
     new ButtonBuilder().setCustomId(BUTTON_ID).setLabel("Create A Pet Room ♡").setStyle(ButtonStyle.Primary),
     new ButtonBuilder().setCustomId("sugar-pets:global-top").setLabel("Top Pets ♡").setStyle(ButtonStyle.Success),
     new ButtonBuilder().setCustomId("sugar-pets:create-pet").setLabel("Adopt A Pet ♡").setStyle(ButtonStyle.Secondary),
-    new ButtonBuilder().setCustomId("sugar-pets:delete-pet").setLabel("Delete A Pet ♡").setStyle(ButtonStyle.Danger),
+    new ButtonBuilder().setCustomId("sugar-pets:delete-menu").setLabel("Delete Room or Pet ♡").setStyle(ButtonStyle.Danger),
   )] };
 }
 
@@ -518,6 +518,31 @@ async function runPetCommand(message, store, client) {
     if (profile && !canAdoptPet(profile, vip)) return reply("All your pet slots are full. Use `!pet slots` to unlock another VIP slot ♡");
     return message.reply({ embeds: [buildAdoptionEmbed(null, vip)], components: [buildSpeciesSelect(userId, vip)], allowedMentions: { repliedUser: false } });
   }
+  if (action === "room") {
+    if (!isUsersPetRoom(message.channel, userId)) return reply("Use this command inside your own private pet room ♡");
+    if (argument.toLowerCase() === "redesign") {
+      await message.channel.setName(formatPetChannelName(message.author.username), "Redesign the owner's private pet room");
+      await message.channel.setTopic("Sugar personal pet room for " + userId, "Restore the private pet room ownership marker");
+      await message.channel.permissionOverwrites.edit(message.guild.roles.everyone, { ViewChannel: false, SendMessages: false, ReadMessageHistory: false });
+      await message.channel.permissionOverwrites.edit(userId, { ViewChannel: true, SendMessages: true, ReadMessageHistory: true, AttachFiles: true, EmbedLinks: true, AddReactions: false });
+      await message.channel.permissionOverwrites.edit(client.user.id, { ViewChannel: true, SendMessages: true, ReadMessageHistory: true, EmbedLinks: true, ManageMessages: true, AddReactions: false });
+      const recent = await message.channel.messages.fetch({ limit: 50 });
+      for (const old of recent.values()) {
+        if (old.author?.id === client.user.id && old.embeds.some((embed) => ["୨୧ 𝓦𝓮𝓵𝓬𝓸𝓶𝓮 𝓱𝓸𝓶𝓮 ♡", "୨୧ 𝓟𝓮𝓽 𝓗𝓮𝓵𝓹 ♡"].includes(embed.title))) await old.delete().catch(() => {});
+      }
+      const active = profile ? (profile.activePetIndex > 0 ? profile.additionalPets?.[profile.activePetIndex - 1] : profile) : null;
+      await message.channel.send({ embeds: [buildPetRoomWelcomeEmbed(profile, active, vip)] });
+      await message.channel.send(buildPetStickyPayload(userId));
+      return reply("Your private pet room has been redesigned and its privacy settings restored ♡");
+    }
+    if (argument.toLowerCase() === "delete") {
+      return message.reply({ content: "Are you sure you want to permanently delete this private pet room? Your pet and coins will stay safe.",
+        components: [new ActionRowBuilder().addComponents(new ButtonBuilder()
+          .setCustomId("sugar-pets:delete-room-confirm:" + userId + ":" + message.channel.id)
+          .setLabel("Yes, delete my room").setStyle(ButtonStyle.Danger))], allowedMentions: { repliedUser: false } });
+    }
+    return reply("Use !pet room redesign to refresh your private room or !pet room delete to remove it ♡");
+  }
   if (action === "delete") {
     if (!canDeletePet(vip)) return reply("Deleting pets is a VIP-only feature ♡");
     if (!profile) return reply("You have no pets to delete ♡");
@@ -776,6 +801,35 @@ export function attachPetSystem(client, store) {
       return interaction.reply({ embeds: [buildAdoptionEmbed(null, vip)], components: [buildSpeciesSelect(interaction.user.id, vip)], ephemeral: true });
     }
 
+    if (interaction.isButton?.() && interaction.customId === "sugar-pets:delete-menu") {
+      return interaction.reply({ content: "What would you like to delete? ♡", components: [new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId("sugar-pets:delete-pet").setLabel("Delete a Pet").setStyle(ButtonStyle.Danger),
+        new ButtonBuilder().setCustomId("sugar-pets:delete-room").setLabel("Delete My Pet Room").setStyle(ButtonStyle.Secondary),
+      )], ephemeral: true });
+    }
+
+    if (interaction.isButton?.() && interaction.customId === "sugar-pets:delete-room") {
+      const topic = "Sugar personal pet room for " + interaction.user.id;
+      const channels = await interaction.guild.channels.fetch().catch(() => interaction.guild.channels.cache);
+      const room = channels.find((channel) => channel?.type === ChannelType.GuildText && channel.topic === topic);
+      if (!room) return interaction.reply({ content: "You don't have a private pet room to delete ♡", ephemeral: true });
+      return interaction.reply({
+        content: "Are you sure you want to permanently delete your private pet room **#" + room.name + "**? Your pet and coins will stay safe.",
+        components: [new ActionRowBuilder().addComponents(new ButtonBuilder()
+          .setCustomId("sugar-pets:delete-room-confirm:" + interaction.user.id + ":" + room.id)
+          .setLabel("Yes, delete my room").setStyle(ButtonStyle.Danger))], ephemeral: true,
+      });
+    }
+
+    if (interaction.isButton?.() && interaction.customId.startsWith("sugar-pets:delete-room-confirm:")) {
+      const [, , , ownerId, channelId] = interaction.customId.split(":");
+      if (interaction.user.id !== ownerId) return interaction.reply({ content: "This room deletion belongs to someone else ♡", ephemeral: true });
+      if (!/^\d{17,20}$/.test(channelId ?? "")) return interaction.reply({ content: "Invalid room deletion request ♡", ephemeral: true });
+      const room = await interaction.guild.channels.fetch(channelId).catch(() => null);
+      if (!room || room.type !== ChannelType.GuildText || room.topic !== "Sugar personal pet room for " + ownerId) return interaction.update({ content: "Your private pet room could not be found; nothing was deleted ♡", components: [] });
+      await room.delete("Private pet room deletion requested by its owner.");
+      return interaction.update({ content: "Your private pet room was deleted. Your pet and coins are safe ♡", components: [] });
+    }
     if (interaction.isButton?.() && interaction.customId === "sugar-pets:delete-pet") {
       const profile = store.get(interaction.guildId, interaction.user.id);
       if (!canDeletePet(isVip(interaction.member))) return interaction.reply({ content: "Deleting pets is a VIP-only feature ♡", ephemeral: true });
