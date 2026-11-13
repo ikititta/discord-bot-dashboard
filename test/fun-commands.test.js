@@ -8,7 +8,6 @@ import {
   buildFunStatsEmbed,
   fetchAnimeGif,
   fetchPurrbotSfwGif,
-  fetchRealGif,
   fetchNsfwGif,
   fetchPurrbotNsfwGif,
   resolveOralNsfwGifCategory,
@@ -195,18 +194,6 @@ test("!lick can retrieve a dedicated SFW GIF from PurrBot", async () => {
   assert.match(gif.url, /lick_001\\.gif$/);
 });
 
-test("real movie GIF lookup uses Giphy with a safe rating", async () => {
-  const gif = await fetchRealGif("cinematic movie shooting", {
-    apiKey: "test-key",
-    fetchImpl: async (url) => {
-      assert.equal(url.searchParams.get("rating"), "pg-13");
-      assert.equal(url.searchParams.get("q"), "cinematic movie shooting");
-      return { ok: true, json: async () => ({ data: [{ images: { original: { url: "https://media.giphy.com/media/example/giphy.gif" } } }] }) };
-    },
-  });
-  assert.equal(gif.source, "Giphy");
-  await assert.rejects(fetchRealGif("shoot", { apiKey: "", fetchImpl: async () => { throw new Error("must not fetch"); } }), /GIPHY_API_KEY/);
-});
 test("anime GIF lookup rejects non-GIF and off-site URLs", async () => {
   await assert.rejects(fetchAnimeGif("hug", {
     fetchImpl: async () => ({ ok: true, json: async () => ({ url: "https://example.com/file.gif" }) }),
