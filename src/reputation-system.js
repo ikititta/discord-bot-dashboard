@@ -128,7 +128,7 @@ export function makePanelPayload() {
       "♡ Choose **Give Positive** or **Give Negative**, then select a member.\n" +
       "♡ Each member has one active vote per person and may change it later.\n" +
       "♡ Vote honestly and respectfully. Harassment, threats, private information, and vote manipulation are not allowed.\n\n" +
-      "Use the buttons below to vote. All reputation commands are listed in the Commands thread in this channel.")
+      "Use the buttons below to vote. Type `!rep` to view your reputation, `!rep @member` to view another member, `!rep stats [@member]` for vote totals, `!rep comments [@member]` for comments, or `!rep top` for the rankings.")
     .setFooter({ text: "Kindness looks good on everyone ♡" });
   return { embeds: [embed], components: [
     new ActionRowBuilder().addComponents(
