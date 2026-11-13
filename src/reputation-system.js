@@ -12,7 +12,8 @@ const PREFIX = "sugar-reputation:";
 const MAX_COMMENTS = 5000;
 const MAX_COMMENT_LENGTH = 800;
 const REPUTATION_CHANNEL_ID = "1570221195222057150";
-export const REPUTATION_COMMANDS_CHANNEL_ID = "1569930648804925522";\nexport const REPUTATION_COMMANDS_TITLE = "୨୧ 𝓡𝓮𝓹𝓾𝓽𝓪𝓽𝓲𝓸𝓷 · 𝓒𝓸𝓶𝓶𝓪𝓷𝓭𝓼 ♡";
+export const REPUTATION_COMMANDS_CHANNEL_ID = "1569930648804925522";
+export const REPUTATION_COMMANDS_TITLE = "୨୧ 𝓡𝓮𝓹𝓾𝓽𝓪𝓽𝓲𝓸𝓷 · 𝓒𝓸𝓶𝓶𝓪𝓷𝓭𝓼 ♡";
 
 export class ReputationStore {
   constructor(dataDir) {
