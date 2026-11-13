@@ -18,6 +18,7 @@ import {
   isVipOnlyFunCommand,
   normalizeFunRole,
   normalizeFunDominance,
+  resolveDominancePair,
   resolveGifPairing,
   resolveNsfwGifCategory,
   shouldPreferAnalGif,
@@ -70,6 +71,29 @@ test("fun commands use the existing Kittisugar gender role IDs only", () => {
   assert.equal(getFunCommandDefinition("smirk").gif, "smug");
   assert.equal(normalizeFunDominance({ roles: { cache: { values: () => [{ name: "꒰ 𝓢𝓾𝓫𝓶𝓲𝓼𝓼𝓲𝓿𝓮 ! ꒱" }] } } }), -2);
   assert.equal(normalizeFunDominance({ roles: { cache: { values: () => [{ name: "꒰ 𝓜𝓸𝓼𝓽𝓵𝔂 𝓓𝓸𝓶𝓲𝓷𝓪𝓷𝓽 ! ꒱" }] } } }), 1);
+});
+
+test("dominance pairing resolves top and bottom independently of gender and command author", () => {
+  const cases = [
+    [2, -2, "actor", "target"],
+    [2, -1, "actor", "target"],
+    [1, -2, "actor", "target"],
+    [1, -1, "actor", "target"],
+    [-2, 2, "target", "actor"],
+    [-1, 1, "target", "actor"],
+    [0, 2, "target", "actor"],
+    [0, 1, "target", "actor"],
+    [0, -2, "actor", "target"],
+    [0, -1, "actor", "target"],
+    [2, 0, "actor", "target"],
+    [-2, 0, "target", "actor"],
+  ];
+  for (const [actor, target, dominant, submissive] of cases) {
+    assert.deepEqual(resolveDominancePair(actor, target), { mode: "directional", dominant, submissive });
+  }
+  for (const [actor, target] of [[2, 1], [1, 2], [-2, -1], [-1, -2], [0, 0], [null, 2], [2, null]]) {
+    assert.deepEqual(resolveDominancePair(actor, target), { mode: "neutral", dominant: null, submissive: null });
+  }
 });
 
 test("VIP access recognizes the live VIP role name if its configured ID changed", () => {
