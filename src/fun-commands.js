@@ -200,7 +200,12 @@ export async function fetchRealGif(query, { fetchImpl = fetch, apiKey = process.
   if (!response.ok) throw new Error("Giphy returned HTTP " + response.status + ".");
   const payload = await response.json();
   const selected = (Array.isArray(payload?.data) ? payload.data : []).find((item) => item?.images?.original?.url);
-  const gifUrl = validatedGifUrl(selected?.images?.original?.url, "media.giphy.com");
+  let gifUrl;
+  try { gifUrl = new URL(selected?.images?.original?.url ?? ""); }
+  catch { throw new Error("Giphy returned an invalid GIF URL."); }
+  if (gifUrl.protocol !== "https:" || !/^media\\d*\\.giphy\\.com$/.test(gifUrl.hostname) || !gifUrl.pathname.endsWith(".gif")) {
+    throw new Error("Giphy returned an invalid GIF URL.");
+  }
   return { url: gifUrl.toString(), anime: "", pairing: null, source: "Giphy" };
 }
 
