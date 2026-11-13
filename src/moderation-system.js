@@ -106,7 +106,7 @@ async function findModerationChannel(guild, settings) {
   const candidates = [
     settings.get(guild.id).reportsChannelId,
     REPORTS_CHANNEL_ID,
-  ].filter((id, index, all) => /^d{17,20}$/.test(id ?? "") && all.indexOf(id) === index);
+  ].filter((id, index, all) => /^\\d{17,20}$/.test(id ?? "") && all.indexOf(id) === index);
 
   for (const id of candidates) {
     const channel = await guild.channels.fetch(id).catch(() => null);
