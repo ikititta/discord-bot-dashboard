@@ -396,11 +396,11 @@ async function handleFunAction(message, store, name, args, fetchImpl) {
       gif = await fetchPurrbotNsfwGif(category, { fetchImpl });
     } else if (definition.gif) {
       const style = store.getGifStyle?.(message.guild.id, message.author.id) ?? "anime";
-      if (name === "lick") { try { gif = await fetchPurrbotSfwGif("lick", { fetchImpl }); } catch (error) { console.warn("[fun] PurrBot lick GIF unavailable; trying anime fallback: " + error.message); } }
-      if (!gif && style === "real") {
+      if (style === "real") {
         const query = REAL_GIF_QUERIES[name] ?? (definition.gif + " reaction gif");
-        try { gif = await fetchRealGif(query, { fetchImpl }); } catch (error) { console.warn("[fun] real GIF lookup failed; trying anime fallback: " + error.message); }
+        try { gif = await fetchRealGif(query, { fetchImpl }); } catch (error) { console.warn("[fun] real GIF lookup failed; trying the anime provider: " + error.message); }
       }
+      if (!gif && name === "lick") { try { gif = await fetchPurrbotSfwGif("lick", { fetchImpl }); } catch (error) { console.warn("[fun] PurrBot lick GIF unavailable; trying anime fallback: " + error.message); } }
       if (!gif) gif = await fetchAnimeGif(definition.gif, { fetchImpl, actorRole: normalizeFunRole(message.member), targetRole });
     }
   }
