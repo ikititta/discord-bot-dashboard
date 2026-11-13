@@ -12,6 +12,7 @@ import {
   COMMANDS_CHANNEL_TOPIC,
   REPUTATION_ONLY_CHANNEL_ID,
   COMMANDS_INFO_CHANNEL_ID,
+  OBSOLETE_COMMANDS_CHANNEL_ID,
 } from "../src/commands-channel.js";
 
 test("commands guide is configured in the Kittisugar category", () => {
@@ -19,6 +20,7 @@ test("commands guide is configured in the Kittisugar category", () => {
   assert.equal(COMMANDS_CHANNEL_NAME, "📖｜୨୧・commands");
   assert.ok(!COMMANDS_CHANNEL_TOPIC.includes("sticky"));
   assert.equal(COMMANDS_INFO_CHANNEL_ID, "1570257241511170150");
+  assert.equal(OBSOLETE_COMMANDS_CHANNEL_ID, "1570839239396958218");
 });
 
 test("commands panel contains the same interactive category buttons for one-shot posts", () => {
@@ -29,20 +31,17 @@ test("commands panel contains the same interactive category buttons for one-shot
   assert.match(payload.embeds[0].data.footer.text, /Select a category/);
   const ids = payload.components.flatMap((row) => row.components.map((button) => button.data.custom_id));
   assert.deepEqual(ids, [
-    "sugar-commands:solo", "sugar-commands:soloNsfw", "sugar-commands:relationship",
-    "sugar-commands:affection", "sugar-commands:interactions", "sugar-commands:nsfw",
+    "sugar-commands:solo", "sugar-commands:couple", "sugar-commands:relationship",
     "sugar-commands:community", "sugar-commands:pets", "sugar-commands:functional",
   ]);
+  assert.ok(!ids.some((id) => id.toLowerCase().includes("nsfw")));
 });
 
 test("each category exposes current command syntax and access requirements", () => {
   const cases = {
-    solo: ["!cry", "!dance", "Solo · no sexual"],
-    soloNsfw: ["Solo · VIP · NSFW", "!masturbate @member"],
+    solo: ["!cry", "!dance", "no solo NSFW actions"],
+    couple: ["!hug @member", "!kiss @member", "!cuddle @member", "!shoot @member", "!fuck @member", "!masturbate @member", "!oral @member", "!anal @member", "VIP", "30-second timeout"],
     relationship: ["!couple @member", "!propose @member", "!divorce"],
-    affection: ["!hug @member", "!kiss @member", "!cuddle @member"],
-    interactions: ["!tease @member", "!seduce @member", "!kill @member", "!shoot @member", "30-second timeout", "playful two-person interaction"],
-    nsfw: ["!fuck @member", "!masturbate @member", "!oral @member", "!anal @member"],
     community: ["!rep", "Confessions, polls", "!rep comments"],
     pets: ["!pet adopt", "!pet select <number>", "!pet buy <treat|toy|potion>", "!pet gif", "!pet delete"],
     functional: ["/delete amount:", "/vip-delete", "/mod-delete", "!quote", "!profile", "/priv-chat create"],
