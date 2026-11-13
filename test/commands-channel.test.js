@@ -12,7 +12,7 @@ import {
   COMMANDS_CHANNEL_TOPIC,
 } from "../src/commands-channel.js";
 
-test("commands guide is configured in the supplied Fun category", () => {
+test("commands guide is configured in the Kittisugar category", () => {
   assert.equal(COMMANDS_CATEGORY_ID, "1568179038625857576");
   assert.equal(COMMANDS_CHANNEL_NAME, "📖｜୨୧・commands");
   assert.ok(COMMANDS_CHANNEL_TOPIC.includes("sticky"));
