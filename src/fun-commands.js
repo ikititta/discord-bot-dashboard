@@ -56,6 +56,7 @@ const SOLO_COMMANDS = Object.freeze({
   happy: { gif: "happy", text: "is happy" },
   blush: { gif: "blush", text: "is blushing" },
   smug: { gif: "smug", text: "looks smug" },
+  smirk: { gif: "smug", text: "is smirking" },
   wave: { gif: "wave", text: "has waved hello" },
   facepalm: { gif: "facepalm", text: "is facepalming" },
   wink: { gif: "wink", text: "has winked" },
