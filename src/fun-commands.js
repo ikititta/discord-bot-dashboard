@@ -202,21 +202,15 @@ export function selectMasturbateGif(actorRole, targetRole, { catalog = MASTURBAT
   const selected = valid[Math.min(valid.length - 1, Math.floor(random() * valid.length))];
   return { url: typeof selected === 'string' ? selected : selected.url, anime: typeof selected === 'string' ? '' : String(selected.anime ?? '').slice(0, 80), pairing, source: 'Kittisugar curated catalog' };
 }
-export function shouldPreferAnalGif(actorRole, targetRole, actorDominance = null, targetDominance = null) {
-  const bothWomen = actorRole === "female" && targetRole === "female";
-  // PurrBot's generic "anal" category cannot guarantee actor/target direction
-  // for mixed-gender pairs. Do not use it for the male-submissive/female-dominant
-  // case: that can return a GIF depicting the opposite action.
-  return bothWomen;
-}
-
 export function resolveNsfwGifCategory(actorRole, targetRole, actorDominance = null, targetDominance = null) {
-  // Preserve the gender pairing first: PurrBot's yaoi category is male-male.
-  // Its generic anal category cannot guarantee the genders shown in the GIF.
+  // Same-gender pairings use the provider's gender-specific categories.
+  if (actorRole === "female" && targetRole === "female") return "yuri";
   if (actorRole === "male" && targetRole === "male") return "yaoi";
-  // For two women, prefer anal as requested; otherwise use the gender-specific yuri category.
-  if (actorRole === "female" && targetRole === "female") return "anal";
-  if (shouldPreferAnalGif(actorRole, targetRole, actorDominance, targetDominance)) return "anal";
+
+  // PurrBot currently exposes only a generic "fuck" category for mixed-gender
+  // pairings; it has no cowgirl/reverse-cowgirl or doggy-style filters.
+  // Keep the dominance resolver available for future tagged providers, but do
+  // not pretend this generic category guarantees a particular position.
   return "fuck";
 }
 
