@@ -259,10 +259,10 @@ export async function fetchPurrbotSfwGif(category, { fetchImpl = fetch } = {}) {
 
 
 export async function fetchNsfwGif({ fetchImpl = fetch, actorRole = "neutral", targetRole = null, actorDominance = null, targetDominance = null } = {}) {
-  // PurrBot's generic categories cannot guarantee which participant is on top.
-  // Only use them for neutral/random pairings; directional pairings need a
-  // position-tagged GIF source, otherwise Sugar could show the roles reversed.
-  if (resolveDominancePair(actorDominance, targetDominance).mode === "directional") return null;
+  // The current provider cannot filter the top/bottom position. Keep GIFs
+  // available rather than suppressing every directional pairing; dominance
+  // still resolves in resolveDominancePair, but this generic GIF is not
+  // guaranteed to depict that exact position.
   const category = resolveNsfwGifCategory(actorRole, targetRole, actorDominance, targetDominance);
   const response = await fetchImpl(PURRBOT_API_BASE + "/img/nsfw/" + category + "/gif", {
     headers: { "User-Agent": "SugarDiscordBot/1.0 (https://github.com/ikititta/discord-bot-dashboard)" },
@@ -454,6 +454,9 @@ async function handleFunAction(message, store, name, args, fetchImpl) {
     if (name === "fuck" || name === "anal") gif = await fetchNsfwGif({ fetchImpl, actorRole, targetRole, actorDominance, targetDominance });
     else if (name === "masturbate") {
       gif = selectMasturbateGif(actorRole, targetRole);
+      // The curated gender-specific catalog is currently empty. Fall back to
+      // the working generic NSFW source so the command still returns a GIF.
+      if (!gif) gif = await fetchNsfwGif({ fetchImpl, actorRole, targetRole, actorDominance, targetDominance });
     } else if (definition.nsfwGif) {
       const category = name === "oral" ? resolveOralNsfwGifCategory(targetRole) : definition.nsfwGif;
       gif = await fetchPurrbotNsfwGif(category, { fetchImpl });
@@ -465,7 +468,7 @@ async function handleFunAction(message, store, name, args, fetchImpl) {
   catch (error) { console.warn(`[fun] GIF lookup failed for !${name}: ${error.message}`); }
 
   if (!gif) {
-    const content = name === "masturbate" ? actionText + "\nNo hay un GIF verificado para esta combinación de géneros todavía ♡" : actionText;
+    const content = actionText + (name === "masturbate" ? "\nNo se encontró un GIF disponible esta vez ♡" : "");
     await safeReply(message, { content }, [message.author.id, ...(targetUser ? [targetUser.id] : [])]);
     return true;
   }
