@@ -186,7 +186,18 @@ export function selectMasturbateGif(actorRole, targetRole, { catalog = MASTURBAT
   const selected = valid[Math.min(valid.length - 1, Math.floor(random() * valid.length))];
   return { url: typeof selected === 'string' ? selected : selected.url, anime: typeof selected === 'string' ? '' : String(selected.anime ?? '').slice(0, 80), pairing, source: 'Kittisugar curated catalog' };
 }
-export function resolveNsfwGifCategory(actorRole, targetRole) {
+export function shouldPreferAnalGif(actorRole, targetRole, actorDominance = null, targetDominance = null) {
+  const bothWomen = actorRole === "female" && targetRole === "female";
+  const maleVerySubmissiveAndOtherVeryDominant =
+    (actorRole === "male" && actorDominance === -2 && targetDominance === 2) ||
+    (targetRole === "male" && targetDominance === -2 && actorDominance === 2);
+  return bothWomen || maleVerySubmissiveAndOtherVeryDominant;
+}
+
+export function resolveNsfwGifCategory(actorRole, targetRole, actorDominance = null, targetDominance = null) {
+  // PurrBot has a documented anal GIF category, but no dedicated dildo tag.
+  // Prefer its anal category for these pairings without swapping actor/target.
+  if (shouldPreferAnalGif(actorRole, targetRole, actorDominance, targetDominance)) return "anal";
   if (actorRole === "female" && targetRole === "female") return "yuri";
   if (actorRole === "male" && targetRole === "male") return "yaoi";
   return "fuck";
@@ -230,8 +241,8 @@ export async function fetchPurrbotSfwGif(category, { fetchImpl = fetch } = {}) {
 }
 
 
-export async function fetchNsfwGif({ fetchImpl = fetch, actorRole = "neutral", targetRole = null } = {}) {
-  const category = resolveNsfwGifCategory(actorRole, targetRole);
+export async function fetchNsfwGif({ fetchImpl = fetch, actorRole = "neutral", targetRole = null, actorDominance = null, targetDominance = null } = {}) {
+  const category = resolveNsfwGifCategory(actorRole, targetRole, actorDominance, targetDominance);
   const response = await fetchImpl(PURRBOT_API_BASE + "/img/nsfw/" + category + "/gif", {
     headers: { "User-Agent": "SugarDiscordBot/1.0 (https://github.com/ikititta/discord-bot-dashboard)" },
     signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
@@ -419,7 +430,7 @@ async function handleFunAction(message, store, name, args, fetchImpl) {
 
   let gif = null;
   try {
-    if (name === "fuck") gif = await fetchNsfwGif({ fetchImpl, actorRole: normalizeFunRole(message.member), targetRole });
+    if (name === "fuck") gif = await fetchNsfwGif({ fetchImpl, actorRole, targetRole, actorDominance, targetDominance });
     else if (name === "masturbate") {
       gif = selectMasturbateGif(actorRole, targetRole);
     } else if (definition.nsfwGif) {
