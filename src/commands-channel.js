@@ -156,6 +156,7 @@ const refreshQueues = new Map();
 export function attachCommandsChannel(client) {
   client.on(Events.MessageCreate, async (message) => {
     if (!message.guild || message.author?.bot || message.webhookId ||
+        message.channelId === REPUTATION_ONLY_CHANNEL_ID ||
         !/^!commands$/i.test(String(message.content ?? "").trim())) return;
     if (message.channel?.topic === COMMANDS_CHANNEL_TOPIC) return;
     await message.reply({
