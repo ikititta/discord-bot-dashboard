@@ -266,6 +266,17 @@ test("!fuck selects NSFW GIF categories from both members' gender roles", async 
   });
 });
 
+test("!fuck does not show a reversed GIF for a dominant woman and submissive man", async () => {
+  const result = await fetchNsfwGif({
+    actorRole: "female",
+    targetRole: "male",
+    actorDominance: 2,
+    targetDominance: -2,
+    fetchImpl: async () => { throw new Error("must not request an unverified direction"); },
+  });
+  assert.equal(result, null);
+});
+
 test("!fuck rejects SFW or wrong-gender GIF results instead of falling back", async () => {
   await assert.rejects(fetchNsfwGif({
     actorRole: "female",
