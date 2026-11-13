@@ -39,8 +39,8 @@ test("commands panel contains the same interactive category buttons for one-shot
 
 test("each category exposes current command syntax and access requirements", () => {
   const cases = {
-    solo: ["!cry", "!dance", "no solo NSFW actions"],
-    couple: ["!hug @member", "!kiss @member", "!cuddle @member", "!shoot @member", "!fuck @member", "!masturbate @member", "!oral @member", "!anal @member", "VIP", "!funstyle", "does not timeout anyone"],
+    solo: ["!cry", "!dance", "!smirk", "no solo NSFW actions"],
+    couple: ["!hug @member", "!kiss @member", "!cuddle @member", "!shoot @member", "!fuck @member", "!masturbate @member", "!oral @member", "!anal @member", "VIP", "does not timeout anyone"],
     relationship: ["!couple @member", "!propose @member", "!divorce"],
     community: ["!rep", "Confessions, polls", "Fun commands can also be used directly", "!rep comments"],
     pets: ["!pet adopt", "!pet select <number>", "!pet buy <treat|toy|potion>", "!pet gif", "!pet room redesign", "!pet room delete", "!pet delete"],
