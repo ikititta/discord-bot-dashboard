@@ -202,7 +202,15 @@ export function isVerifiedAdult(member) {
 }
 
 export function isVip(member) {
-  return Boolean(member?.roles?.cache?.has(FUN_VIP_ROLE_ID));
+  const roles = member?.roles?.cache;
+  if (!roles) return false;
+  // The configured ID is the primary check. Also recognize the live role by
+  // its normalized name so a recreated/renamed Discord role does not silently
+  // lock out VIP benefits while the stored ID is stale.
+  if (roles.has?.(FUN_VIP_ROLE_ID)) return true;
+  return typeof roles.some === "function"
+    ? roles.some((role) => String(role?.name ?? "").normalize("NFKD").toLowerCase().replace(/\\p{M}/gu, "").replace(/[^a-z0-9]/g, "") === "vip")
+    : false;
 }
 
 export const KILL_TIMEOUT_MS = 30_000;
