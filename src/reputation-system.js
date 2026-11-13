@@ -11,7 +11,7 @@ const MEMBER_ROLE_ID = "1568188534836428812";
 const PREFIX = "sugar-reputation:";
 const MAX_COMMENTS = 5000;
 const MAX_COMMENT_LENGTH = 800;
-const REPUTATION_CHANNEL_ID = "1570221195222057150";
+const REPUTATION_CHANNEL_ID = "1570221195222057150";\nexport const REPUTATION_COMMANDS_CHANNEL_ID = "1569930648804925522";\nexport const REPUTATION_COMMANDS_TITLE = "୨୧ 𝓡𝓮𝓹𝓾𝓽𝓪𝓽𝓲𝓸𝓷 · 𝓒𝓸𝓶𝓶𝓪𝓷𝓭𝓼 ♡";
 
 export class ReputationStore {
   constructor(dataDir) {
@@ -170,6 +170,41 @@ async function ensureStickyReputationPanels(channel, client, store, guild) {
     if (existing) await existing.edit(payload); else await channel.send(payload);
     for (const duplicate of matches) await duplicate.delete().catch((error) => { if (error?.code !== 10008) console.error("[reputation] duplicate panel could not be removed: " + error.message); });
   }
+}
+
+export function buildReputationCommandsEmbed() {
+  return new EmbedBuilder().setColor(COLOR).setTitle(REPUTATION_COMMANDS_TITLE)
+    .setDescription([
+      "**Reputation commands**",
+      "`!rep` — view your own reputation score, votes and recent comments.",
+      "`!rep @member` — view another member's reputation.",
+      "`!rep stats [@member]` — view total reputation, positive and negative votes, and comments received.",
+      "`!rep comments [@member]` — view recent reputation comments.",
+      "`!rep top` — view the positive and negative reputation rankings.",
+      "",
+      "**Reputation panel**",
+      "Use the Give Positive and Give Negative buttons in the reputation panel to vote. Each member has one active vote per person and may change it later.",
+    ].join("\\n"))
+    .setFooter({ text: "Only reputation commands are listed here ♡" });
+}
+
+async function ensureReputationCommandsPanel(guild, client) {
+  const channel = await guild.channels.fetch(REPUTATION_COMMANDS_CHANNEL_ID).catch(() => null);
+  if (!channel || channel.type !== ChannelType.GuildText) {
+    console.warn("[reputation] commands-only channel " + REPUTATION_COMMANDS_CHANNEL_ID + " was not found; no channel was created.");
+    return null;
+  }
+  const recent = await channel.messages.fetch({ limit: 100 });
+  const matches = [...recent.values()].filter((message) =>
+    message.author?.id === client.user.id && message.embeds.some((embed) => embed.title === REPUTATION_COMMANDS_TITLE),
+  ).sort((a, b) => a.createdTimestamp - b.createdTimestamp);
+  const existing = matches.shift();
+  if (existing) await existing.edit({ embeds: [buildReputationCommandsEmbed()] });
+  else await channel.send({ embeds: [buildReputationCommandsEmbed()] });
+  for (const duplicate of matches) await duplicate.delete().catch((error) => {
+    if (error?.code !== 10008) console.error("[reputation] duplicate commands panel could not be removed: " + error.message);
+  });
+  return channel;
 }
 
 async function setup(guild, client, store) {
