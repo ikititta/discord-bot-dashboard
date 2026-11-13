@@ -419,8 +419,9 @@ export function attachFunCommands(client, { store, fetchImpl = fetch, token, app
     if (interaction.isChatInputCommand?.() && ["stats", "vip"].includes(interaction.commandName)) {
       try {
         const targetUser = interaction.commandName === "vip" ? interaction.options.getUser("member") ?? interaction.user : interaction.user;
-        if (!isVip(interaction.member)) { await interaction.reply({ content: VIP_STATS_MESSAGE, ephemeral: true }); return; }
-        const targetMember = targetUser.id === interaction.user.id ? interaction.member : await interaction.guild.members.fetch(targetUser.id).catch(() => null);
+        const requesterMember = await interaction.guild.members.fetch(interaction.user.id).catch(() => null);
+        if (!isVip(requesterMember)) { await interaction.reply({ content: VIP_STATS_MESSAGE, ephemeral: true }); return; }
+        const targetMember = targetUser.id === interaction.user.id ? requesterMember : await interaction.guild.members.fetch(targetUser.id).catch(() => null);
         if (!targetMember) { await interaction.reply({ content: "Member not found in Kittisugar.", ephemeral: true }); return; }
         const stats = store.getStats(interaction.guildId, targetUser.id);
         const embed = buildFunStatsEmbed({ user: { ...targetUser, id: targetUser.id, displayName: displayName(targetMember, targetUser) }, stats, full: true, received: targetUser.id !== interaction.user.id, relationship: store.getRelationship(interaction.guildId, targetUser.id), history: store.getRelationshipHistory(interaction.guildId, targetUser.id) });
