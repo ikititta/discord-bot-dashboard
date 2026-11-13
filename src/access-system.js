@@ -169,24 +169,26 @@ function channelMention(guild, names) {
 }
 
 export function buildGuidePayload(guild) {
+  const dashboard = guild?.channels?.cache?.find((channel) =>
+    channel.type === ChannelType.GuildText && normalizeName(channel.name) === "dashboard",
+  );
   const embed = new EmbedBuilder()
     .setColor(COLOR)
-    .setTitle(`୨୧ ${toRoyalBold("Kittisugar Guide!")} ♡`)
+    .setTitle(`${toRoyalBold("Kittisugar Guide!")} 🎀`)
     .setDescription([
-      "A little guide of Kittisugar ♡ Tap a channel mention to open it.",
+      "Welcome to Kittisugar! Tap any channel mention below to open it.",
       "",
-      "Use `!commands` to open Sugar's complete command guide and browse commands by category.",
-      "`!profile [@member]` — view a member profile.",
-      "`!pet adopt` — open the pet adoption menu.",
+      "When you join the server, you can always find this guide again in " + (dashboard ? `<#${dashboard.id}>` : "#dashboard") + ".",
       "",
-      "Mention Sugar or address the bot directly to start a conversation ♡",
+      "`!commands` — explore all Sugar commands.",
+      "`!quote` — reply to someone's message with `!quote` to save/share it as a quote.",
+      "`!smile` — try a fun interaction command.",
       "",
-      "The channel directory below is generated from the server's current channel structure. Each channel appears once with its purpose.",
+      "You can also mention Sugar or address the bot directly to chat with her ♡",
     ].join("\n"))
     .setFooter({ text: "Kittisugar · Quick guide ♡" });
   return { embeds: [embed, ...buildServerMap(guild)] };
 }
-
 const CHANNEL_PURPOSES = {
   getaccess: "Start here: read the welcome panel and press Enter Server to begin verification.",
   welcomes: "See the welcome cards Sugar posts when new members join.",
@@ -210,99 +212,91 @@ const CHANNEL_PURPOSES = {
   media: "Share images, videos, and other media with the community.",
   nsfw: "Adult-only discussion and media. Follow the server's NSFW rules and channel restrictions.",
   memes: "Share memes and funny content with the community.",
-  games: "Talk about games and find people to play with.",
-  music: "Share and discuss music with other members.",
-  bots: "Use bot commands and interact with the server's bots.",
-};
-
-function isPrivateChatRoom(channel) {
+  games: "Talk about games and find peopfunction isPrivateChatRoom(channel) {
+  const name = normalizeName(channel.name);
   if (channel.id === PRIVATE_CHAT_LOBBY_CHANNEL_ID) return false;
   return channel.parentId === PRIVATE_CHAT_CATEGORY_ID ||
+    name.startsWith("privateroom") ||
+    name.startsWith("privatechatroom") ||
     String(channel.name ?? "").startsWith("👥");
 }
 
-function describeChannel(channel) {
-  if (channel.id === PRIVATE_CHAT_LOBBY_CHANNEL_ID) {
-    return "Create a new private chat room here with the Create Private Chat button or /priv-chat create. Private rooms are intentionally not listed in this directory.";
-  }
+function isExcludedGuideChannel(channel, categoryById) {
+  const name = normalizeName(channel.name);
+  const categoryName = normalizeName(categoryById.get(channel.parentId)?.name);
+  const excludedTerms = ["ticket", "transcript", "admin", "staff", "moderation", "modlog", "auditlog"];
+  if (excludedTerms.some((term) => name.includes(term) || categoryName.includes(term))) return true;
+  // The support channel only launches private tickets, so it is not a public destination.
+  if (["support", "tickets", "ticket", "ticketpanel"].includes(name)) return true;
+  return false;
+}
 
+function describeChannel(channel) {
+  if (channel.id === PRIVATE_CHAT_LOBBY_CHANNEL_ID ||
+      ["privatechat", "privatechatlobby", "createprivatechat"].includes(normalizeName(channel.name))) {
+    return "Create a private chat room here with the Create Private Chat button or /priv-chat create. Private rooms are not listed.";
+  }
   const key = normalizeName(channel.name);
   if (CHANNEL_PURPOSES[key]) return CHANNEL_PURPOSES[key];
-
   const topic = String(channel.topic ?? "").replace(/\s+/g, " ").trim();
   if (topic && normalizeName(topic) !== key) return topic.slice(0, 220);
-
   if (channel.type === ChannelType.GuildVoice || channel.type === ChannelType.GuildStageVoice) {
     return "Join this voice channel to talk with other members in real time.";
   }
-  if (channel.type === ChannelType.GuildForum) {
-    return "Create a post or join an existing discussion in this forum.";
-  }
-  if (channel.type === ChannelType.GuildAnnouncement) {
-    return "Read important server announcements and updates.";
-  }
-
-  const readable = String(channel.name ?? "this channel")
-    .replace(/[|｜]/g, " ")
-    .replace(/[_-]+/g, " ")
-    .trim();
+  if (channel.type === ChannelType.GuildForum) return "Create a post or join an existing discussion in this forum.";
+  if (channel.type === ChannelType.GuildAnnouncement) return "Read important server announcements and updates.";
+  const readable = String(channel.name ?? "this channel").replace(/[|｜]/g, " ").replace(/[_-]+/g, " ").trim();
   return `Use this channel for ${readable || "community"} discussions, posts, and related content.`;
 }
 
 function buildServerMap(guild) {
   if (!guild?.channels?.cache) return [];
-
-  const channels = [...guild.channels.cache.values()].filter((channel) =>
+  const all = [...guild.channels.cache.values()];
+  const categories = all.filter((channel) => channel.type === ChannelType.GuildCategory)
+    .sort((a, b) => (a.rawPosition ?? 0) - (b.rawPosition ?? 0));
+  const categoryById = new Map(categories.map((category) => [category.id, category]));
+  const visibleChannels = all.filter((channel) =>
     channel.type !== ChannelType.GuildCategory &&
     !channel.isThread?.() &&
-    !isPrivateChatRoom(channel),
+    !isPrivateChatRoom(channel) &&
+    !isExcludedGuideChannel(channel, categoryById),
   );
-  const categories = [...guild.channels.cache.values()]
-    .filter((channel) => channel.type === ChannelType.GuildCategory)
-    .sort((a, b) => (a.rawPosition ?? 0) - (b.rawPosition ?? 0));
-  const categoryIds = new Set(categories.map((category) => category.id));
 
-  const groups = categories.map((category) => ({
-    title: category.name,
-    channels: channels
-      .filter((channel) => channel.parentId === category.id)
+  // Keep each Discord category's channels together without exposing category names.
+  const orderedGroups = categories.map((category) => ({
+    channels: visibleChannels.filter((channel) => channel.parentId === category.id)
       .sort((a, b) => (a.rawPosition ?? 0) - (b.rawPosition ?? 0)),
   })).filter((group) => group.channels.length);
-
-  const uncategorized = channels
-    .filter((channel) => !channel.parentId || !categoryIds.has(channel.parentId))
+  const uncategorized = visibleChannels.filter((channel) => !categoryById.has(channel.parentId))
     .sort((a, b) => (a.rawPosition ?? 0) - (b.rawPosition ?? 0));
-  if (uncategorized.length) groups.push({ title: "Other channels", channels: uncategorized });
+  if (uncategorized.length) orderedGroups.push({ channels: uncategorized });
 
-  const embeds = [];
-  let description = "";
-  const flush = () => {
-    if (!description) return;
-    embeds.push(new EmbedBuilder()
-      .setColor(COLOR)
-      .setTitle(`୨୧ ${toRoyalBold("Server Channels")} ♡`)
-      .setDescription(description));
-    description = "";
-  };
+  const lines = orderedGroups.flatMap((group) =>
+    group.channels.map((channel) => `• <#${channel.id}> — ${describeChannel(channel)}`),
+  );
+  if (!lines.length) return [];
 
-  for (const group of groups) {
-    const heading = `**୨୧ ${group.title}**`;
-    if (description && description.length + heading.length + 2 > 3800) flush();
-    description += (description ? "\n\n" : "") + heading;
-
-    for (const channel of group.channels) {
-      const line = `• <#${channel.id}> — ${describeChannel(channel)}`;
-      if (description.length + line.length + 1 > 3800) {
-        flush();
-        description = heading;
-      }
-      description += "\n" + line;
+  const chunks = [];
+  let current = [];
+  let length = 0;
+  for (const line of lines) {
+    if (current.length && length + line.length + 1 > 3000 && chunks.length < 2) {
+      chunks.push(current);
+      current = [];
+      length = 0;
     }
+    current.push(line);
+    length += line.length + 1;
   }
-  flush();
+  if (current.length) chunks.push(current);
 
-  if (embeds.length > 9) {
-    throw new Error(`The server channel directory needs ${embeds.length} embeds; Discord allows at most 9 directory embeds plus the guide intro.`);
+  const titles = ["Getting Started", "Community", "Explore"];
+  return chunks.map((chunk, index) => new EmbedBuilder()
+    .setColor(COLOR)
+    .setTitle(`${toRoyalBold(titles[index] ?? "Explore")} 🎀`)
+    .setDescription(chunk.join("\n")));
+}
+ver channel directory needs ${embeds.length} embeds; Discord allows at most 9 directory embeds plus the guide intro.`);
   }
   return embeds;
 }
