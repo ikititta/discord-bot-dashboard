@@ -4,7 +4,8 @@ import {
 
 export const COMMANDS_CATEGORY_ID = "1568179038625857576";
 export const COMMANDS_CHANNEL_NAME = "📖｜୨୧・commands";
-export const COMMANDS_CHANNEL_TOPIC = "Kittisugar interactive all-commands panel · Sugar sticky";
+export const COMMANDS_CHANNEL_TOPIC = "Kittisugar interactive all-commands guide";
+export const COMMANDS_INFO_CHANNEL_ID = "1570257241511170150";
 export const COMMANDS_PANEL_TITLE = "୨୧ 𝓚𝓲𝓽𝓽𝓲𝓼𝓾𝓰𝓪𝓻 · 𝓒𝓸𝓶𝓶𝓪𝓷𝓭𝓼 ♡";
 export const MODERATION_COMMANDS_CHANNEL_ID = "1570277294868660264";
 export const MODERATION_PANEL_TITLE = "୨୧ 𝓜𝓸𝓭𝓮𝓻𝓪𝓽𝓲𝓸𝓷 · 𝓒𝓸𝓶𝓶𝓪𝓷𝓭𝓼 ♡";
@@ -138,7 +139,7 @@ export async function ensureCommandsChannel(guild, client) {
   return channel;
 }
 
-async function refreshCommandsSticky(channel, client) {
+async function upsertCommandsPanel(channel, client) {
   const recent = await channel.messages.fetch({ limit: 100 });
   const previous = [...recent.values()].filter((message) =>
     message.author?.id === client.user.id &&
