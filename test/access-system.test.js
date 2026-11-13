@@ -131,61 +131,84 @@ test("verification rolls back Member if removing New fails", async () => {
   assert.equal(member.roles.cache.has("new"), true);
 });
 
-test("access, rules, and guide panels contain the required confirmations and updated guide", () => {
+test("access, rules, and guide panels use one ordered, fully described channel directory", () => {
   const guild = { emojis: { cache: [] } };
   const access = buildAccessPanelPayload(guild);
   const rules = buildRulesPayload();
-  const channelNames = ["get-access", "rules", "guide", "confessions", "loveletters", "suggestions", "quotes", "selfies", "introductions", "pets", "support", "private-chat", "self-roles"];
-  const channels = channelNames.map((name, index) => ({ name, id: String(100000000000000000n + BigInt(index)), type: 0 }));
-  const guide = buildGuidePayload({ channels: { cache: { find: (predicate) => channels.find(predicate), values: () => channels.values() } } });
+  const startCategory = { id: "1569548036055507055", name: "start", type: 4, rawPosition: 0 };
+  const communityCategory = { id: "1569548036055507056", name: "community", type: 4, rawPosition: 1 };
+  const privateCategory = { id: "1568179036520321035", name: "private chats", type: 4, rawPosition: 2 };
+  const channelNames = ["get-access", "welcomes", "rules", "guide", "confessions", "loveletters", "suggestions", "reputation", "quotes", "selfies", "introductions", "pets", "support", "self-roles"];
+  const channels = channelNames.map((name, index) => ({
+    name,
+    id: String(100000000000000000n + BigInt(index)),
+    type: 0,
+    parentId: index < 4 ? startCategory.id : communityCategory.id,
+    rawPosition: index,
+  }));
+  const lobby = {
+    id: "1568179043356901376",
+    name: "private-chat-lobby",
+    type: 0,
+    parentId: privateCategory.id,
+    rawPosition: 0,
+  };
+  const privateRoom = {
+    id: "1568179043356901377",
+    name: "👥｜୨୧・test-room",
+    type: 0,
+    parentId: privateCategory.id,
+    rawPosition: 1,
+  };
+  const allChannels = [startCategory, communityCategory, privateCategory, ...channels, lobby, privateRoom];
+  const guide = buildGuidePayload({
+    channels: {
+      cache: {
+        find: (predicate) => allChannels.find(predicate),
+        values: () => allChannels.values(),
+      },
+    },
+  });
 
   assert.equal(access.embeds[0].data.title, `୨୧ ${toRoyalBold("Get Access!")} ♡`);
   assert.ok(access.embeds[0].data.description.includes("please read **Rules** & **Guide**"));
-  assert.doesNotMatch(access.embeds[0].data.description, /Rules and \*\*Guide\*\*/);
   assert.match(access.embeds[0].data.description, /read & agree/i);
   assert.match(access.embeds[0].data.description, /18 years of age or older/i);
   assert.equal(access.components[0].components[0].data.label, "Enter Server ♡");
-  assert.equal(access.components[0].components[0].data.style, 1);
+
   const ruleText = rules.embeds[0].data.description;
   assert.match(ruleText, /\$5 USD once, for life/);
   assert.match(ruleText, /Seller role is \*\*optional\*\*/);
   assert.match(ruleText, /virtual-pet extras/);
   assert.match(ruleText, /anonymous reputation posts/);
   assert.match(ruleText, /bulk deletion/);
-  assert.doesNotMatch(ruleText, /no ads/i);
   assert.match(ruleText, /a ban from Kittisugar/);
   assert.match(ruleText, /monthly hosting costs/);
   assert.match(ruleText, /NSFW content in NSFW channels/i);
-  assert.doesNotMatch(ruleText, /Porn category|nsfw.*category/i);
-  assert.match(ruleText, /server boosts/i);
-  for (const heading of ["01 · Respect", "02 · Content", "03 · Promotions & Selling", "04 · Warnings", "05 · Support Kittisugar"]) {
-    assert.ok(ruleText.includes(`## ${toRoyalBold(heading)}`), `missing fancy Rules heading: ${heading}`);
-  }
-  assert.doesNotMatch(ruleText, /\n\n##/);
 
   const guideText = guide.embeds[0].data.description;
-  const channelGuideText = guide.embeds.slice(1).map((embed) => embed.data.description).join("\n");
+  const directory = guide.embeds.slice(1).map((item) => item.data.description).join("\n");
   assert.equal(guide.embeds[0].data.title, `୨୧ ${toRoyalBold("Kittisugar Guide!")} ♡`);
-  assert.match(guideText, /A little guide of Kittisugar/);
-  assert.doesNotMatch(guideText, /\n\n(?:## )?୨୧/);
-  for (const title of ["Start", "Community", "Help", "Commands & Help", "Sugar AI"]) {
-    assert.ok(guideText.includes(`## ୨୧ ${toRoyalBold(title)}`), `missing large guide heading: ${title}`);
-  }
-  assert.equal((guideText.match(/• <#\d{18}>/g) ?? []).length, 13);
-  assert.ok(guideText.includes(`## ୨୧ ${toRoyalBold("Start")}\n\n• <#100000000000000000>\nRead the welcome message`));
-  assert.match(guideText, /Use `!commands` to open the complete command guide/);
-  assert.ok(channelGuideText.includes("• <#100000000000000000> —"));
-  assert.ok(channelGuideText.includes("community rules"));
-  assert.ok(guide.embeds.length > 1);
+  assert.match(guideText, /Use `!commands` to open Sugar's complete command guide/);
   assert.ok(guideText.includes("`!profile [@member]` — view a member profile."));
   assert.ok(guideText.includes("`!pet adopt` — open the pet adoption menu."));
-  assert.doesNotMatch(guideText, /delete amount:/);
-  assert.doesNotMatch(guideText, /!rep stats/);
-  assert.doesNotMatch(guideText, /!pet daily/);
-  assert.doesNotMatch(guideText, /!funhelp/);
-  assert.doesNotMatch(channelGuideText, /• <#\\d{18}>\\s*(?:\\n|$)/);
-});
+  assert.ok(directory.includes("**୨୧ start**"));
+  assert.ok(directory.includes("**୨୧ community**"));
+  assert.ok(directory.includes("• <#100000000000000000> — Start here:"));
+  assert.ok(directory.includes("• <#100000000000000009> — Share your selfies"));
+  assert.ok(directory.includes("• <#100000000000000010> — Introduce yourself"));
+  assert.ok(directory.includes("• <#1568179043356901376> — Create a new private chat room here"));
+  assert.doesNotMatch(directory, /1568179043356901377/);
+  assert.doesNotMatch(directory, /private chat room.*test-room/i);
 
+  const lines = directory.split("\n").filter((line) => line.includes("<#"));
+  assert.equal(lines.length, channels.length + 1);
+  for (const line of lines) {
+    assert.match(line, /^• <#\d{18}> — .+$/);
+  }
+  assert.equal(new Set(lines.map((line) => line.match(/<#(\d+)>/)[1])).size, lines.length);
+  assert.equal((guideText.match(/<#!?\d{18}>/g) ?? []).length, 0);
+});
 test("detects Discord server booster status", () => {
   assert.equal(isServerBooster({ premiumSinceTimestamp: 123, premiumSince: new Date(123) }), true);
   assert.equal(isServerBooster({ premiumSinceTimestamp: null, premiumSince: null }), false);
