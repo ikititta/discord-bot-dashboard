@@ -237,7 +237,7 @@ const CHANNEL_PURPOSES = {
 
 function describeChannel(channel) {
   const topic = String(channel.topic ?? "").trim();
-  if (topic) return topic.replace(/\\s+/g, " ").slice(0, 220);
+  if (topic) return topic.replace(/\s+/g, " ").slice(0, 220);
   const key = normalizeName(channel.name);
   if (CHANNEL_PURPOSES[key]) return CHANNEL_PURPOSES[key];
   if (channel.type === ChannelType.GuildVoice || channel.type === ChannelType.GuildStageVoice) {
@@ -280,7 +280,7 @@ function buildServerMap(guild) {
         description = "";
       }
       lines.push(line);
-      description = lines.join("\\n");
+      description = lines.join("\n");
     }
     if (description) embeds.push(new EmbedBuilder().setColor(COLOR).setTitle(`୨୧ ${toRoyalBold(group.title)} ♡`).setDescription(description));
   }
