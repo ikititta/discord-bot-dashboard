@@ -237,8 +237,8 @@ export async function fetchAnimeGif(category, {
   fetchImpl = fetch,
   actorRole = "neutral",
   targetRole = null,
-  actorDominance = 0,
-  targetDominance = 0,
+  actorDominance = null,
+  targetDominance = null,
 } = {}) {
   if (!GIF_CATEGORIES.has(category)) throw new Error("Invalid anime GIF category.");
 
