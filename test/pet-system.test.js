@@ -4,7 +4,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { ChannelType } from "discord.js";
-import { PetStore, formatPetChannelName, isUsersPetRoom, PET_ADOPTION_CHANNEL_IDS, ensurePetCategoryPosition, PET_ROOMS_CATEGORY_ID, PET_PANEL_CHANNEL_ID, PET_CATEGORY_BELOW_ID, applyNeedsDecay, chileDateKey, canAdoptPet, refreshPetUnlocks, migratePetWallet, removePetFromProfile, parsePetDeleteConfirmationId, canDeletePet, canAdoptSpecies, VIP_ONLY_PET_SPECIES } from "../src/pet-system.js";
+import { PetStore, formatPetChannelName, isUsersPetRoom, PET_ADOPTION_CHANNEL_IDS, ensurePetCategoryPosition, PET_ROOMS_CATEGORY_ID, PET_PANEL_CHANNEL_ID, PET_CATEGORY_BELOW_ID, applyNeedsDecay, chileDateKey, canAdoptPet, refreshPetUnlocks, migratePetWallet, removePetFromProfile, parsePetDeleteConfirmationId, canDeletePet, canAdoptSpecies, VIP_ONLY_PET_SPECIES, PET_HELP_CATEGORIES, buildPetCategoryEmbed } from "../src/pet-system.js";
 import { petSummary } from "../src/member-profile-system.js";
 
 test("virtual pet data persists across store restarts", () => {
@@ -287,4 +287,13 @@ test("pets panel buttons use the requested order, labels and Discord colours", (
     assert.ok(position > previous, "button is missing or out of order: " + button);
     previous = position;
   }
+});
+
+
+test("pet help categories list every supported command and mark VIP-only actions", () => {
+  const all = Object.values(PET_HELP_CATEGORIES).map((item) => item.body).join("\\n");
+  for (const command of ["!pet adopt", "!pet status", "!pet stats", "!pet redraw", "!pet daily", "!pet shop", "!pet buy", "!pet use", "!pet inventory", "!pet select", "!pet delete", "!pet name", "!pet color", "!pet breed", "!pet appearance", "!pet personality", "!pet room", "!pet outfit", "!pet slots", "!pet minigame"]) {
+    assert.ok(all.includes(command), "missing " + command);
+  }
+  assert.match(buildPetCategoryEmbed("vip").data.description, /VIP/);
 });
