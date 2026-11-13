@@ -125,35 +125,49 @@ export async function ensureCommandsChannel(guild, client) {
     EmbedLinks: true,
     CreatePublicThreads: false,
     SendMessagesInThreads: false,
-  }, "Allow members to trigger the commands sticky while keeping the guide channel tidy");
+  }, "Allow members to use the commands guide");
   await channel.permissionOverwrites.edit(client.user.id, {
     ViewChannel: true,
     SendMessages: true,
     ReadMessageHistory: true,
     EmbedLinks: true,
     ManageMessages: true,
-  }, "Allow Sugar to refresh the commands sticky");
+  }, "Allow Sugar to update the commands guide");
 
-  await refreshCommandsSticky(channel, client);
+  await upsertCommandsPanel(channel, client);
   console.info("[commands] interactive guide ready in #" + channel.name);
   return channel;
 }
 
 async function upsertCommandsPanel(channel, client) {
   const recent = await channel.messages.fetch({ limit: 100 });
-  const previous = [...recent.values()].filter((message) =>
+  const matches = [...recent.values()].filter((message) =>
     message.author?.id === client.user.id &&
     message.embeds.some((embed) => embed.title === COMMANDS_PANEL_TITLE),
-  ).sort((a, b) => a.createdTimestamp - b.createdTimestamp);
-  for (const message of previous) {
-    await message.delete().catch((error) => {
+  ).sort((a, b) => b.createdTimestamp - a.createdTimestamp);
+  const existing = matches.shift();
+  const panel = existing
+    ? await existing.edit(buildCommandsPanelPayload())
+    : await channel.send(buildCommandsPanelPayload());
+  for (const duplicate of matches) {
+    await duplicate.delete().catch((error) => {
       if (error?.code !== 10008) throw error;
     });
   }
-  return channel.send(buildCommandsPanelPayload());
+  return panel;
 }
 
-const refreshQueues = new Map();
+export async function ensureCommandsInfoPanel(guild, client) {
+  const channel = await guild.channels.fetch(COMMANDS_INFO_CHANNEL_ID).catch(() => null);
+  if (!channel || channel.type !== ChannelType.GuildText) {
+    console.warn("[commands] additional commands channel " + COMMANDS_INFO_CHANNEL_ID + " was not found; no channel was created.");
+    return null;
+  }
+  await upsertCommandsPanel(channel, client);
+  console.info("[commands] additional commands guide updated in #" + channel.name);
+  return channel;
+}
+
 export function attachCommandsChannel(client) {
   client.on(Events.MessageCreate, async (message) => {
     if (!message.guild || message.author?.bot || message.webhookId ||
@@ -175,22 +189,6 @@ export function attachCommandsChannel(client) {
       console.error("[commands] category response failed: " + error.message);
     });
   });
-
-  const refreshForMessage = (message) => {
-    if (!message.guild || message.author?.bot || message.webhookId ||
-        message.channel?.type !== ChannelType.GuildText ||
-        message.channel.parentId !== COMMANDS_CATEGORY_ID ||
-        message.channel.topic !== COMMANDS_CHANNEL_TOPIC) return;
-    const channel = message.channel;
-    const previous = refreshQueues.get(channel.id) ?? Promise.resolve();
-    const next = previous.catch(() => {}).then(() => refreshCommandsSticky(channel, client))
-      .catch((error) => console.error("[commands] sticky refresh failed: " + error.message));
-    refreshQueues.set(channel.id, next);
-    void next.finally(() => {
-      if (refreshQueues.get(channel.id) === next) refreshQueues.delete(channel.id);
-    });
-  };
-  client.on(Events.MessageCreate, refreshForMessage);
 
   const setup = (guild) => ensureCommandsChannel(guild, client).catch((error) =>
     console.error("[commands] setup failed in " + guild.id + ": " + error.message),
