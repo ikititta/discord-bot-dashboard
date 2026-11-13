@@ -195,11 +195,12 @@ export function shouldPreferAnalGif(actorRole, targetRole, actorDominance = null
 }
 
 export function resolveNsfwGifCategory(actorRole, targetRole, actorDominance = null, targetDominance = null) {
-  // PurrBot has a documented anal GIF category, but no dedicated dildo tag.
-  // Prefer its anal category for these pairings without swapping actor/target.
-  if (shouldPreferAnalGif(actorRole, targetRole, actorDominance, targetDominance)) return "anal";
-  if (actorRole === "female" && targetRole === "female") return "yuri";
+  // Preserve the gender pairing first: PurrBot's yaoi category is male-male.
+  // Its generic anal category cannot guarantee the genders shown in the GIF.
   if (actorRole === "male" && targetRole === "male") return "yaoi";
+  // For two women, prefer anal as requested; otherwise use the gender-specific yuri category.
+  if (actorRole === "female" && targetRole === "female") return "anal";
+  if (shouldPreferAnalGif(actorRole, targetRole, actorDominance, targetDominance)) return "anal";
   return "fuck";
 }
 
