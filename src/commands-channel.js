@@ -147,6 +147,11 @@ async function upsertCommandsPanel(channel, client, { sticky = false } = {}) {
   const panel = existing
     ? await existing.edit(buildCommandsPanelPayload())
     : await channel.send(buildCommandsPanelPayload());
+  if (sticky && !panel.pinned) {
+    await panel.pin("Keep the Kittisugar commands guide visible in this channel").catch((error) => {
+      console.error("[commands] could not pin the commands guide in #" + channel.name + ": " + error.message);
+    });
+  }
   for (const duplicate of matches) {
     await duplicate.delete().catch((error) => {
       if (error?.code !== 10008) throw error;
@@ -161,8 +166,8 @@ export async function ensureCommandsInfoPanel(guild, client) {
     console.warn("[commands] additional commands channel " + COMMANDS_INFO_CHANNEL_ID + " was not found; no channel was created.");
     return null;
   }
-  await upsertCommandsPanel(channel, client);
-  console.info("[commands] additional commands guide updated in #" + channel.name);
+  await upsertCommandsPanel(channel, client, { sticky: true });
+  console.info("[commands] sticky commands guide updated in #" + channel.name);
   return channel;
 }
 
@@ -199,6 +204,9 @@ export function attachCommandsChannel(client) {
     console.error("[commands] setup failed in " + guild.id + ": " + error.message),
   );
   const setupAll = (guild) => {
+    void removeObsoleteCommandsChannel(guild).catch((error) =>
+      console.error("[commands] obsolete channel removal failed in " + guild.id + ": " + error.message),
+    );
     void setup(guild);
     void ensureCommandsInfoPanel(guild, client).catch((error) =>
       console.error("[commands] additional guide setup failed in " + guild.id + ": " + error.message),
