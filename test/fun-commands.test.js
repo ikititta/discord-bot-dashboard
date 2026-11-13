@@ -65,7 +65,7 @@ test("fun commands use the existing Kittisugar gender role IDs only", () => {
   assert.equal(resolveGifPairing("male", "female"), "mf");
   assert.equal(resolveGifPairing("trans", "male"), null);
   assert.equal(resolveGifPairing("non-binary", "female"), null);
-  assert.equal(resolveGifPairing("male", "female", -2, 2), "fm");
+  assert.equal(resolveGifPairing("male", "female", -2, 2), "mf");
   assert.equal(resolveGifPairing("male", "female", 2, -2), "mf");
   assert.equal(getFunCommandDefinition("smirk").gif, "smug");
   assert.equal(normalizeFunDominance({ roles: { cache: { values: () => [{ name: "꒰ 𝓢𝓾𝓫𝓶𝓲𝓼𝓼𝓲𝓿𝓮 ! ꒱" }] } } }), -2);
@@ -239,13 +239,13 @@ test("!fuck selects NSFW GIF categories from both members' gender roles", async 
   assert.equal(resolveNsfwGifCategory("male", "male"), "yaoi");
   assert.equal(resolveNsfwGifCategory("female", "male"), "fuck");
   assert.equal(shouldPreferAnalGif("female", "female"), true);
-  assert.equal(shouldPreferAnalGif("male", "female", -2, 2), true);
-  assert.equal(shouldPreferAnalGif("female", "male", 2, -2), true);
+  assert.equal(shouldPreferAnalGif("male", "female", -2, 2), false);
+  assert.equal(shouldPreferAnalGif("female", "male", 2, -2), false);
   assert.equal(shouldPreferAnalGif("male", "female", -1, 2), false);
   assert.equal(shouldPreferAnalGif("male", "female", -2, 1), false);
-  assert.equal(resolveNsfwGifCategory("male", "female", -2, 2), "anal");
+  assert.equal(resolveNsfwGifCategory("male", "female", -2, 2), "fuck");
   assert.equal(resolveNsfwGifCategory("male", "male", -2, 2), "yaoi");
-  assert.equal(resolveNsfwGifCategory("female", "male", 2, -2), "anal");
+  assert.equal(resolveNsfwGifCategory("female", "male", 2, -2), "fuck");
   assert.equal(resolveNsfwGifCategory("trans", "female"), "fuck");
   const gif = await fetchNsfwGif({
     actorRole: "female",
