@@ -98,7 +98,7 @@ test("paired and solo commands enforce the correct mention mode", () => {
   assert.equal(getFunCommandDefinition("lick").needsTarget, true);
   assert.equal(getFunCommandDefinition("lick").gif, "lick");
   assert.equal(getFunCommandDefinition("shoot").needsTarget, true);
-  assert.equal(getFunCommandDefinition("shoot").gif, null);
+  assert.equal(getFunCommandDefinition("shoot").gif, "shoot");
   assert.equal(getFunCommandDefinition("feet").needsTarget, true);
   assert.equal(getFunCommandDefinition("rape"), null);
   assert.equal(getFunCommandDefinition("fuck").needsTarget, true);
@@ -162,6 +162,20 @@ test("unsupported pairing categories fall back to Nekos.best GIFs", async () => 
       };
     },
   });
+  assert.equal(gif.source, "Nekos.best");
+});
+
+test("!shoot retrieves a dedicated shooting reaction GIF", async () => {
+  const gif = await fetchAnimeGif("shoot", {
+    fetchImpl: async (url) => {
+      assert.equal(url, "https://nekos.best/api/v2/shoot");
+      return {
+        ok: true,
+        json: async () => ({ results: [{ url: "https://nekos.best/api/v2/shoot/example.gif", anime_name: "Example" }] }),
+      };
+    },
+  });
+  assert.equal(gif.url, "https://nekos.best/api/v2/shoot/example.gif");
   assert.equal(gif.source, "Nekos.best");
 });
 
