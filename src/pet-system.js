@@ -120,7 +120,7 @@ export function canDeletePet(vip) {
 function buildPetEmbed() {
   return new EmbedBuilder().setColor(COLOR).setTitle("୨୧ 𝓥𝓲𝓻𝓽𝓾𝓪𝓵 𝓟𝓮𝓽𝓼 ♡")
     .setDescription("Adopt your own virtual companion, create a private pet room and take care of your little friend ♡\n\n" +
-      "All pet commands and activities are available inside your private room. Create your room below to get started!");
+      "Use `!pet adopt` in this channel to choose a species. In your private pet room, use `!pet`, `!pet feed`, `!pet play`, `!pet talk`, `!pet story`, `!pet shop` and the other `!pet` commands to care for your companion. Create your room below to get started!");
 }
 function buildPetRoomWelcomeEmbed(profile, pet, vip = false) {
   const description = pet
@@ -130,11 +130,11 @@ function buildPetRoomWelcomeEmbed(profile, pet, vip = false) {
     .setFooter({ text: "A little home for you and your companion ♡" });
 }
 const PET_HELP_CATEGORIES = {
-  care: { label: "Care & bonding", title: "୨୧ 𝓒𝓪𝓻𝓮 & 𝓑𝓸𝓷𝓭𝓲𝓷𝓰 ♡", body: "`!pet` · `!pet stats` · `!pet feed` · `!pet play` · `!pet cuddle` · `!pet talk` · `!pet story` · `!pet gif [happy|dance|sleep]`\n\nFeed, play, cuddle and talk to care for your companion, build your bond and unlock stories and GIFs." },
-  coins: { label: "Coins & items", title: "୨୧ 𝓒𝓸𝓲𝓷𝓼 & 𝓘𝓽𝓮𝓶𝓼 ♡", body: "`!pet daily` · `!pet shop` · `!pet buy <treat|toy|potion>` · `!pet use <item>` · `!pet inventory`\n\nEarn daily coins, buy treats, toys and potions. Your wallet is shared by all your pets." },
-  manage: { label: "My pets", title: "୨୧ 𝓜𝔂 𝓟𝓮𝓽𝓼 ♡", body: "`!pet select <number>` · `!pet stats`\n\nChoose which companion is active and check their individual stats. Adoption and species selection happen in the pets channel." },
+  care: { label: "Care & bonding", title: "୨୧ 𝓒𝓪𝓻𝓮 & 𝓑𝓸𝓷𝓭𝓲𝓷𝓰 ♡", body: "`!pet` / `!pet status` · `!pet stats` · `!pet feed` · `!pet play` · `!pet cuddle` · `!pet talk` · `!pet story` · `!pet gif [happy|dance|sleep]` · `!pet redraw`\n\nView your companion, check stats, care for them, unlock stories and GIFs, or request a fresh illustration." },
+  coins: { label: "Coins & items", title: "୨୧ 𝓒𝓸𝓲𝓷𝓼 & 𝓘𝓽𝓮𝓶𝓼 ♡", body: "`!pet daily` · `!pet shop` · `!pet buy <treat|toy|potion>` · `!pet use <item>` · `!pet inventory`\n\nCollect your daily coins, check shop prices, buy items, use them and view your inventory. Treat: 10 coins · Toy: 25 coins · Potion: 60 coins." },
+  manage: { label: "My pets", title: "୨୧ 𝓜𝔂 𝓟𝓮𝓽𝓼 ♡", body: "`!pet adopt` · `!pet select <number>` · `!pet stats` · `!pet delete`\n\nAdopt in the pets channel, switch between companions and view their stats. Deleting a pet is VIP-only and requires confirmation." },
   customize: { label: "Customisation", title: "୨୧ 𝓒𝓾𝓼𝓽𝓸𝓶𝓲𝓼𝓪𝓽𝓲𝓸𝓷 ♡", body: "`!pet name <name>` · `!pet color <color>` · `!pet breed <breed>` · `!pet appearance <details>` · `!pet personality <traits>`\n\nVIP members can customise their companion's identity." },
-  vip: { label: "VIP features", title: "୨୧ 𝓥𝓘𝓟 𝓕𝓮𝓪𝓽𝓾𝓻𝓮𝓼 ♡", body: "`!pet delete` · `!pet room` · `!pet outfit <name>` · `!pet slots` · `!pet minigame`\n\nVIP unlocks extra species, customisation, additional pet slots and pet deletion." },
+  vip: { label: "VIP features", title: "୨୧ 𝓥𝓘𝓟 𝓕𝓮𝓪𝓽𝓾𝓻𝓮𝓼 ♡", body: "`!pet room` · `!pet outfit <name>` · `!pet slots` · `!pet minigame` · `!pet delete`\n\nVIP unlocks extra species, additional pet slots, pet deletion, room and outfit features, and the daily minigame." },
 };
 function buildPetStickyPayload(ownerId) {
   const row = new ActionRowBuilder().addComponents(
@@ -892,7 +892,8 @@ export function attachPetSystem(client, store) {
       const legacyCommands = roomMessages.find((message) => message.author?.id === client.user.id && message.embeds.some((embed) => embed.title === "୨୧ 𝓟𝓮𝓽 𝓡𝓸𝓸𝓶 · 𝓒𝓸𝓶𝓶𝓪𝓷𝓭𝓼 ♡"));
       if (legacyCommands) await legacyCommands.delete().catch(() => {});
       const sticky = roomMessages.find((message) => message.author?.id === client.user.id && message.embeds.some((embed) => embed.title === "୨୧ 𝓟𝓮𝓽 𝓗𝓮𝓵𝓹 ♡"));
-      if (!sticky) await petChannel.send(buildPetStickyPayload(interaction.user.id));
+      if (sticky) await sticky.edit(buildPetStickyPayload(interaction.user.id));
+      else await petChannel.send(buildPetStickyPayload(interaction.user.id));
       await petChannel.permissionOverwrites.edit(interaction.user.id, { AddReactions: false });
       await petChannel.permissionOverwrites.edit(client.user.id, { AddReactions: false });
       await interaction.editReply({ content: `Your pet room is ready: <#${petChannel.id}> ♡` });
