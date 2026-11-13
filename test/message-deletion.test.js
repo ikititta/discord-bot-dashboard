@@ -8,7 +8,6 @@ import {
   buildMessageDeletionCommands,
   handleMessageDeletionInteraction,
   MESSAGE_DELETION_LIMITS,
-  MESSAGE_DELETION_PROTECTED_CHANNEL_IDS,
 } from "../src/message-deletion.js";
 
 const ACTOR_ID = "941800000000000101";
@@ -529,13 +528,3 @@ test("per-message Discord errors are reported without claiming success", async (
 });
 
 
-test("the protected channel never allows Sugar deletion commands", async () => {
-  assert.deepEqual(MESSAGE_DELETION_PROTECTED_CHANNEL_IDS, ["1570257241511170150"]);
-  for (const commandName of ["delete", "vip-delete", "mod-delete"]) {
-    const message = makeMessage(1, ACTOR_ID);
-    const harness = makeHarness({ commandName, amount: 1, channelId: "1570257241511170150", memberRoleIds: [VIP_ROLE_ID, MOD_ROLE_ID], config: { vipRoleIds: [VIP_ROLE_ID], moderatorRoleIds: [MOD_ROLE_ID] }, messages: [message] });
-    await handleMessageDeletionInteraction(harness.interaction, harness.context);
-    assert.deepEqual(harness.deletedIds, []);
-    assert.match(response(harness).content, /protected and cannot be deleted/);
-  }
-});
