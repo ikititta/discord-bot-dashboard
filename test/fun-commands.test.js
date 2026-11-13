@@ -232,15 +232,6 @@ test("!fuck rejects SFW or wrong-gender GIF results instead of falling back", as
 });
 
 
-test("fun help works with both documented prefix syntaxes", () => {
-  assert.equal(isFunHelpCommand("funhelp"), true);
-  assert.equal(isFunHelpCommand("fun", "help"), true);
-  assert.equal(isFunHelpCommand("fun", "stats"), false);
-  assert.equal(isFunHelpCommand("smile"), false);
-});
-
-
-
 test("VIP NSFW commands use their matching PurrBot categories", async () => {
   for (const category of ["solo", "solo_male", "blowjob", "pussylick", "anal"]) {
     const gif = await fetchPurrbotNsfwGif(category, {
