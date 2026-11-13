@@ -3,7 +3,8 @@
 // Everything it does is read out of the settings file, which the dashboard
 // writes, so a change takes effect on the next event with no restart.
 
-import { ChannelType, Client, EmbedBuilder, Events, GatewayIntentBits, PermissionFlagsBits, Partials } from "discord.js";
+import { ChannelType, Client, EmbedBuilder, Events, GatewayIntentBits, PermissionFlagsBits, Partials, AttachmentBuilder } from "discord.js";
+import { createCanvas, loadImage } from "@napi-rs/canvas";
 
 import { createMessageResponder } from "./message-handler.js";
 import { shouldAutoReactToMessage, addAutoReactions } from "./auto-reactions.js";
@@ -109,21 +110,93 @@ export function createBot({
       footer: `${member.guild.memberCount} members`,
     });
 
-    // Kittisugar welcome card: member avatar as the author icon and the
-    // server banner as the large image. Discord controls embed text color.
+    // Kittisugar welcome card: server artwork as the background, member avatar,
+    // and all welcome copy rendered in white directly on the image.
     if (member.guild.id === "1567093019377930363") {
       try {
         const channel = await client.channels.fetch("1569909644590321737");
         if (channel?.isTextBased()) {
-          const avatar = member.user.displayAvatarURL({ extension: "png", size: 256 });
-          const banner = member.guild.bannerURL({ extension: "png", size: 2048 });
+          const width = 1200;
+          const height = 480;
+          const canvas = createCanvas(width, height);
+          const ctx = canvas.getContext("2d");
+
+          const backgroundUrl =
+            member.guild.bannerURL({ extension: "png", size: 2048 }) ??
+            member.guild.iconURL({ extension: "png", size: 1024 });
+          if (backgroundUrl) {
+            const background = await loadImage(backgroundUrl);
+            const scale = Math.max(width / background.width, height / background.height);
+            const cropWidth = width / scale;
+            const cropHeight = height / scale;
+            ctx.drawImage(
+              background,
+              (background.width - cropWidth) / 2,
+              (background.height - cropHeight) / 2,
+              cropWidth,
+              cropHeight,
+              0,
+              0,
+              width,
+              height,
+            );
+          } else {
+            const gradient = ctx.createLinearGradient(0, 0, width, height);
+            gradient.addColorStop(0, "#3d2945");
+            gradient.addColorStop(1, "#b77eaa");
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, width, height);
+          }
+
+          // A soft dark veil keeps the white lettering readable over any server image.
+          const veil = ctx.createLinearGradient(0, 0, width, 0);
+          veil.addColorStop(0, "rgba(20, 12, 25, 0.72)");
+          veil.addColorStop(0.58, "rgba(20, 12, 25, 0.35)");
+          veil.addColorStop(1, "rgba(20, 12, 25, 0.12)");
+          ctx.fillStyle = veil;
+          ctx.fillRect(0, 0, width, height);
+
+          const avatarUrl = member.user.displayAvatarURL({ extension: "png", size: 512 });
+          const avatar = await loadImage(avatarUrl);
+          const avatarSize = 184;
+          const avatarX = 112;
+          const avatarY = 148;
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(avatarX + avatarSize / 2, avatarY + avatarSize / 2, avatarSize / 2 + 9, 0, Math.PI * 2);
+          ctx.fillStyle = "rgba(255,255,255,0.96)";
+          ctx.fill();
+          ctx.beginPath();
+          ctx.arc(avatarX + avatarSize / 2, avatarY + avatarSize / 2, avatarSize / 2, 0, Math.PI * 2);
+          ctx.clip();
+          ctx.drawImage(avatar, avatarX, avatarY, avatarSize, avatarSize);
+          ctx.restore();
+
+          const displayName = member.user.globalName ?? member.user.username;
+          ctx.textAlign = "left";
+          ctx.textBaseline = "alphabetic";
+          ctx.shadowColor = "rgba(0,0,0,0.35)";
+          ctx.shadowBlur = 12;
+          ctx.fillStyle = "#ffffff";
+          ctx.font = 'bold 30px sans-serif';
+          ctx.fillText("KITTISUGAR  ♡", 350, 174);
+          ctx.font = 'bold 66px sans-serif';
+          ctx.fillText("WELCOME", 350, 258);
+          ctx.font = 'bold 40px sans-serif';
+          ctx.fillText(displayName.slice(0, 24), 350, 318);
+          ctx.font = '28px sans-serif';
+          ctx.fillText("we're so happy you're here ♡", 350, 374);
+
+          const attachment = new AttachmentBuilder(await canvas.encode("png"), { name: "kittisugar-welcome.png" });
           const welcome = new EmbedBuilder()
             .setColor(0xffffff)
-            .setAuthor({ name: member.user.globalName ?? member.user.username, iconURL: avatar })
-            .setDescription(`Welcome to Kittisugar, <@${member.id}>! ♡`)
+            .setImage("attachment://kittisugar-welcome.png")
             .setFooter({ text: `${member.guild.memberCount} members` });
-          if (banner) welcome.setImage(banner);
-          await channel.send({ embeds: [welcome], allowedMentions: { parse: [], users: [member.id] } });
+          await channel.send({
+            files: [attachment],
+            embeds: [welcome],
+            allowedMentions: { parse: [] },
+          });
         }
       } catch (error) {
         console.error(`[welcome] could not send welcome for ${member.id}: ${error.message}`);
