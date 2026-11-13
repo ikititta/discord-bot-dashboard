@@ -54,6 +54,15 @@ test("fun commands use the existing Kittisugar gender role IDs only", () => {
   assert.equal(resolveGifPairing("non-binary", "female"), null);
 });
 
+test("VIP access recognizes the live VIP role name if its configured ID changed", () => {
+  const member = { roles: { cache: {
+    has: () => false,
+    some: (predicate) => [{ id: "999999999999999999", name: "ＶＩＰ" }].some(predicate),
+  } } };
+  assert.equal(isVip(member), true);
+  assert.equal(isVip(memberWithRoles([])), false);
+});
+
 test("fun commands recognize the live Member role even if its role ID changes", () => {
   const member = { roles: { cache: {
     has: () => false,
