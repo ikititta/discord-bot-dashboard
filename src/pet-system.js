@@ -253,11 +253,11 @@ async function ensurePetsChannel(guild, client, store) {
   const oldPanels = recent.filter((message) => message.author?.id === client.user.id &&
     message.embeds.some((embed) => embed.title === "୨୧ 𝓥𝓲𝓻𝓽𝓾𝓪𝓵 𝓟𝓮𝓽𝓼 ♡"));
   if (oldPanels.size) {
-    // Refresh every matching legacy panel so no stale two-button copy remains.
     await Promise.all([...oldPanels.values()].map((message) => message.edit(panelPayload())));
   } else {
     await channel.send(panelPayload());
   }
+  await refreshExistingPetRoomHelpPanels(guild, client);
   return channel;
 }
 
