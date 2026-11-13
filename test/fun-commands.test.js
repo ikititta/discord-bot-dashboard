@@ -44,6 +44,9 @@ test("fun commands use the existing Kittisugar gender role IDs only", () => {
   assert.equal(isVip(memberWithRoles(["1568188534836428812"])), false);
   assert.equal(isVipOnlyFunCommand("fuck"), true);
   assert.equal(isVipOnlyFunCommand("kill"), true);
+  assert.equal(isVipOnlyFunCommand("masturbate"), true);
+  assert.equal(isVipOnlyFunCommand("oral"), true);
+  assert.equal(isVipOnlyFunCommand("anal"), true);
   assert.equal(KILL_TIMEOUT_MS, 30_000);
   assert.equal(isVipOnlyFunCommand("spank"), false);
   assert.equal(resolveGifPairing("female", "female"), "ff");
@@ -83,7 +86,7 @@ test("fun help explains command types, stats, and VIP access", () => {
   const fields = embed.data.fields.map((field) => field.name + " " + field.value).join("\\n");
   assert.match(fields, /\/stats — privately view your complete stats/);
   assert.match(fields, /\/vip stats — privately view your report/);
-  assert.match(fields, /VIP unlocks !fuck, !kill \(30-second timeout\), private statistics/);
+  assert.match(fields, /VIP unlocks !fuck \(existing uncensored anime GIF behavior\), !masturbate, !oral, !anal/);
   assert.doesNotMatch(fields, /Everyone can view their own basic stats/);
   assert.match(fields, /Two-person commands/);
   assert.doesNotMatch(embed.data.description, /18\+/);
@@ -93,6 +96,9 @@ test("fun help explains command types, stats, and VIP access", () => {
   assert.match(fields, /!lick @member/);
   assert.match(fields, /!feet @member/);
   assert.match(fields, /!shoot @member/);
+  assert.match(fields, /!masturbate @member \(VIP; censored anime GIF\)/);
+  assert.match(fields, /!oral @member \(VIP; censored anime GIF\)/);
+  assert.match(fields, /!anal @member \(VIP; censored anime GIF\)/);
   assert.doesNotMatch(fields, /NSFW preferences|!nsfw-on|!nsfw-off|approval/i);
 });
 
@@ -111,6 +117,12 @@ test("paired and solo commands enforce the correct mention mode", () => {
   assert.equal(getFunCommandDefinition("feet").needsTarget, true);
   assert.equal(getFunCommandDefinition("rape"), null);
   assert.equal(getFunCommandDefinition("fuck").needsTarget, true);
+  assert.equal(getFunCommandDefinition("masturbate").needsTarget, true);
+  assert.equal(getFunCommandDefinition("oral").needsTarget, true);
+  assert.equal(getFunCommandDefinition("anal").needsTarget, true);
+  assert.equal(getFunCommandDefinition("masturbate").gif, "blush");
+  assert.equal(getFunCommandDefinition("oral").gif, "wink");
+  assert.equal(getFunCommandDefinition("anal").gif, "smug");
   assert.equal(getFunCommandDefinition("unknown"), null);
 });
 
