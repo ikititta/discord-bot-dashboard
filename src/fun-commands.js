@@ -279,7 +279,7 @@ async function fetchTaggedNsfwGif(tags, fetchImpl) {
   const gifs = posts.filter((post) => {
     try {
       const media = new URL(post?.file_url ?? "");
-      return media.protocol === "https:" && (media.hostname === "rule34.xxx" || media.hostname.endsWith(".rule34.xxx")) && media.pathname.toLowerCase().endsWith(".gif") && tags.every((tag) => String(post?.tags ?? "").split(/\\s+/).includes(tag));
+      return media.protocol === "https:" && (media.hostname === "rule34.xxx" || media.hostname.endsWith(".rule34.xxx")) && media.pathname.toLowerCase().endsWith(".gif") && tags.every((tag) => String(post?.tags ?? "").split(/\s+/).includes(tag));
     } catch { return false; }
   });
   if (!gifs.length) return null;
