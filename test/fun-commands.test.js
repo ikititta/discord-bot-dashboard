@@ -6,9 +6,7 @@ import {
   FUN_VIP_ROLE_ID,
   KILL_TIMEOUT_MS,
   buildFunActionText,
-  buildFunHelpEmbed,
   buildFunStatsEmbed,
-  isFunHelpCommand,
   fetchAnimeGif,
   fetchNsfwGif,
   fetchPurrbotNsfwGif,
@@ -89,31 +87,6 @@ test("fun action messages mention the actor and target with clear past-tense wor
   assert.equal(buildFunActionText("111", "222", { text: "has masturbated" }), "<@111> has masturbated <@222>!");
 });
 
-test("fun help explains command types, stats, and VIP access", () => {
-  const embed = buildFunHelpEmbed();
-  assert.match(embed.data.title, /Fun Commands Guide/);
-  const fields = embed.data.fields.map((field) => field.name + " " + field.value).join("\\n");
-  assert.match(fields, /\/stats — privately view your complete stats/);
-  assert.match(fields, /\/vip stats — privately view your report/);
-  assert.match(fields, /VIP unlocks !fuck \\(existing gender-aware NSFW GIF behavior\\), !masturbate, !oral, and !anal/);
-  assert.doesNotMatch(fields, /Everyone can view their own basic stats/);
-  assert.match(fields, /Two-person commands/);
-  assert.doesNotMatch(embed.data.description, /18\+/);
-  assert.match(fields, /Solo commands/);
-  assert.doesNotMatch(embed.data.footer.text, /consent/i);
-  assert.match(fields, /!fuck @member/);
-  assert.match(fields, /!lick @member/);
-  assert.match(fields, /!feet @member/);
-  assert.match(fields, /!shoot @member/);
-  assert.match(fields, /!masturbate @member \\(VIP; NSFW\\)/);
-  assert.match(fields, /!oral @member \\(VIP; NSFW\\)/);
-  assert.match(fields, /!anal @member \\(VIP; NSFW\\)/);
-  assert.doesNotMatch(fields, /age-restricted channels only|NSFW channel/);
-  assert.match(fields, /!tease @member \(VIP; text-only\)/);
-  assert.match(fields, /!seduce @member \(VIP; GIF\)/);
-  assert.doesNotMatch(fields, /NSFW preferences|!nsfw-on|!nsfw-off|approval/i);
-});
-
 test("paired and solo commands enforce the correct mention mode", () => {
   assert.equal(getFunCommandDefinition("slap").needsTarget, true);
   assert.equal(getFunCommandDefinition("spank").needsTarget, true);
@@ -138,7 +111,7 @@ test("paired and solo commands enforce the correct mention mode", () => {
   assert.equal(getFunCommandDefinition("masturbate").gif, null);
   assert.equal(getFunCommandDefinition("oral").gif, null);
   assert.equal(getFunCommandDefinition("anal").gif, null);
-  assert.equal(getFunCommandDefinition("tease").gif, null);
+  assert.equal(getFunCommandDefinition("tease").gif, "wink");
   assert.equal(getFunCommandDefinition("seduce").gif, "wink");
   assert.equal(getFunCommandDefinition("unknown"), null);
 });
