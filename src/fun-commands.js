@@ -2,7 +2,7 @@ import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, Events, RES
 import { GENDER_ROLE_IDS } from "./role-onboarding.js";
 
 const KITTISUGAR_GUILD_ID = "1567093019377930363";
-const GIF_PREFERENCES_CHANNEL_ID = "1570873475038711973";
+const RETIRED_GIF_PREFERENCES_CHANNEL_ID = "1570873475038711973";
 
 export const FUN_ROLE_IDS = GENDER_ROLE_IDS;
 export const FUN_VIP_ROLE_ID = "1568188640113463437";
@@ -439,7 +439,7 @@ const STATS_COMMAND = new SlashCommandBuilder().setName("stats").setDescription(
 const VIP_COMMAND = new SlashCommandBuilder().setName("vip").setDescription("VIP commands").addSubcommand((sub) => sub.setName("stats").setDescription("Privately view complete stats").addUserOption((option) => option.setName("member").setDescription("Member whose stats to view").setRequired(false))).toJSON();
 
 export async function removeGifPreferencesChannel(guild) {
-  const channel = await guild.channels.fetch("1570873475038711973").catch(() => null);
+  const channel = await guild.channels.fetch(RETIRED_GIF_PREFERENCES_CHANNEL_ID).catch(() => null);
   if (!channel) return false;
   await channel.delete("Retire GIF preferences panel; Sugar now uses anime GIFs only");
   console.info("[fun] retired GIF preferences channel and its embed");
@@ -514,10 +514,6 @@ export function attachFunCommands(client, { store, fetchImpl = fetch, token, app
       if (["couple", "propose", "marry", "breakup", "divorce"].includes(name)) {
         if (!isVerifiedAdult(message.member)) { await safeReply(message, { content: "Relationships are available to verified Member accounts ♡" }); return; }
         await handleRelationshipCommand(message, store, name, fetchImpl);
-        return;
-      }
-      if (name === "funstyle") {
-        await safeReply(message, { content: "All fun commands use anime GIFs." });
         return;
       }
       if (name === "nsfw-on" || name === "nsfw-off") {
