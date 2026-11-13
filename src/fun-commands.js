@@ -20,9 +20,9 @@ const TWO_PERSON_COMMANDS = Object.freeze({
   bonk: { gif: "bonk", text: "has bonked" },
   spank: { gif: "spank", text: "has given a playful spanking to" },
   fuck: { gif: "fuck", text: "has fucked" },
-  masturbate: { gif: null, text: "has started a private, off-screen interaction with" },
-  oral: { gif: null, text: "has started a private, off-screen interaction with" },
-  anal: { gif: null, text: "has started a private, off-screen interaction with" },
+  masturbate: { gif: null, nsfwGif: "solo", text: "has initiated a NSFW interaction with" },
+  oral: { gif: null, nsfwGif: "blowjob", text: "has initiated an oral NSFW interaction with" },
+  anal: { gif: null, nsfwGif: "anal", text: "has initiated an anal NSFW interaction with" },
   hug: { gif: "hug", text: "has hugged" },
   kiss: { gif: "kiss", text: "has kissed" },
   tease: { gif: null, text: "has playfully teased" },
@@ -146,6 +146,23 @@ export function resolveNsfwGifCategory(actorRole, targetRole) {
   return "fuck";
 }
 
+export async function fetchPurrbotNsfwGif(category, { fetchImpl = fetch } = {}) {
+  const allowedCategories = new Set(["solo", "solo_male", "blowjob", "anal"]);
+  if (!allowedCategories.has(category)) throw new Error("Invalid PurrBot NSFW GIF category.");
+  const response = await fetchImpl(PURRBOT_API_BASE + "/img/nsfw/" + category + "/gif", {
+    headers: { "User-Agent": "SugarDiscordBot/1.0 (https://github.com/ikititta/discord-bot-dashboard)" },
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+  });
+  if (!response.ok) throw new Error(`NSFW GIF service returned HTTP ${response.status}.`);
+  const payload = await response.json();
+  if (payload?.error !== false) throw new Error("NSFW GIF service did not return a valid result.");
+  const gifUrl = validatedGifUrl(payload?.link, "cdn.purrbot.site");
+  if (!gifUrl.pathname.startsWith("/nsfw/" + category + "/gif/")) {
+    throw new Error("NSFW GIF service returned content outside the selected " + category + " category.");
+  }
+  return { url: gifUrl.toString(), anime: "", pairing: category, source: "PurrBot NSFW" };
+}
+
 export async function fetchNsfwGif({ fetchImpl = fetch, actorRole = "neutral", targetRole = null } = {}) {
   const category = resolveNsfwGifCategory(actorRole, targetRole);
   const response = await fetchImpl(PURRBOT_API_BASE + "/img/nsfw/" + category + "/gif", {
@@ -255,10 +272,10 @@ export function buildFunHelpEmbed() {
     .setDescription("Use these commands in Kittisugar. Every fun command requires the Member role. Two-person commands need a member mention; solo commands do not.")
     .addFields(
       { name: "Relationships", value: "!couple @member · !propose @member · !marry @member · !breakup · !divorce. The other member must accept proposals." },
-      { name: "Two-person commands", value: "!hug @member · !slap @member · !bonk @member · !spank @member · !kiss @member · !tease @member (VIP; text-only) · !seduce @member (VIP; text-only) · !fuck @member · !cuddle @member · !pat @member · !poke @member · !bite @member · !lick @member · !feet @member · !kick @member · !shoot @member · !masturbate @member (VIP; text-only) · !oral @member (VIP; text-only) · !anal @member (VIP; text-only) · !kill @member (VIP; 30-second timeout) · !highfive @member · !handhold @member" },
+      { name: "Two-person commands", value: "!hug @member · !slap @member · !bonk @member · !spank @member · !kiss @member · !tease @member (VIP; text-only) · !seduce @member (VIP; text-only) · !fuck @member · !cuddle @member · !pat @member · !poke @member · !bite @member · !lick @member · !feet @member · !kick @member · !shoot @member · !masturbate @member (VIP; NSFW channel) · !oral @member (VIP; NSFW channel) · !anal @member (VIP; NSFW channel) · !kill @member (VIP; 30-second timeout) · !highfive @member · !handhold @member" },
       { name: "Solo commands", value: "!cry · !laugh · !dance · !sleep · !happy · !blush · !smug · !wave · !facepalm · !wink · !shrug · !smile · !pout" },
       { name: "Statistics", value: "/stats — privately view your complete stats (VIP).\n/vip stats — privately view your report or another member’s (VIP).\nStats count commands used, interactions received, and interaction partners." },
-      { name: "VIP", value: "VIP unlocks !fuck (existing NSFW anime GIF behavior), !masturbate, !oral, !anal, !tease, and !seduce (text-only interactions), !kill (30-second timeout), private statistics, and other exclusive benefits. Use /stats or /vip stats; reports are visible only to the requester." },
+      { name: "VIP", value: "VIP unlocks !fuck (existing gender-aware NSFW GIF behavior), !masturbate, !oral, and !anal (NSFW GIFs; age-restricted channels only), !tease and !seduce (text-only interactions), !kill (30-second timeout), private statistics, and other exclusive benefits. Use /stats or /vip stats; reports are visible only to the requester." },
     )
     .setFooter({ text: "Have fun in Kittisugar ♡" });
 }
@@ -319,6 +336,10 @@ async function handleFunAction(message, store, name, args, fetchImpl) {
       return true;
     }
     targetRole = normalizeFunRole(targetMember);
+    if (["masturbate", "oral", "anal"].includes(name) && message.channel?.nsfw !== true) {
+      await safeReply(message, { content: "This NSFW command is only available in an age-restricted channel 🔞" });
+      return true;
+    }
     // VIP access for paired commands is satisfied when either participant is VIP.
     if (isVipOnlyFunCommand(name) && !isVip(message.member) && !isVip(targetMember)) {
       await safeReply(message, { content: `The !${name} command is a VIP-only benefit ♡` });
@@ -351,7 +372,11 @@ async function handleFunAction(message, store, name, args, fetchImpl) {
   let gif = null;
   try {
     if (name === "fuck") gif = await fetchNsfwGif({ fetchImpl, actorRole: normalizeFunRole(message.member), targetRole });
-    else if (definition.gif) gif = await fetchAnimeGif(definition.gif, { fetchImpl, actorRole: normalizeFunRole(message.member), targetRole });
+    else if (definition.nsfwGif) {
+      const actorRole = normalizeFunRole(message.member);
+      const category = definition.nsfwGif === "solo" && actorRole === "male" ? "solo_male" : definition.nsfwGif;
+      gif = await fetchPurrbotNsfwGif(category, { fetchImpl });
+    } else if (definition.gif) gif = await fetchAnimeGif(definition.gif, { fetchImpl, actorRole: normalizeFunRole(message.member), targetRole });
   }
   catch (error) { console.warn(`[fun] GIF lookup failed for !${name}: ${error.message}`); }
 
