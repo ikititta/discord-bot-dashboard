@@ -20,6 +20,9 @@ const TWO_PERSON_COMMANDS = Object.freeze({
   bonk: { gif: "bonk", text: "has bonked" },
   spank: { gif: "spank", text: "has given a playful spanking to" },
   fuck: { gif: "fuck", text: "has fucked" },
+  masturbate: { gif: "blush", text: "has triggered a censored anime reaction for" },
+  oral: { gif: "wink", text: "has triggered a censored anime reaction for" },
+  anal: { gif: "smug", text: "has triggered a censored anime reaction for" },
   hug: { gif: "hug", text: "has hugged" },
   kiss: { gif: "kiss", text: "has kissed" },
   cuddle: { gif: "cuddle", text: "has cuddled" },
@@ -219,7 +222,7 @@ export function isVip(member) {
 export const KILL_TIMEOUT_MS = 30_000;
 
 export function isVipOnlyFunCommand(name) {
-  return name === "fuck" || name === "kill";
+  return ["fuck", "kill", "masturbate", "oral", "anal"].includes(name);
 }
 
 function displayName(member, user) {
@@ -250,10 +253,10 @@ export function buildFunHelpEmbed() {
     .setDescription("Use these commands in Kittisugar. Every fun command requires the Member role. Two-person commands need a member mention; solo commands do not.")
     .addFields(
       { name: "Relationships", value: "!couple @member · !propose @member · !marry @member · !breakup · !divorce. The other member must accept proposals." },
-      { name: "Two-person commands", value: "!hug @member · !slap @member · !bonk @member · !spank @member · !kiss @member · !fuck @member · !cuddle @member · !pat @member · !poke @member · !bite @member · !lick @member · !feet @member · !kick @member · !shoot @member · !kill @member (VIP; 30-second timeout) · !highfive @member · !handhold @member" },
+      { name: "Two-person commands", value: "!hug @member · !slap @member · !bonk @member · !spank @member · !kiss @member · !fuck @member · !cuddle @member · !pat @member · !poke @member · !bite @member · !lick @member · !feet @member · !kick @member · !shoot @member · !masturbate @member (VIP; censored anime GIF) · !oral @member (VIP; censored anime GIF) · !anal @member (VIP; censored anime GIF) · !kill @member (VIP; 30-second timeout) · !highfive @member · !handhold @member" },
       { name: "Solo commands", value: "!cry · !laugh · !dance · !sleep · !happy · !blush · !smug · !wave · !facepalm · !wink · !shrug · !smile · !pout" },
       { name: "Statistics", value: "/stats — privately view your complete stats (VIP).\n/vip stats — privately view your report or another member’s (VIP).\nStats count commands used, interactions received, and interaction partners." },
-      { name: "VIP", value: "VIP unlocks !fuck, !kill (30-second timeout), private statistics, and other exclusive benefits. Use /stats or /vip stats; reports are visible only to the requester." },
+      { name: "VIP", value: "VIP unlocks !fuck (existing uncensored anime GIF behavior), !masturbate, !oral, !anal (censored anime reaction GIFs), !kill (30-second timeout), private statistics, and other exclusive benefits. Use /stats or /vip stats; reports are visible only to the requester." },
     )
     .setFooter({ text: "Have fun in Kittisugar ♡" });
 }
