@@ -10,7 +10,7 @@ import {
   buildFunStatsEmbed,
   isFunHelpCommand,
   fetchAnimeGif,
-  fetchNsfwGif,
+  fetchNsfwGif,\n  fetchPurrbotNsfwGif,
   getFunCommandDefinition,
   isVerifiedAdult,
   isVip,
@@ -258,3 +258,17 @@ test("fun help works with both documented prefix syntaxes", () => {
 });
 
 
+
+test("VIP NSFW commands use their matching PurrBot categories", async () => {
+  for (const category of ["solo", "solo_male", "blowjob", "anal"]) {
+    const gif = await fetchPurrbotNsfwGif(category, {
+      fetchImpl: async (url) => {
+        assert.equal(url, "https://api.purrbot.site/v2/img/nsfw/" + category + "/gif");
+        return { ok: true, json: async () => ({ link: "https://cdn.purrbot.site/nsfw/" + category + "/gif/" + category + "_001.gif", error: false }) };
+      },
+    });
+    assert.equal(gif.pairing, category);
+    assert.equal(gif.source, "PurrBot NSFW");
+  }
+  await assert.rejects(fetchPurrbotNsfwGif("kiss"), /Invalid PurrBot NSFW GIF category/);
+});
