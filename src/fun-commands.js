@@ -76,7 +76,12 @@ export function normalizeFunRole(member) {
 }
 
 export function normalizeFunDominance(member) {
-  const normalize = (value) => String(value ?? "").normalize("NFKD").toLowerCase().replace(/\\p{M}/gu, "").replace(/[^a-z]/g, "");
+  const normalize = (value) => [...String(value ?? "")].map((character) => {
+    const point = character.codePointAt(0);
+    if (point >= 0x1d4d0 && point <= 0x1d4e9) return String.fromCharCode(65 + point - 0x1d4d0);
+    if (point >= 0x1d4ea && point <= 0x1d503) return String.fromCharCode(97 + point - 0x1d4ea);
+    return character;
+  }).join("").normalize("NFKD").toLowerCase().replace(/\\p{M}/gu, "").replace(/[^a-z]/g, "");
   const labels = new Map([
     ["submissive", -2],
     ["mostlysubmissive", -1],
