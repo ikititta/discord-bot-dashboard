@@ -69,6 +69,7 @@ async function assignMemberAccess(member, { newRole, memberRole }) {
 const PREFIX = "sugar-onboard:";
 const SELF_PREFIX = "sugar-selfroles:";
 const COLOR = 0xffd9ff;
+export const SELF_ROLES_CHANNEL_ID = "1569197643714789427";
 const SELF_ROLES_CHANNEL_NAME = "🎀｜୨୧•𝓼𝓮𝓵𝓯-𝓻𝓸𝓵𝓮𝓼";
 export const NSFW_HIDDEN_ROLE_ID = "1569885841180856361";
 const AGE_REVIEW_ROLE_NAME = "age-review";
@@ -406,9 +407,14 @@ export async function ensureSelfRolesChannel(guild, client) {
     return null;
   }
 
-  const channel = guild.channels.cache.find((item) =>
-    item.type === ChannelType.GuildText && normalizeRoleName(item.name) === "selfroles",
-  );
+  const channel = guild.channels.cache.get(SELF_ROLES_CHANNEL_ID) ??
+    guild.channels.cache.find((item) =>
+      item.type === ChannelType.GuildText && normalizeRoleName(item.name) === "selfroles",
+    );
+  if (channel && channel.type !== ChannelType.GuildText) {
+    console.warn(`[self-roles] configured channel ${SELF_ROLES_CHANNEL_ID} is not a text channel in guild ${guild.id}`);
+    return null;
+  }
   if (!channel) {
     console.warn(`[self-roles] existing self-roles channel was not found in guild ${guild.id}; no channel was created.`);
     return null;
