@@ -21,7 +21,6 @@ import {
   resolveDominancePair,
   resolveGifPairing,
   resolveNsfwGifCategory,
-  shouldPreferAnalGif,
   resolveMasturbateGifPairing,
   selectMasturbateGif,
 } from "../src/fun-commands.js";
@@ -262,11 +261,8 @@ test("!fuck selects NSFW GIF categories from both members' gender roles", async 
   assert.equal(resolveNsfwGifCategory("female", "female"), "yuri");
   assert.equal(resolveNsfwGifCategory("male", "male"), "yaoi");
   assert.equal(resolveNsfwGifCategory("female", "male"), "fuck");
-  assert.equal(shouldPreferAnalGif("female", "female"), true);
-  assert.equal(shouldPreferAnalGif("male", "female", -2, 2), false);
-  assert.equal(shouldPreferAnalGif("female", "male", 2, -2), false);
-  assert.equal(shouldPreferAnalGif("male", "female", -1, 2), false);
-  assert.equal(shouldPreferAnalGif("male", "female", -2, 1), false);
+  assert.equal(resolveNsfwGifCategory("female", "male", 2, -2), "fuck"); // dominant woman: provider has no pose-specific category
+  assert.equal(resolveNsfwGifCategory("male", "female", 2, -2), "fuck"); // dominant man: generic mixed-gender category
   assert.equal(resolveNsfwGifCategory("male", "female", -2, 2), "fuck");
   assert.equal(resolveNsfwGifCategory("male", "male", -2, 2), "yaoi");
   assert.equal(resolveNsfwGifCategory("female", "male", 2, -2), "fuck");
