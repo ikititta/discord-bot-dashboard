@@ -37,6 +37,19 @@ test("fun command statistics persist actor usage, received actions, and partners
   }
 });
 
+test("member GIF style preferences persist and default to anime", () => {
+  const directory = temporaryDirectory();
+  try {
+    const store = new FunCommandStore(directory);
+    const guildId = "1567093019377930363";
+    const userId = "11111111111111111";
+    assert.equal(store.getGifStyle(guildId, userId), "anime");
+    store.setGifStyle(guildId, userId, "real");
+    const reopened = new FunCommandStore(directory);
+    assert.equal(reopened.getGifStyle(guildId, userId), "real");
+    assert.throws(() => reopened.setGifStyle(guildId, userId, "nsfw"), /Invalid fun GIF style/);
+  } finally { fs.rmSync(directory, { recursive: true, force: true }); }
+});
 test("fun command store rejects invalid identifiers and commands", () => {
   const directory = temporaryDirectory();
   try {
