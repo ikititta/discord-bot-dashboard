@@ -17,6 +17,7 @@ import {
   isVip,
   isVipOnlyFunCommand,
   normalizeFunRole,
+  normalizeFunDominance,
   resolveGifPairing,
   resolveNsfwGifCategory,
 } from "../src/fun-commands.js";
@@ -61,6 +62,11 @@ test("fun commands use the existing Kittisugar gender role IDs only", () => {
   assert.equal(resolveGifPairing("male", "female"), "mf");
   assert.equal(resolveGifPairing("trans", "male"), null);
   assert.equal(resolveGifPairing("non-binary", "female"), null);
+  assert.equal(resolveGifPairing("male", "female", -2, 2), "fm");
+  assert.equal(resolveGifPairing("male", "female", 2, -2), "mf");
+  assert.equal(getFunCommandDefinition("smirk").gif, "smug");
+  assert.equal(normalizeFunDominance({ roles: { cache: { values: () => [{ name: "꒰ 𝓢𝓾𝓫𝓶𝓲𝓼𝓼𝓲𝓿𝓮 ! ꒱" }] } } }), -2);
+  assert.equal(normalizeFunDominance({ roles: { cache: { values: () => [{ name: "꒰ 𝓜𝓸𝓼𝓽𝓵𝔂 𝓓𝓸𝓶𝓲𝓷𝓪𝓷𝓽 ! ꒱" }] } } }), 1);
 });
 
 test("VIP access recognizes the live VIP role name if its configured ID changed", () => {
