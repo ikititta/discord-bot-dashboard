@@ -41,7 +41,7 @@ test("each category exposes current command syntax and access requirements", () 
     interactions: ["!tease @member", "!seduce @member", "!kill @member", "!shoot @member", "30-second timeout", "playful two-person interaction"],
     nsfw: ["!fuck @member", "!masturbate @member", "!oral @member", "!anal @member"],
     community: ["!rep", "Confessions, polls", "!rep comments"],
-    pets: ["!pet adopt", "!pet buy <treat|toy|potion>", "!pet gif", "!pet delete"],
+    pets: ["!pet adopt", "!pet select <number>", "!pet buy <treat|toy|potion>", "!pet gif", "!pet delete"],
     functional: ["/delete amount:", "/vip-delete", "/mod-delete", "!quote", "!profile", "/priv-chat create"],
   };
   for (const [category, phrases] of Object.entries(cases)) {
@@ -59,7 +59,7 @@ test("moderation is kept out of normal commands and only mod-delete is posted in
   assert.equal(payload.embeds[0].data.title, MODERATION_PANEL_TITLE);
   assert.match(payload.embeds[0].data.title, /Moderation/);
   const normalIds = buildCommandsPanelPayload().components.flatMap((row) => row.components.map((button) => button.data.custom_id));
-  assert.ok(!normalIds.some((id) => id.includes("staff") || id.includes("moderation")));
+  assert.ok(!normalIds.some((id) => id.includes("staff") || id.includes("moderation")));\n  assert.equal(REPUTATION_ONLY_CHANNEL_ID, "1569930648804925522");
   for (const phrase of ["/mod-delete", "100 recent messages", "authorised moderators"]) {
     assert.ok(payload.embeds[0].data.description.toLowerCase().includes(phrase.toLowerCase()));
   }
