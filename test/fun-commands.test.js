@@ -92,17 +92,22 @@ test("fun help explains command types, stats, and VIP access", () => {
   assert.match(fields, /!fuck @member/);
   assert.match(fields, /!lick @member/);
   assert.match(fields, /!feet @member/);
+  assert.match(fields, /!shoot @member/);
   assert.doesNotMatch(fields, /NSFW preferences|!nsfw-on|!nsfw-off|approval/i);
 });
 
 test("paired and solo commands enforce the correct mention mode", () => {
   assert.equal(getFunCommandDefinition("slap").needsTarget, true);
   assert.equal(getFunCommandDefinition("spank").needsTarget, true);
+  assert.equal(getFunCommandDefinition("spank").gif, "spank");
   assert.equal(getFunCommandDefinition("cry").needsTarget, false);
   assert.equal(getFunCommandDefinition("laugh").needsTarget, false);
   assert.equal(getFunCommandDefinition("kill").needsTarget, true);
   assert.equal(getFunCommandDefinition("bite").needsTarget, true);
   assert.equal(getFunCommandDefinition("lick").needsTarget, true);
+  assert.equal(getFunCommandDefinition("lick").gif, "lick");
+  assert.equal(getFunCommandDefinition("shoot").needsTarget, true);
+  assert.equal(getFunCommandDefinition("shoot").gif, null);
   assert.equal(getFunCommandDefinition("feet").needsTarget, true);
   assert.equal(getFunCommandDefinition("rape"), null);
   assert.equal(getFunCommandDefinition("fuck").needsTarget, true);
