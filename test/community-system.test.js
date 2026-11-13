@@ -6,7 +6,7 @@ import path from "node:path";
 
 import { CommunityStore } from "../src/community-store.js";
 import {
-  buildConfessionsPanelPayload,
+  buildConfessionsPanelPayload,\n  isCountedCommunityPost,
   buildLoveLettersPanelPayload,
   buildSuggestionsPanelPayload,
   buildSuggestionComponents,
@@ -28,6 +28,17 @@ import {
   formatReplyDescription,
 } from "../src/community-system.js";
 import { buildTicketPanelPayload } from "../src/ticket-system.js";
+
+test("only currently posted confession and love-letter embeds count, not panel or deleted history", () => {
+  const bot = "1568188534836428812";
+  const make = (title) => ({ author: { id: bot }, embeds: [{ title }] });
+  assert.equal(isCountedCommunityPost(make("𝓒𝓸𝓷𝓯𝓮𝓼𝓼𝓲𝓸𝓷 #(001) 🎀"), "confession", bot), true);
+  assert.equal(isCountedCommunityPost(make("𝓐𝓷𝓸𝓷𝔂𝓶𝓸𝓾𝓼 𝓒𝓸𝓷𝓯𝓮𝓼𝓼𝓲𝓸𝓷 #(002) 🎀"), "confession", bot), true);
+  assert.equal(isCountedCommunityPost(make("𝓛𝓸𝓿𝓮 𝓛𝓮𝓽𝓽𝓮𝓻 #001 🎀"), "letter", bot), true);
+  assert.equal(isCountedCommunityPost(make("୨୧ 𝒄𝒐𝒏𝒇𝒆𝒔𝒔ions ♡"), "confession", bot), false);
+  assert.equal(isCountedCommunityPost(make("𝓛𝓸𝓿𝓮 𝓛𝓮𝓽𝓽𝓮𝓻 #001 🎀"), "confession", bot), false);
+  assert.equal(isCountedCommunityPost(make("𝓒𝓸𝓷𝓯𝓮𝓼𝓼𝓲𝓸𝓷 #(001) 🎀"), "confession", "another-bot"), false);
+});
 
 test("community counters persist and increment independently", () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "sugar-community-"));
@@ -63,7 +74,7 @@ test("confessions panel offers anonymous, named, and poll actions", () => {
   assert.ok(buttons.every((item) => !item.label.toLowerCase().includes("with my name")));
   assert.equal(buttons[1].label, "Create Poll ♡");
   assert.equal(buttons[1].style, 2);
-  assert.equal(payload.embeds[0].toJSON().title, "୨୧ 𝒄𝒐𝒏𝒇𝒆𝒔𝒔ions ♡");
+  assert.equal(payload.embeds[0].toJSON().title, "୨୧ 𝒄𝒐𝒏𝒇𝒆𝒔𝒔ions ♡");\n  assert.match(payload.embeds[0].toJSON().description, /Confessions currently in this chat:\\*\\* 0/);\n  assert.match(buildConfessionsPanelPayload(7).embeds[0].toJSON().description, /Confessions currently in this chat:\\*\\* 7/);
 });
 
 test("Suggestions panel offers anonymous or named submissions and native vote/report reactions", () => {
@@ -78,7 +89,7 @@ test("Suggestions panel offers anonymous or named submissions and native vote/re
   assert.match(source, /for \(const emoji of \["⬆️", "⬇️", "⚠️"\]\)/);
   assert.match(source, /sendSuggestionReactionReport/);
 });
-test("love letters panel offers anonymous and named public submissions", () => {
+test("love letters panel shows the live in-channel count", () => {\n  assert.match(buildLoveLettersPanelPayload(4).embeds[0].toJSON().description, /Love letters currently in this chat:\\*\\* 4/);\n});\n\ntest("love letters panel offers anonymous and named public submissions", () => {
   const payload = buildLoveLettersPanelPayload();
   const buttons = payload.components[0].toJSON().components;
   assert.deepEqual(buttons.map((item) => item.custom_id), [
