@@ -227,7 +227,7 @@ export function resolveOralNsfwGifCategory(targetRole) {
 }
 
 export async function fetchPurrbotNsfwGif(category, { fetchImpl = fetch } = {}) {
-  const allowedCategories = new Set(["solo", "solo_male", "blowjob", "pussylick", "anal"]);
+  const allowedCategories = new Set(["solo", "solo_male", "blowjob", "pussylick", "anal", "yaoi", "yuri"]);
   if (!allowedCategories.has(category)) throw new Error("Invalid PurrBot NSFW GIF category.");
   const response = await fetchImpl(PURRBOT_API_BASE + "/img/nsfw/" + category + "/gif", {
     headers: { "User-Agent": "SugarDiscordBot/1.0 (https://github.com/ikititta/discord-bot-dashboard)" },
@@ -451,7 +451,13 @@ async function handleFunAction(message, store, name, args, fetchImpl) {
 
   let gif = null;
   try {
-    if (name === "fuck" || name === "anal") gif = await fetchNsfwGif({ fetchImpl, actorRole, targetRole, actorDominance, targetDominance });
+    if (name === "fuck" || name === "anal") {
+      if (name === "anal") {
+        gif = await fetchPurrbotNsfwGif("anal", { fetchImpl });
+      } else {
+        gif = await fetchNsfwGif({ fetchImpl, actorRole, targetRole, actorDominance, targetDominance });
+      }
+    }
     else if (name === "masturbate") {
       gif = selectMasturbateGif(actorRole, targetRole);
       // The curated gender-specific catalog is currently empty. Fall back to
