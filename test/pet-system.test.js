@@ -280,7 +280,7 @@ test("pets panel buttons use the requested order, labels and Discord colours", (
     '.setCustomId(BUTTON_ID).setLabel("Create A Pet Room ♡").setStyle(ButtonStyle.Primary)',
     '.setCustomId("sugar-pets:global-top").setLabel("Top Pets ♡").setStyle(ButtonStyle.Success)',
     '.setCustomId("sugar-pets:create-pet").setLabel("Adopt A Pet ♡").setStyle(ButtonStyle.Secondary)',
-    '.setCustomId("sugar-pets:delete-pet").setLabel("Delete A Pet ♡").setStyle(ButtonStyle.Danger)',
+    '.setCustomId("sugar-pets:delete-menu").setLabel("Delete Room or Pet ♡").setStyle(ButtonStyle.Danger)',
   ];
   let previous = -1;
   for (const button of expected) {
@@ -290,6 +290,13 @@ test("pets panel buttons use the requested order, labels and Discord colours", (
   }
 });
 
+
+test("pet room management exposes redesign and delete actions", () => {
+  const source = fs.readFileSync(new URL("../src/pet-system.js", import.meta.url), "utf8");
+  assert.ok(source.includes("!pet room redesign"));
+  assert.ok(source.includes("!pet room delete"));
+  assert.ok(source.includes("sugar-pets:delete-room-confirm:"));
+});
 
 test("pet help categories list every supported command and mark VIP-only actions", () => {
   const all = Object.values(PET_HELP_CATEGORIES).map((item) => item.body).join("\\n");
