@@ -47,6 +47,8 @@ test("fun commands use the existing Kittisugar gender role IDs only", () => {
   assert.equal(isVipOnlyFunCommand("masturbate"), true);
   assert.equal(isVipOnlyFunCommand("oral"), true);
   assert.equal(isVipOnlyFunCommand("anal"), true);
+  assert.equal(isVipOnlyFunCommand("tease"), true);
+  assert.equal(isVipOnlyFunCommand("seduce"), true);
   assert.equal(KILL_TIMEOUT_MS, 30_000);
   assert.equal(isVipOnlyFunCommand("spank"), false);
   assert.equal(resolveGifPairing("female", "female"), "ff");
@@ -96,9 +98,11 @@ test("fun help explains command types, stats, and VIP access", () => {
   assert.match(fields, /!lick @member/);
   assert.match(fields, /!feet @member/);
   assert.match(fields, /!shoot @member/);
-  assert.match(fields, /!masturbate @member \(VIP; censored anime GIF\)/);
-  assert.match(fields, /!oral @member \(VIP; censored anime GIF\)/);
-  assert.match(fields, /!anal @member \(VIP; censored anime GIF\)/);
+  assert.match(fields, /!masturbate @member \(VIP; text-only\)/);
+  assert.match(fields, /!oral @member \(VIP; text-only\)/);
+  assert.match(fields, /!anal @member \(VIP; text-only\)/);
+  assert.match(fields, /!tease @member \(VIP; text-only\)/);
+  assert.match(fields, /!seduce @member \(VIP; text-only\)/);
   assert.doesNotMatch(fields, /NSFW preferences|!nsfw-on|!nsfw-off|approval/i);
 });
 
@@ -120,9 +124,13 @@ test("paired and solo commands enforce the correct mention mode", () => {
   assert.equal(getFunCommandDefinition("masturbate").needsTarget, true);
   assert.equal(getFunCommandDefinition("oral").needsTarget, true);
   assert.equal(getFunCommandDefinition("anal").needsTarget, true);
-  assert.equal(getFunCommandDefinition("masturbate").gif, "blush");
-  assert.equal(getFunCommandDefinition("oral").gif, "wink");
-  assert.equal(getFunCommandDefinition("anal").gif, "smug");
+  assert.equal(getFunCommandDefinition("tease").needsTarget, true);
+  assert.equal(getFunCommandDefinition("seduce").needsTarget, true);
+  assert.equal(getFunCommandDefinition("masturbate").gif, null);
+  assert.equal(getFunCommandDefinition("oral").gif, null);
+  assert.equal(getFunCommandDefinition("anal").gif, null);
+  assert.equal(getFunCommandDefinition("tease").gif, null);
+  assert.equal(getFunCommandDefinition("seduce").gif, null);
   assert.equal(getFunCommandDefinition("unknown"), null);
 });
 
