@@ -419,7 +419,7 @@ async function handleRelationshipCommand(message, store, name, fetchImpl) {
 }
 const STATS_COMMAND = new SlashCommandBuilder().setName("stats").setDescription("Privately view your complete fun statistics").toJSON();
 const VIP_COMMAND = new SlashCommandBuilder().setName("vip").setDescription("VIP commands").addSubcommand((sub) => sub.setName("stats").setDescription("Privately view complete stats").addUserOption((option) => option.setName("member").setDescription("Member whose stats to view").setRequired(false))).toJSON();
-async function registerFunHelpCommand(token, applicationId) {
+async function registerFunCommands(token, applicationId) {
   const rest = new REST({ version: "10" }).setToken(token);
   const route = Routes.applicationGuildCommands(applicationId, KITTISUGAR_GUILD_ID);
   const current = await rest.get(route);
@@ -458,7 +458,7 @@ export function attachFunCommands(client, { store, fetchImpl = fetch, token, app
     }
   });
   client.once(Events.ClientReady, () => {
-    if (token && applicationId) void registerFunHelpCommand(token, applicationId).catch((error) => console.error("[fun] /fun help registration failed: " + error.message));
+    if (token && applicationId) void registerFunCommands(token, applicationId).catch((error) => console.error("[fun] stats command registration failed: " + error.message));
   });
 
   client.on(Events.MessageCreate, async (message) => {
