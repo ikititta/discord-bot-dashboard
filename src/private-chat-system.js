@@ -104,7 +104,7 @@ export function buildPrivateChatPermissionOverwrites({ everyoneId, ownerId, memb
     { id: everyoneId, deny: [PermissionFlagsBits.ViewChannel] },
     ...(ownerId !== excludedOwnerId ? [{ id: ownerId, allow: MEMBER_PERMISSIONS }] : []),
     ...(excludedOwnerId && excludedOwnerId !== ownerId ? [{ id: excludedOwnerId, deny: [PermissionFlagsBits.ViewChannel] }] : []),
-    ...memberIds.map((id) => ({ id, allow: MEMBER_PERMISSIONS })),
+    ...memberIds.filter((id) => id !== excludedOwnerId).map((id) => ({ id, allow: MEMBER_PERMISSIONS })),
     {
       id: botId,
       allow: [...MEMBER_PERMISSIONS, PermissionFlagsBits.ManageChannels, PermissionFlagsBits.ManageMessages],
