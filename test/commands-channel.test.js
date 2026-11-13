@@ -28,7 +28,7 @@ test("commands panel contains interactive category buttons and is explicitly not
   assert.deepEqual(ids, [
     "sugar-commands:solo", "sugar-commands:soloNsfw", "sugar-commands:relationship",
     "sugar-commands:affection", "sugar-commands:interactions", "sugar-commands:nsfw",
-    "sugar-commands:functional",
+    "sugar-commands:community", "sugar-commands:pets", "sugar-commands:functional",
   ]);
 });
 
@@ -40,7 +40,9 @@ test("each category exposes current command syntax and access requirements", () 
     affection: ["!hug @member", "!kiss @member", "!cuddle @member"],
     interactions: ["!tease @member", "!seduce @member", "anime GIFs"],
     nsfw: ["!fuck @member", "!masturbate @member", "!oral @member", "!anal @member"],
-    functional: ["/delete amount:", "/vip-delete", "/mod-delete", "!quote", "!profile", "!rep", "!pet", "/priv-chat create"],
+    community: ["!rep", "Confessions, polls", "!rep comments"],
+    pets: ["!pet adopt", "!pet buy <treat|toy|potion>", "!pet gif", "!pet delete"],
+    functional: ["/delete amount:", "/vip-delete", "/mod-delete", "!quote", "!profile", "/priv-chat create"],
   };
   for (const [category, phrases] of Object.entries(cases)) {
     const embed = buildCommandsCategoryEmbed(category);
