@@ -242,7 +242,7 @@ export function buildFunHelpEmbed() {
       { name: "Two-person commands", value: "!hug @member · !slap @member · !bonk @member · !spank @member · !kiss @member · !fuck @member · !cuddle @member · !pat @member · !poke @member · !bite @member · !kick @member · !kill @member (VIP; 30-second timeout) · !highfive @member · !handhold @member" },
       { name: "Solo commands", value: "!cry · !laugh · !dance · !sleep · !happy · !blush · !smug · !wave · !facepalm · !wink · !shrug · !smile · !pout" },
       { name: "Statistics", value: "!stats — VIP members can see their complete stats.\n!vip stats — same complete report.\n!vip stats @member — view another member’s complete stats.\nStats count commands used, interactions received, and interaction partners." },
-      { name: "VIP", value: "VIP unlocks !fuck, !kill (30-second timeout), complete statistics, and other exclusive benefits. Members without the VIP role cannot use !fuck, !stats, or !vip stats." },
+      { name: "VIP", value: "VIP unlocks !fuck, !kill (30-second timeout), complete statistics, and other exclusive benefits. For !fuck and !kill, either the person using the command or the mentioned member must have VIP. Only the person viewing VIP statistics needs VIP." },
     )
     .setFooter({ text: "Have fun in Kittisugar ♡" });
 }
@@ -284,11 +284,6 @@ async function handleStats(message, store, args) {
 async function handleFunAction(message, store, name, args, fetchImpl) {
   const definition = getFunCommandDefinition(name);
   if (!definition) return false;
-  if (isVipOnlyFunCommand(name) && !isVip(message.member)) {
-    await safeReply(message, { content: `The !${name} command is a VIP-only benefit ♡` });
-    return true;
-  }
-
   let targetMember = null;
   let targetUser = null;
   let targetRole = null;
@@ -308,6 +303,11 @@ async function handleFunAction(message, store, name, args, fetchImpl) {
       return true;
     }
     targetRole = normalizeFunRole(targetMember);
+    // VIP access for paired commands is satisfied when either participant is VIP.
+    if (isVipOnlyFunCommand(name) && !isVip(message.member) && !isVip(targetMember)) {
+      await safeReply(message, { content: `The !${name} command is a VIP-only benefit ♡` });
+      return true;
+    }
   } else if (message.mentions.users.size) {
     await safeReply(message, { content: `!${name} is a solo command and doesn't need a mention.` });
     return true;
