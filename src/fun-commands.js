@@ -75,6 +75,22 @@ export function normalizeFunRole(member) {
   return matches.length === 1 ? matches[0] : "neutral";
 }
 
+export function normalizeFunDominance(member) {
+  const normalize = (value) => String(value ?? "").normalize("NFKD").toLowerCase().replace(/\\p{M}/gu, "").replace(/[^a-z]/g, "");
+  const labels = new Map([
+    ["submissive", -2],
+    ["mostlysubmissive", -1],
+    ["switch", 0],
+    ["mostlydominant", 1],
+    ["dominant", 2],
+  ]);
+  for (const role of member?.roles?.cache?.values?.() ?? []) {
+    const score = labels.get(normalize(role.name));
+    if (score !== undefined) return score;
+  }
+  return 0;
+}
+
 export function getFunCommandDefinition(name) {
   if (Object.hasOwn(TWO_PERSON_COMMANDS, name)) return { ...TWO_PERSON_COMMANDS[name], needsTarget: true };
   if (Object.hasOwn(SOLO_COMMANDS, name)) return { ...SOLO_COMMANDS[name], needsTarget: false };
@@ -125,18 +141,21 @@ export function buildFunStatsEmbed({ user, stats, full = false, received = false
   return embed;
 }
 
-export function resolveGifPairing(actorRole, targetRole = null) {
+export function resolveGifPairing(actorRole, targetRole = null, actorDominance = 0, targetDominance = 0) {
   if (targetRole === null) {
     if (actorRole === "female") return "f";
     if (actorRole === "male") return "m";
     return null;
   }
+  const reverse = Number(actorDominance) < Number(targetDominance);
+  const first = reverse ? targetRole : actorRole;
+  const second = reverse ? actorRole : targetRole;
   return ({
     "female:female": "ff",
     "male:male": "mm",
     "female:male": "fm",
     "male:female": "mf",
-  })[`${actorRole}:${targetRole}`] ?? null;
+  })[`${first}:${second}`] ?? null;
 }
 
 function validatedGifUrl(rawUrl, expectedHost) {
@@ -213,11 +232,13 @@ export async function fetchAnimeGif(category, {
   fetchImpl = fetch,
   actorRole = "neutral",
   targetRole = null,
+  actorDominance = 0,
+  targetDominance = 0,
 } = {}) {
   if (!GIF_CATEGORIES.has(category)) throw new Error("Invalid anime GIF category.");
 
   if (GIFUKAI_PAIRING_CATEGORIES.has(category)) {
-    const pairing = resolveGifPairing(actorRole, targetRole);
+    const pairing = resolveGifPairing(actorRole, targetRole, actorDominance, targetDominance);
     const url = new URL(`${GIFUKAI_API_BASE}/${category}`);
     if (pairing) url.searchParams.set("pairing", pairing);
     try {
@@ -329,6 +350,9 @@ async function handleFunAction(message, store, name, args, fetchImpl) {
   let targetMember = null;
   let targetUser = null;
   let targetRole = null;
+  let targetDominance = 0;
+  const actorRole = normalizeFunRole(message.member);
+  const actorDominance = normalizeFunDominance(message.member);
   if (definition.needsTarget) {
     targetUser = message.mentions.users.first();
     const replyTargetAllowed = !["fuck", "masturbate", "oral", "anal"].includes(name);
@@ -350,6 +374,7 @@ async function handleFunAction(message, store, name, args, fetchImpl) {
       return true;
     }
     targetRole = normalizeFunRole(targetMember);
+    targetDominance = normalizeFunDominance(targetMember);
     if (name === "oral" && !resolveOralNsfwGifCategory(targetRole)) {
       await safeReply(message, { content: "I need the mentioned member to have a Female or Male role to choose the matching oral GIF ♡" });
       return true;
@@ -383,7 +408,7 @@ async function handleFunAction(message, store, name, args, fetchImpl) {
       gif = await fetchPurrbotNsfwGif(category, { fetchImpl });
     } else if (definition.gif) {
       if (name === "lick") { try { gif = await fetchPurrbotSfwGif("lick", { fetchImpl }); } catch (error) { console.warn("[fun] PurrBot lick GIF unavailable; trying anime fallback: " + error.message); } }
-      if (!gif) gif = await fetchAnimeGif(definition.gif, { fetchImpl, actorRole: normalizeFunRole(message.member), targetRole });
+      if (!gif) gif = await fetchAnimeGif(definition.gif, { fetchImpl, actorRole, targetRole, actorDominance, targetDominance });
     }
   }
   catch (error) { console.warn(`[fun] GIF lookup failed for !${name}: ${error.message}`); }
@@ -425,7 +450,7 @@ async function handleRelationshipCommand(message, store, name, fetchImpl) {
     let gif = null;
     try {
       const category = name === "couple" ? "handhold" : "kiss";
-      gif = await fetchAnimeGif(category, { fetchImpl, actorRole: normalizeFunRole(message.member), targetRole: normalizeFunRole(member) });
+      gif = await fetchAnimeGif(category, { fetchImpl, actorRole: normalizeFunRole(message.member), targetRole: normalizeFunRole(member), actorDominance: normalizeFunDominance(message.member), targetDominance: normalizeFunDominance(member) });
     } catch (error) { console.warn(`[fun] relationship GIF lookup failed for !${name}: ${error.message}`); }
     const embed = gif ? new EmbedBuilder().setColor(COLOR).setImage(gif.url) : null;
     await safeReply(message, { content: (type === "marriage" ? "💍 " : "💗 ") + "<@" + message.author.id + "> has proposed to <@" + target.id + ">!", ...(embed ? { embeds: [embed] } : {}), components: [relationshipRow(proposal.id)] }, [message.author.id, target.id]);
