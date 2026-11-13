@@ -22,6 +22,7 @@ const COMMANDS = Object.freeze({
   "mod-delete": { kind: "moderator", max: MESSAGE_DELETION_LIMITS.moderator, roleField: "moderatorRoleIds" },
 });
 const CONFIRM_PREFIX = "message-delete:";
+export const MESSAGE_DELETION_PROTECTED_CHANNEL_IDS = Object.freeze(["1570257241511170150"]);
 const PENDING_TTL_MS = 5 * 60 * 1_000;
 const REQUIRED_BOT_PERMISSIONS = [
   PermissionFlagsBits.ViewChannel,
@@ -386,6 +387,9 @@ function isEligibleMessage(message, targetId) {
 function validateGuildChannel(interaction) {
   if (!interaction.inGuild?.() || !interaction.guildId || !interaction.channel) {
     throw new UserFacingError("These commands can only be used in a server text channel.");
+  }
+  if (MESSAGE_DELETION_PROTECTED_CHANNEL_IDS.includes(interaction.channelId)) {
+    throw new UserFacingError("Messages in this channel are protected and cannot be deleted by Sugar.");
   }
   if (typeof interaction.channel.messages?.fetch !== "function") {
     throw new UserFacingError("This channel does not support message deletion.");
