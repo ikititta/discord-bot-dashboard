@@ -1,11 +1,8 @@
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, Events, REST, Routes, SlashCommandBuilder, StringSelectMenuBuilder } from "discord.js";
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, Events, REST, Routes, SlashCommandBuilder } from "discord.js";
 import { GENDER_ROLE_IDS } from "./role-onboarding.js";
 
 const KITTISUGAR_GUILD_ID = "1567093019377930363";
-const FUN_CATEGORY_ID = "1568179038625857576";
-export const GIF_PREFERENCES_CHANNEL_ID = "1570873475038711973";
-export const GIF_PREFERENCES_CHANNEL_NAME = "🎞️｜୨୧・𝓰𝓲𝓯-𝓹𝓻𝓮𝓯𝓼";
-const GIF_PREFERENCES_PANEL_TITLE = "୨୧ 𝓖𝓘𝓕 Preferences";
+const GIF_PREFERENCES_CHANNEL_ID = "1570873475038711973";
 
 export const FUN_ROLE_IDS = GENDER_ROLE_IDS;
 export const FUN_VIP_ROLE_ID = "1568188640113463437";
@@ -14,7 +11,6 @@ export const FUN_MEMBER_ROLE_ID = "1568188534836428812";
 const GIFUKAI_API_BASE = "https://api.gifukai.com/v1";
 const NEKOS_BEST_API_BASE = "https://nekos.best/api/v2";
 const PURRBOT_API_BASE = "https://api.purrbot.site/v2";
-const GIPHY_API_BASE = "https://api.giphy.com/v1/gifs/search";
 const GIFUKAI_PAIRING_CATEGORIES = new Set(["hug", "kiss", "pat", "cry", "sleep", "pout", "smile", "shrug", "laugh", "dance", "happy", "blush", "smug", "wave", "facepalm", "wink"]);
 const REQUEST_TIMEOUT_MS = 8_000;
 const COLOR = 0xffd9ff;
@@ -195,29 +191,7 @@ export async function fetchPurrbotSfwGif(category, { fetchImpl = fetch } = {}) {
   return { url: gifUrl.toString(), anime: "", pairing: category, source: "PurrBot SFW" };
 }
 
-export async function fetchRealGif(query, { fetchImpl = fetch, apiKey = process.env.GIPHY_API_KEY } = {}) {
-  if (!apiKey) throw new Error("GIPHY_API_KEY is not configured.");
-  const url = new URL(GIPHY_API_BASE);
-  url.searchParams.set("api_key", apiKey); url.searchParams.set("q", query);
-  url.searchParams.set("limit", "10"); url.searchParams.set("rating", "pg-13"); url.searchParams.set("lang", "en");
-  const response = await fetchImpl(url, { signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
-  if (!response.ok) throw new Error("Giphy returned HTTP " + response.status + ".");
-  const payload = await response.json();
-  const selected = (Array.isArray(payload?.data) ? payload.data : []).find((item) => item?.images?.original?.url);
-  let gifUrl;
-  try { gifUrl = new URL(selected?.images?.original?.url ?? ""); }
-  catch { throw new Error("Giphy returned an invalid GIF URL."); }
-  if (gifUrl.protocol !== "https:" || !/^media\\d*\\.giphy\\.com$/.test(gifUrl.hostname) || !gifUrl.pathname.endsWith(".gif")) {
-    throw new Error("Giphy returned an invalid GIF URL.");
-  }
-  return { url: gifUrl.toString(), anime: "", pairing: null, source: "Giphy" };
-}
 
-const REAL_GIF_QUERIES = Object.freeze({
-  shoot: "cinematic movie shooting scene gunshot reaction",
-  kill: "cinematic movie dramatic defeat reaction",
-  lick: "lick reaction gif",
-});
 export async function fetchNsfwGif({ fetchImpl = fetch, actorRole = "neutral", targetRole = null } = {}) {
   const category = resolveNsfwGifCategory(actorRole, targetRole);
   const response = await fetchImpl(PURRBOT_API_BASE + "/img/nsfw/" + category + "/gif", {
@@ -407,12 +381,7 @@ async function handleFunAction(message, store, name, args, fetchImpl) {
       const category = name === "oral" ? resolveOralNsfwGifCategory(targetRole) : definition.nsfwGif === "solo" && actorRole === "male" ? "solo_male" : definition.nsfwGif;
       gif = await fetchPurrbotNsfwGif(category, { fetchImpl });
     } else if (definition.gif) {
-      const style = store.getGifStyle?.(message.guild.id, message.author.id) ?? "anime";
-      if (style === "real") {
-        const query = REAL_GIF_QUERIES[name] ?? (definition.gif + " reaction gif");
-        try { gif = await fetchRealGif(query, { fetchImpl }); } catch (error) { console.warn("[fun] real GIF lookup failed; trying the anime provider: " + error.message); }
-      }
-      if (!gif && name === "lick") { try { gif = await fetchPurrbotSfwGif("lick", { fetchImpl }); } catch (error) { console.warn("[fun] PurrBot lick GIF unavailable; trying anime fallback: " + error.message); } }
+      if (name === "lick") { try { gif = await fetchPurrbotSfwGif("lick", { fetchImpl }); } catch (error) { console.warn("[fun] PurrBot lick GIF unavailable; trying anime fallback: " + error.message); } }
       if (!gif) gif = await fetchAnimeGif(definition.gif, { fetchImpl, actorRole: normalizeFunRole(message.member), targetRole });
     }
   }
@@ -455,12 +424,7 @@ async function handleRelationshipCommand(message, store, name, fetchImpl) {
     let gif = null;
     try {
       const category = name === "couple" ? "handhold" : "kiss";
-      const style = store.getGifStyle?.(message.guild.id, message.author.id) ?? "anime";
-      if (style === "real") {
-        try { gif = await fetchRealGif(category + " romantic movie relationship reaction", { fetchImpl }); }
-        catch (error) { console.warn("[fun] real relationship GIF lookup failed; using anime: " + error.message); }
-      }
-      if (!gif) gif = await fetchAnimeGif(category, { fetchImpl, actorRole: normalizeFunRole(message.member), targetRole: normalizeFunRole(member) });
+      gif = await fetchAnimeGif(category, { fetchImpl, actorRole: normalizeFunRole(message.member), targetRole: normalizeFunRole(member) });
     } catch (error) { console.warn(`[fun] relationship GIF lookup failed for !${name}: ${error.message}`); }
     const embed = gif ? new EmbedBuilder().setColor(COLOR).setImage(gif.url) : null;
     await safeReply(message, { content: (type === "marriage" ? "💍 " : "💗 ") + "<@" + message.author.id + "> has proposed to <@" + target.id + ">!", ...(embed ? { embeds: [embed] } : {}), components: [relationshipRow(proposal.id)] }, [message.author.id, target.id]);
@@ -474,40 +438,12 @@ async function handleRelationshipCommand(message, store, name, fetchImpl) {
 const STATS_COMMAND = new SlashCommandBuilder().setName("stats").setDescription("Privately view your complete fun statistics").toJSON();
 const VIP_COMMAND = new SlashCommandBuilder().setName("vip").setDescription("VIP commands").addSubcommand((sub) => sub.setName("stats").setDescription("Privately view complete stats").addUserOption((option) => option.setName("member").setDescription("Member whose stats to view").setRequired(false))).toJSON();
 
-export function buildGifPreferencesPanelPayload() {
-  return {
-    embeds: [new EmbedBuilder()
-      .setColor(COLOR)
-      .setTitle(GIF_PREFERENCES_PANEL_TITLE)
-      .setDescription("Choose the GIF style used for fun commands when someone mentions you or when you mention someone. Your choice is saved to your account.")],
-    components: [new ActionRowBuilder().addComponents(
-      new ButtonBuilder().setCustomId("sugar-gif-style:anime").setLabel("Anime").setStyle(ButtonStyle.Secondary),
-      new ButtonBuilder().setCustomId("sugar-gif-style:real").setLabel("Real").setStyle(ButtonStyle.Primary),
-    )],
-  };
-}
-
-export async function ensureGifPreferencesChannel(guild, client) {
-  const channel = await guild.channels.fetch(GIF_PREFERENCES_CHANNEL_ID).catch(() => null);
-  if (!channel || channel.type !== 0 || channel.guildId !== guild.id) {
-    console.warn("[fun] designated GIF preferences channel " + GIF_PREFERENCES_CHANNEL_ID + " was not found; no channel was created.");
-    return null;
-  }
-  const recent = await channel.messages.fetch({ limit: 100 });
-  const matches = [...recent.values()].filter((message) =>
-    message.author?.id === client.user.id &&
-    message.embeds.some((embed) => [GIF_PREFERENCES_PANEL_TITLE, "୨୧ 𝓖𝓘𝓕 · 𝓟𝓻𝓮𝓯𝓮𝓻𝓮𝓷𝓬𝓮𝓼 ♡"].includes(embed.title)),
-  ).sort((a, b) => b.createdTimestamp - a.createdTimestamp);
-  const existing = matches.shift();
-  if (existing) await existing.edit(buildGifPreferencesPanelPayload());
-  else await channel.send(buildGifPreferencesPanelPayload());
-  for (const duplicate of matches) {
-    await duplicate.delete().catch((error) => {
-      if (error?.code !== 10008) throw error;
-    });
-  }
-  console.info("[fun] GIF preferences panel ready in #" + channel.name);
-  return channel;
+export async function removeGifPreferencesChannel(guild) {
+  const channel = await guild.channels.fetch("1570873475038711973").catch(() => null);
+  if (!channel) return false;
+  await channel.delete("Retire GIF preferences panel; Sugar now uses anime GIFs only");
+  console.info("[fun] retired GIF preferences channel and its embed");
+  return true;
 }
 
 async function registerFunCommands(token, applicationId) {
@@ -520,39 +456,7 @@ export function attachFunCommands(client, { store, fetchImpl = fetch, token, app
   if (!store) throw new Error("The fun-command statistics store is required.");
 
   client.on(Events.InteractionCreate, async (interaction) => {
-    if (interaction.isStringSelectMenu?.() && interaction.customId === "sugar-gif-preferences") {
-      const style = interaction.values?.[0];
-      if (!["anime", "real"].includes(style)) {
-        return interaction.reply({ content: "Choose anime or real GIFs ♡", ephemeral: true });
-      }
-      store.setGifStyle(interaction.guildId, interaction.user.id, style);
-      const note = style === "real" && !process.env.GIPHY_API_KEY
-        ? "\nReal GIFs need GIPHY_API_KEY in FadeHost; Sugar will use anime GIFs until it is configured."
-        : "";
-      return interaction.reply({
-        content: "Your GIF preference is now **" + (style === "anime" ? "Anime GIFs" : "Real / movie GIFs") + "** ♡" + note,
-        ephemeral: true,
-      });
-    }
-    if (interaction.isStringSelectMenu?.() && interaction.customId.startsWith("sugar-fun-style:")) {
-      const ownerId = interaction.customId.split(":")[1];
-      if (interaction.user.id !== ownerId) return interaction.reply({ content: "This GIF style menu belongs to someone else ♡", ephemeral: true });
-      const style = interaction.values?.[0];
-      if (!["anime", "real"].includes(style)) return interaction.reply({ content: "Choose anime or real GIFs ♡", ephemeral: true });
-      store.setGifStyle(interaction.guildId, ownerId, style);
-      const note = style === "real" && !process.env.GIPHY_API_KEY ? "\nReal GIFs need GIPHY_API_KEY in FadeHost; Sugar will use anime GIFs until it is configured." : "";
-      return interaction.update({ content: "Your fun GIF style is now **" + style + "** ♡" + note, components: [] });
-    }
     if (interaction.isButton?.()) {
-      if (interaction.customId === "sugar-gif-style:anime" || interaction.customId === "sugar-gif-style:real") {
-        const style = interaction.customId.endsWith(":real") ? "real" : "anime";
-        store.setGifStyle(interaction.guildId, interaction.user.id, style);
-        const note = style === "real" && !process.env.GIPHY_API_KEY
-          ? " Real GIFs need GIPHY_API_KEY in FadeHost; anime GIFs will be used until it is configured."
-          : "";
-        await interaction.reply({ content: "Your GIF preference is now **" + (style === "anime" ? "Anime" : "Real") + " for fun commands**." + note, ephemeral: true });
-        return;
-      }
       try {
         await handleRelationshipButton(interaction, store);
       } catch (error) {
@@ -581,17 +485,17 @@ export function attachFunCommands(client, { store, fetchImpl = fetch, token, app
     if (token && applicationId) void registerFunCommands(token, applicationId).catch((error) => console.error("[fun] stats command registration failed: " + error.message));
   });
 
-  const setupGifPreferences = (guild) => {
+  const retireGifPreferences = (guild) => {
     if (guild.id !== KITTISUGAR_GUILD_ID) return;
-    void ensureGifPreferencesChannel(guild, client).catch((error) =>
-      console.error("[fun] GIF preferences channel setup failed: " + error.message),
+    void removeGifPreferencesChannel(guild).catch((error) =>
+      console.error("[fun] could not delete retired GIF preferences channel: " + error.message),
     );
   };
   client.once(Events.ClientReady, () => {
     const guild = client.guilds.cache.get(KITTISUGAR_GUILD_ID);
-    if (guild) setupGifPreferences(guild);
+    if (guild) retireGifPreferences(guild);
   });
-  client.on(Events.GuildCreate, setupGifPreferences);
+  client.on(Events.GuildCreate, retireGifPreferences);
 
   client.on(Events.MessageCreate, async (message) => {
     if (!message.guild || message.guild.id !== KITTISUGAR_GUILD_ID ||
@@ -613,17 +517,7 @@ export function attachFunCommands(client, { store, fetchImpl = fetch, token, app
         return;
       }
       if (name === "funstyle") {
-        const current = store.getGifStyle?.(message.guild.id, message.author.id) ?? "anime";
-        await safeReply(message, {
-          content: "Choose the GIF style for your fun interactions. NSFW commands keep their existing VIP and age-role restrictions ♡",
-          components: [new ActionRowBuilder().addComponents(new StringSelectMenuBuilder()
-            .setCustomId("sugar-fun-style:" + message.author.id)
-            .setPlaceholder("Choose your GIF style ♡")
-            .addOptions(
-              { label: "Anime GIFs", value: "anime", description: "Anime reactions and illustrations", default: current === "anime" },
-              { label: "Real / movie GIFs", value: "real", description: "Real-life and cinematic reaction GIFs", default: current === "real" },
-            ))],
-        });
+        await safeReply(message, { content: "All fun commands use anime GIFs." });
         return;
       }
       if (name === "nsfw-on" || name === "nsfw-off") {
