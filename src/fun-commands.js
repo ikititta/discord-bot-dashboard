@@ -496,7 +496,7 @@ export async function ensureGifPreferencesChannel(guild, client) {
   const recent = await channel.messages.fetch({ limit: 100 });
   const matches = [...recent.values()].filter((message) =>
     message.author?.id === client.user.id &&
-    message.embeds.some((embed) => embed.title === GIF_PREFERENCES_PANEL_TITLE),
+    message.embeds.some((embed) => [GIF_PREFERENCES_PANEL_TITLE, "୨୧ 𝓖𝓘𝓕 · 𝓟𝓻𝓮𝓯𝓮𝓻𝓮𝓷𝓬𝓮𝓼 ♡"].includes(embed.title)),
   ).sort((a, b) => b.createdTimestamp - a.createdTimestamp);
   const existing = matches.shift();
   if (existing) await existing.edit(buildGifPreferencesPanelPayload());
