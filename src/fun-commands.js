@@ -96,6 +96,23 @@ export function normalizeFunDominance(member) {
   return null;
 }
 
+export function resolveDominancePair(actorDominance, targetDominance) {
+  const actor = Number.isInteger(actorDominance) ? actorDominance : null;
+  const target = Number.isInteger(targetDominance) ? targetDominance : null;
+  if (actor === null || target === null) return { mode: "neutral", dominant: null, submissive: null };
+
+  // Positive values are dominant; negative values are submissive; Switch is 0.
+  if (actor > 0 && target < 0) return { mode: "directional", dominant: "actor", submissive: "target" };
+  if (target > 0 && actor < 0) return { mode: "directional", dominant: "target", submissive: "actor" };
+  if (actor === 0 && target > 0) return { mode: "directional", dominant: "target", submissive: "actor" };
+  if (actor === 0 && target < 0) return { mode: "directional", dominant: "actor", submissive: "target" };
+  if (target === 0 && actor > 0) return { mode: "directional", dominant: "actor", submissive: "target" };
+  if (target === 0 && actor < 0) return { mode: "directional", dominant: "target", submissive: "actor" };
+
+  // Same-side preferences (including two Switches) are neutral/random.
+  return { mode: "neutral", dominant: null, submissive: null };
+}
+
 export function getFunCommandDefinition(name) {
   if (Object.hasOwn(TWO_PERSON_COMMANDS, name)) return { ...TWO_PERSON_COMMANDS[name], needsTarget: true };
   if (Object.hasOwn(SOLO_COMMANDS, name)) return { ...SOLO_COMMANDS[name], needsTarget: false };
@@ -242,13 +259,10 @@ export async function fetchPurrbotSfwGif(category, { fetchImpl = fetch } = {}) {
 
 
 export async function fetchNsfwGif({ fetchImpl = fetch, actorRole = "neutral", targetRole = null, actorDominance = null, targetDominance = null } = {}) {
-  // PurrBot cannot filter mixed-gender GIFs by actor/target direction. Fail
-  // closed for the exact dominant-woman/submissive-man pairing rather than
-  // showing a GIF that depicts the woman being dominated.
-  const hasDominantWomanAndSubmissiveMan =
-    (actorRole === "female" && actorDominance === 2 && targetRole === "male" && targetDominance === -2) ||
-    (targetRole === "female" && targetDominance === 2 && actorRole === "male" && actorDominance === -2);
-  if (hasDominantWomanAndSubmissiveMan) return null;
+  // PurrBot's generic categories cannot guarantee which participant is on top.
+  // Only use them for neutral/random pairings; directional pairings need a
+  // position-tagged GIF source, otherwise Sugar could show the roles reversed.
+  if (resolveDominancePair(actorDominance, targetDominance).mode === "directional") return null;
   const category = resolveNsfwGifCategory(actorRole, targetRole, actorDominance, targetDominance);
   const response = await fetchImpl(PURRBOT_API_BASE + "/img/nsfw/" + category + "/gif", {
     headers: { "User-Agent": "SugarDiscordBot/1.0 (https://github.com/ikititta/discord-bot-dashboard)" },
@@ -437,7 +451,7 @@ async function handleFunAction(message, store, name, args, fetchImpl) {
 
   let gif = null;
   try {
-    if (name === "fuck") gif = await fetchNsfwGif({ fetchImpl, actorRole, targetRole, actorDominance, targetDominance });
+    if (name === "fuck" || name === "anal") gif = await fetchNsfwGif({ fetchImpl, actorRole, targetRole, actorDominance, targetDominance });
     else if (name === "masturbate") {
       gif = selectMasturbateGif(actorRole, targetRole);
     } else if (definition.nsfwGif) {
