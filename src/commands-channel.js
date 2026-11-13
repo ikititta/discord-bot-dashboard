@@ -35,17 +35,22 @@ export function buildCommandsCategoryEmbed(category) {
 export function buildModerationCommandsEmbed() {
   return new EmbedBuilder()
     .setColor(COLOR)
-    .setTitle("🛡️ ୨୧ Moderation ♡")
+    .setTitle(MODERATION_PANEL_TITLE)
     .setDescription(
-      "**/mod-delete amount:<1-100> [member:<member>]**\n" +
-      "Delete up to 100 recent messages in this channel. Add a member to target their messages; leave it empty to clean eligible messages from the channel.\n\n" +
-      "This command is restricted to authorised moderators. Large deletions require confirmation."
+      "Use the buttons below to moderate members. Actions are permission-checked and performed privately.\n\n" +
+      "Choose **Ban**, **Timeout**, or **Warn** to enter a member ID and reason. Choose **Commands** to view the moderation command guide."
     )
-    .setFooter({ text: "Kittisugar · Moderation ♡" });
+    .setFooter({ text: "Kittisugar · Staff tools ♡" });
 }
 
 export function buildModerationCommandsPanelPayload() {
-  return { embeds: [buildModerationCommandsEmbed()] };
+  const row = new ActionRowBuilder().addComponents(
+    new ButtonBuilder().setCustomId("sugar-moderation:ban").setLabel("Ban").setEmoji("🔨").setStyle(ButtonStyle.Danger),
+    new ButtonBuilder().setCustomId("sugar-moderation:timeout").setLabel("Timeout").setEmoji("🔇").setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder().setCustomId("sugar-moderation:warn").setLabel("Warn").setEmoji("⚠️").setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder().setCustomId("sugar-moderation:commands").setLabel("Commands").setEmoji("📖").setStyle(ButtonStyle.Primary),
+  );
+  return { embeds: [buildModerationCommandsEmbed()], components: [row] };
 }
 
 export async function ensureModerationCommandsPanel(guild, client) {
@@ -58,17 +63,23 @@ export async function ensureModerationCommandsPanel(guild, client) {
   const previous = [...recent.values()].filter((message) =>
     message.author?.id === client.user.id &&
     (message.embeds.some((embed) =>
-      [MODERATION_PANEL_TITLE, "୨୧ 𝓢𝓽𝓪𝓯𝓯 · 𝓣𝓸𝓸𝓵𝓼 ♡"].includes(embed.title)) ||
-      message.components.some((row) => row.components.some((component) => component.customId === "sugar-moderation-commands"))),
-  );
-  for (const message of previous) {
-    await message.delete().catch((error) => {
+      [MODERATION_PANEL_TITLE, "🛡️ ୨୧ Moderation ♡", "୨୧ 𝓢𝓽𝓪𝓯𝓯 · 𝓣𝓸𝓸𝓵𝓼 ♡"].includes(embed.title)) ||
+      message.components.some((row) => row.components.some((component) =>
+        ["sugar-moderation-commands", "sugar-moderation:ban", "sugar-moderation:commands"].includes(component.customId)))),
+  ).sort((a, b) => b.createdTimestamp - a.createdTimestamp);
+
+  const existing = previous.shift();
+  const panel = existing
+    ? await existing.edit(buildModerationCommandsPanelPayload())
+    : await channel.send(buildModerationCommandsPanelPayload());
+
+  for (const duplicate of previous) {
+    await duplicate.delete().catch((error) => {
       if (error?.code !== 10008) throw error;
     });
   }
-  await channel.send(buildModerationCommandsPanelPayload());
-  console.info("[commands] moderation guide ready in #" + channel.name);
-  return channel;
+  console.info("[commands] single interactive moderation panel ready in #" + channel.name);
+  return panel;
 }
 
 export function buildCommandsPanelPayload() {
@@ -191,8 +202,117 @@ export function attachCommandsChannel(client) {
   });
 
   client.on(Events.InteractionCreate, async (interaction) => {
-    if (!interaction.isButton?.()) return;
-    if (!interaction.customId.startsWith(PREFIX)) return;
+    if (interaction.isButton?.() && interaction.customId.startsWith("sugar-moderation:")) {
+      const action = interaction.customId.slice("sugar-moderation:".length);
+      if (action === "commands") {
+        await interaction.reply({
+          embeds: [buildModerationCommandsEmbed().setDescription(
+            "**/mod-delete amount:<1-100> [member:<member>]**\\nDelete up to 100 recent messages in this channel. Add a member to target their messages; leave it empty to clean eligible messages from the channel.\\n\\nThis command is restricted to authorised moderators. Large deletions require confirmation."
+          )],
+          ephemeral: true,
+        });
+        return;
+      }
+      if (!["ban", "timeout", "warn"].includes(action)) return;
+      const permitted = action === "ban"
+        ? interaction.memberPermissions?.has("BanMembers") || interaction.memberPermissions?.has("Administrator")
+        : interaction.memberPermissions?.has("ModerateMembers") || interaction.memberPermissions?.has("ManageMessages") || interaction.memberPermissions?.has("Administrator");
+      if (!permitted) {
+        await interaction.reply({ content: "You don't have permission to use this moderation action.", ephemeral: true });
+        return;
+      }
+      const modal = new ModalBuilder()
+        .setCustomId("sugar-moderation-modal:" + action)
+        .setTitle(action === "ban" ? "Ban a member" : action === "timeout" ? "Timeout a member" : "Warn a member");
+      const target = new TextInputBuilder()
+        .setCustomId("target")
+        .setLabel("Member ID")
+        .setPlaceholder("Paste the Discord user ID")
+        .setStyle(TextInputStyle.Short)
+        .setRequired(true)
+        .setMaxLength(25);
+      const reason = new TextInputBuilder()
+        .setCustomId("reason")
+        .setLabel("Reason")
+        .setPlaceholder("Explain why this action is being taken")
+        .setStyle(TextInputStyle.Paragraph)
+        .setRequired(true)
+        .setMaxLength(500);
+      modal.addComponents(
+        new ActionRowBuilder().addComponents(target),
+        new ActionRowBuilder().addComponents(reason),
+      );
+      if (action === "timeout") {
+        const duration = new TextInputBuilder()
+          .setCustomId("duration")
+          .setLabel("Duration in minutes (1–40320)")
+          .setPlaceholder("e.g. 10")
+          .setStyle(TextInputStyle.Short)
+          .setRequired(true)
+          .setMaxLength(5);
+        modal.addComponents(new ActionRowBuilder().addComponents(duration));
+      }
+      await interaction.showModal(modal);
+      return;
+    }
+
+    if (interaction.isModalSubmit?.() && interaction.customId.startsWith("sugar-moderation-modal:")) {
+      const action = interaction.customId.slice("sugar-moderation-modal:".length);
+      const targetId = interaction.fields.getTextInputValue("target").trim();
+      const reason = interaction.fields.getTextInputValue("reason").trim();
+      if (!/^\\d{17,20}$/.test(targetId) || !reason) {
+        await interaction.reply({ content: "Enter a valid Discord user ID and a reason.", ephemeral: true });
+        return;
+      }
+      const permitted = action === "ban"
+        ? interaction.memberPermissions?.has("BanMembers") || interaction.memberPermissions?.has("Administrator")
+        : interaction.memberPermissions?.has("ModerateMembers") || interaction.memberPermissions?.has("ManageMessages") || interaction.memberPermissions?.has("Administrator");
+      if (!permitted || !interaction.guild) {
+        await interaction.reply({ content: "You don't have permission to use this moderation action.", ephemeral: true });
+        return;
+      }
+      await interaction.deferReply({ ephemeral: true });
+      try {
+        const targetMember = await interaction.guild.members.fetch(targetId).catch(() => null);
+        if (targetId === interaction.user.id || targetId === interaction.client.user.id) {
+          await interaction.editReply("You cannot moderate yourself or Sugar.");
+          return;
+        }
+        if (action !== "ban" && !targetMember) {
+          await interaction.editReply("That member is not currently in this server.");
+          return;
+        }
+        if (targetMember && !targetMember.moderatable && action !== "ban") {
+          await interaction.editReply("I cannot moderate that member. Check Sugar's role position and permissions.");
+          return;
+        }
+        if (action === "ban") {
+          if (targetMember && !targetMember.bannable) {
+            await interaction.editReply("I cannot ban that member. Check Sugar's role position and Ban Members permission.");
+            return;
+          }
+          await interaction.guild.members.ban(targetId, { reason: reason.slice(0, 500) });
+          await interaction.editReply("🔨 Member banned successfully.");
+        } else if (action === "timeout") {
+          const minutes = Number(interaction.fields.getTextInputValue("duration"));
+          if (!Number.isInteger(minutes) || minutes < 1 || minutes > 40320) {
+            await interaction.editReply("Duration must be a whole number between 1 and 40320 minutes.");
+            return;
+          }
+          await targetMember.timeout(minutes * 60_000, reason.slice(0, 500));
+          await interaction.editReply("🔇 Member timed out for " + minutes + " minute(s).");
+        } else if (action === "warn") {
+          await targetMember.send("You received a warning in **" + interaction.guild.name + "**.\\nReason: " + reason.slice(0, 500)).catch(() => null);
+          await interaction.editReply("⚠️ Warning processed. Sugar attempted to DM the member.");
+        }
+      } catch (error) {
+        console.error("[moderation-panel] " + action + " failed: " + error.message);
+        await interaction.editReply("The action failed. Check Sugar's permissions, role hierarchy, and the target ID.");
+      }
+      return;
+    }
+
+    if (!interaction.isButton?.() || !interaction.customId.startsWith(PREFIX)) return;
     const category = interaction.customId.slice(PREFIX.length);
     if (!categories[category]) return;
     await interaction.reply({ embeds: [buildCommandsCategoryEmbed(category)], ephemeral: true }).catch((error) => {
