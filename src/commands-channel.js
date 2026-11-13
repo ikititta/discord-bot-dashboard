@@ -87,7 +87,7 @@ export function buildCommandsPanelPayload() {
     embeds: [new EmbedBuilder()
       .setColor(COLOR)
       .setTitle(COMMANDS_PANEL_TITLE)
-      .setDescription("All Sugar commands, neatly organised ♡\n\nChoose a category below to see its commands and how to use them.")
+      .setDescription("All Sugar commands, neatly organised ♡\n\nChoose a category below to see its commands and how to use them. Fun and relationship interactions require the Member role; VIP-only commands are marked.")
       .setFooter({ text: "Select a category to browse commands · Not pinned ♡" })],
     components: rows,
   };
