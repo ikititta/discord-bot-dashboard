@@ -129,7 +129,7 @@ function buildPetRoomWelcomeEmbed(profile, pet, vip = false) {
   return new EmbedBuilder().setColor(COLOR).setTitle("୨୧ 𝓦𝓮𝓵𝓬𝓸𝓶𝓮 𝓱𝓸𝓶𝓮 ♡").setDescription(description)
     .setFooter({ text: "A little home for you and your companion ♡" });
 }
-const PET_HELP_CATEGORIES = {
+export const PET_HELP_CATEGORIES = {
   care: { label: "Care & bonding", title: "୨୧ 𝓒𝓪𝓻𝓮 & 𝓑𝓸𝓷𝓭𝓲𝓷𝓰 ♡", body: "`!pet` / `!pet status` · `!pet stats` · `!pet feed` · `!pet play` · `!pet cuddle` · `!pet talk` · `!pet story` · `!pet gif [happy|dance|sleep]` · `!pet redraw`\n\nView your companion, check stats, care for them, unlock stories and GIFs, or request a fresh illustration." },
   coins: { label: "Coins & items", title: "୨୧ 𝓒𝓸𝓲𝓷𝓼 & 𝓘𝓽𝓮𝓶𝓼 ♡", body: "`!pet daily` · `!pet shop` · `!pet buy <treat|toy|potion>` · `!pet use <item>` · `!pet inventory`\n\nCollect your daily coins, check shop prices, buy items, use them and view your inventory. Treat: 10 coins · Toy: 25 coins · Potion: 60 coins." },
   manage: { label: "My pets", title: "୨୧ 𝓜𝔂 𝓟𝓮𝓽𝓼 ♡", body: "`!pet adopt` · `!pet select <number>` · `!pet stats` · `!pet delete`\n\nAdopt in the pets channel, switch between companions and view their stats. Deleting a pet is VIP-only and requires confirmation." },
@@ -144,7 +144,7 @@ function buildPetStickyPayload(ownerId) {
   return { embeds: [new EmbedBuilder().setColor(COLOR).setTitle("୨୧ 𝓟𝓮𝓽 𝓗𝓮𝓵𝓹 ♡")
     .setDescription("Choose a category to see the commands for your companion ♡")], components: [row] };
 }
-function buildPetCategoryEmbed(category) {
+export function buildPetCategoryEmbed(category) {
   const item = PET_HELP_CATEGORIES[category];
   return new EmbedBuilder().setColor(COLOR).setTitle(item.title).setDescription(item.body)
     .setFooter({ text: "Use these commands in your private pet room ♡" });
@@ -261,7 +261,28 @@ async function ensurePetsChannel(guild, client, store) {
   return channel;
 }
 
-export async function ensurePetCategoryPosition(guild, onError = console.warn) {
+export async function refreshExistingPetRoomHelpPanels(guild, client) {
+  const channels = await guild.channels.fetch().catch(() => guild.channels.cache);
+  for (const channel of channels.values()) {
+    if (channel.type !== ChannelType.GuildText) continue;
+    const ownerId = /^Sugar personal pet room for (\\d{17,20})$/.exec(channel.topic ?? "")?.[1];
+    if (!ownerId) continue;
+    try {
+      const recent = await channel.messages.fetch({ limit: 50 });
+      const legacy = [...recent.values()].filter((message) => message.author?.id === client.user.id &&
+        message.embeds.some((embed) => embed.title === "୨୧ 𝓟𝓮𝓽 𝓡𝓸𝓸𝓶 · 𝓒𝓸𝓶𝓶𝓪𝓷𝓭𝓼 ♡"));
+      for (const message of legacy) await message.delete().catch(() => {});
+      const sticky = [...recent.values()].find((message) => message.author?.id === client.user.id &&
+        message.embeds.some((embed) => embed.title === "୨୧ 𝓟𝓮𝓽 𝓗𝓮𝓵𝓹 ♡"));
+      if (sticky) await sticky.edit(buildPetStickyPayload(ownerId));
+      else await channel.send(buildPetStickyPayload(ownerId));
+    } catch (error) {
+      console.warn("[pets] could not refresh help in " + channel.id + ": " + error.message);
+    }
+  }
+}
+
+async function ensurePetCategoryPosition(guild, onError = console.warn) {
   const category = guild.channels.cache.get(PET_ROOMS_CATEGORY_ID) ??
     await guild.channels.fetch(PET_ROOMS_CATEGORY_ID).catch(() => null);
   const reference = guild.channels.cache.get(PET_CATEGORY_BELOW_ID) ??
