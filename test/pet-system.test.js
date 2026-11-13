@@ -246,6 +246,7 @@ test("pets startup refreshes every old panel and does not treat the panel channe
 test("pets panel targets the configured channel ID even if its name changes", () => {
   const source = fs.readFileSync(new URL("../src/pet-system.js", import.meta.url), "utf8");
   assert.equal(PET_PANEL_CHANNEL_ID, "1570223501317513408");
+  assert.ok(PET_ADOPTION_CHANNEL_IDS.has(PET_PANEL_CHANNEL_ID));
   assert.ok(source.includes("guild.channels.cache.get(PET_PANEL_CHANNEL_ID)"));
   assert.ok(source.includes("guild.channels.fetch(PET_PANEL_CHANNEL_ID)"));
   assert.ok(!source.includes("item.type === ChannelType.GuildText && item.name === CHANNEL_NAME"));
