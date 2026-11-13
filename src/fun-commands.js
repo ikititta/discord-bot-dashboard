@@ -260,7 +260,7 @@ export function resolveNsfwGifSearchTags(actorRole, targetRole, actorDominance =
   const dominantRole = pair.mode === "directional" ? (pair.dominant === "actor" ? actorRole : targetRole) : null;
   if ((actorRole === "female" && targetRole === "male") || (actorRole === "male" && targetRole === "female")) {
     if (dominantRole === "female") return [["animated", "cowgirl"], ["animated", "reverse_cowgirl"]];
-    if (dominantRole === "male") return [["animated", "doggystyle"], ["animated", "missionary"]];
+    if (dominantRole === "male") return [["animated", "doggy_style"], ["animated", "missionary"]];
     return [["animated", "hetero"]];
   }
   return [];
@@ -279,7 +279,7 @@ async function fetchTaggedNsfwGif(tags, fetchImpl) {
   const gifs = posts.filter((post) => {
     try {
       const media = new URL(post?.file_url ?? "");
-      return media.protocol === "https:" && (media.hostname === "rule34.xxx" || media.hostname.endsWith(".rule34.xxx")) && media.pathname.toLowerCase().endsWith(".gif");
+      return media.protocol === "https:" && (media.hostname === "rule34.xxx" || media.hostname.endsWith(".rule34.xxx")) && media.pathname.toLowerCase().endsWith(".gif") && String(post?.tags ?? "").split(/\\s+/).some((tag) => tags.includes(tag));
     } catch { return false; }
   });
   if (!gifs.length) return null;
@@ -289,6 +289,8 @@ async function fetchTaggedNsfwGif(tags, fetchImpl) {
 
 export async function fetchNsfwGif({ fetchImpl = fetch, actorRole = "neutral", targetRole = null, actorDominance = null, targetDominance = null } = {}) {
   const searches = resolveNsfwGifSearchTags(actorRole, targetRole, actorDominance, targetDominance);
+  const dominancePair = resolveDominancePair(actorDominance, targetDominance);
+  const hasDirectionalMixedGenderPair = (actorRole === "female" && targetRole === "male" || actorRole === "male" && targetRole === "female") && dominancePair.mode === "directional";
   for (const tags of searches) {
     try {
       const tagged = await fetchTaggedNsfwGif(tags, fetchImpl);
@@ -297,6 +299,10 @@ export async function fetchNsfwGif({ fetchImpl = fetch, actorRole = "neutral", t
       console.warn(`[fun] tagged GIF lookup failed for ${tags.join(" ")}: ${error.message}`);
     }
   }
+  // Never return a generic mixed-gender GIF for a directional pairing:
+  // it can contradict the member marked as dominant.
+  if (hasDirectionalMixedGenderPair) throw new Error("No GIF matching the dominant member's requested pose was found.");
+
   const category = resolveNsfwGifCategory(actorRole, targetRole, actorDominance, targetDominance);
   const response = await fetchImpl(PURRBOT_API_BASE + "/img/nsfw/" + category + "/gif", {
     headers: { "User-Agent": "SugarDiscordBot/1.0 (https://github.com/ikititta/discord-bot-dashboard)" },
