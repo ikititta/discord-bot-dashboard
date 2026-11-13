@@ -922,29 +922,24 @@ export async function createPrivateChat(interaction, client, store, displayName,
 }
 
 export async function findPrivateChatsCategory(guild) {
-  let categories = findPrivateChatsCategories(guild);
-  if (!categories.length && typeof guild.channels.fetch === "function") {
-    await guild.channels.fetch();
-    categories = findPrivateChatsCategories(guild);
+  let category = guild.channels.cache.get(PRIVATE_CHAT_CATEGORY_ID) ?? null;
+  if (!category && typeof guild.channels.fetch === "function") {
+    try {
+      category = await guild.channels.fetch(PRIVATE_CHAT_CATEGORY_ID);
+    } catch (error) {
+      if (error?.code !== 10003 && error?.code !== 10004) {
+        throw new Error(`Could not fetch the configured Private Chats category (${error.code ?? "Discord API error"}).`);
+      }
+    }
   }
-  if (categories.length !== 1) {
-    throw new Error(
-      categories.length
-        ? "There is more than one category named Private Chats. Rename the duplicates so private chats have one destination."
-        : "I could not find the Private Chats category. Create it first, then try again.",
-    );
+  if (!category) {
+    throw new Error(`I could not find the configured Private Chats category (${PRIVATE_CHAT_CATEGORY_ID}). Check that the ID is correct and Sugar can view it.`);
   }
-  return categories[0];
+  if (category.type !== ChannelType.GuildCategory || category.guildId !== guild.id) {
+    throw new Error(`The configured Private Chats ID (${PRIVATE_CHAT_CATEGORY_ID}) is not a category in this server.`);
+  }
+  return category;
 }
-
-function findPrivateChatsCategories(guild) {
-  return [...guild.channels.cache.values()].filter(
-    (channel) =>
-      channel.type === ChannelType.GuildCategory &&
-      normalizeCategoryName(channel.name) === "privatechats",
-  );
-}
-
 async function fetchGuildMembers(guild, userIds) {
   try {
     return await Promise.all(userIds.map((id) => guild.members.fetch(id)));
