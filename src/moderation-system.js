@@ -165,6 +165,8 @@ export function attachModerationSystem(client, { settings, store }) {
 
   client.on(Events.MessageCreate, async (message) => {
     if (!message.guild || message.author?.bot || message.webhookId || !message.member) return;
+    // This channel is exempt from automatic message removal; members' messages must remain visible.
+    if (message.channelId === "1570257241511170150") return;
     if (hasModeratorAccess(message.member, settings)) return;
 
     const now = Date.now();
