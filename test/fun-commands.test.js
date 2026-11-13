@@ -88,7 +88,7 @@ test("fun help explains command types, stats, and VIP access", () => {
   const fields = embed.data.fields.map((field) => field.name + " " + field.value).join("\\n");
   assert.match(fields, /\/stats — privately view your complete stats/);
   assert.match(fields, /\/vip stats — privately view your report/);
-  assert.match(fields, /VIP unlocks !fuck \(existing NSFW anime GIF behavior\), !masturbate, !oral, !anal/);
+  assert.match(fields, /VIP unlocks !fuck \\(existing gender-aware NSFW GIF behavior\\), !masturbate, !oral, and !anal/);
   assert.doesNotMatch(fields, /Everyone can view their own basic stats/);
   assert.match(fields, /Two-person commands/);
   assert.doesNotMatch(embed.data.description, /18\+/);
@@ -98,9 +98,9 @@ test("fun help explains command types, stats, and VIP access", () => {
   assert.match(fields, /!lick @member/);
   assert.match(fields, /!feet @member/);
   assert.match(fields, /!shoot @member/);
-  assert.match(fields, /!masturbate @member \(VIP; text-only\)/);
-  assert.match(fields, /!oral @member \(VIP; text-only\)/);
-  assert.match(fields, /!anal @member \(VIP; text-only\)/);
+  assert.match(fields, /!masturbate @member \\(VIP; NSFW channel\\)/);
+  assert.match(fields, /!oral @member \\(VIP; NSFW channel\\)/);
+  assert.match(fields, /!anal @member \\(VIP; NSFW channel\\)/);
   assert.match(fields, /!tease @member \(VIP; text-only\)/);
   assert.match(fields, /!seduce @member \(VIP; text-only\)/);
   assert.doesNotMatch(fields, /NSFW preferences|!nsfw-on|!nsfw-off|approval/i);
