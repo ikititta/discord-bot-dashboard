@@ -6,6 +6,7 @@ export const COMMANDS_CATEGORY_ID = "1568179038625857576";
 export const COMMANDS_CHANNEL_NAME = "📖｜୨୧・commands";
 export const COMMANDS_CHANNEL_TOPIC = "Kittisugar interactive all-commands guide";
 export const COMMANDS_INFO_CHANNEL_ID = "1570257241511170150";
+export const OBSOLETE_COMMANDS_CHANNEL_ID = "1570839239396958218";
 export const COMMANDS_PANEL_TITLE = "୨୧ 𝓚𝓲𝓽𝓽𝓲𝓼𝓾𝓰𝓪𝓻 · 𝓒𝓸𝓶𝓶𝓪𝓷𝓭𝓼 ♡";
 export const MODERATION_COMMANDS_CHANNEL_ID = "1570277294868660264";
 export const MODERATION_PANEL_TITLE = "୨୧ 𝓜𝓸𝓭𝓮𝓻𝓪𝓽𝓲𝓸𝓷 · 𝓒𝓸𝓶𝓶𝓪𝓷𝓭𝓼 ♡";
@@ -13,12 +14,9 @@ export const REPUTATION_ONLY_CHANNEL_ID = "1569930648804925522";
 const COLOR = 0xffd9ff;
 const PREFIX = "sugar-commands:";
 const categories = {
-  solo: { label: "Solo · SFW", emoji: "🌷", description: "**Solo · no sexual**\n`!cry` · `!laugh` · `!dance` · `!sleep` · `!happy` · `!blush` · `!smug` · `!wave` · `!facepalm` · `!wink` · `!shrug` · `!smile` · `!pout`\n\nSolo actions; no member mention needed." },
-  soloNsfw: { label: "Solo · NSFW", emoji: "🔞", description: "**Solo · VIP · NSFW**\nNo solo NSFW action is currently enabled. `!masturbate @member` is a two-person interaction and appears in Couple · NSFW." },
+  solo: { label: "Solo", emoji: "🌷", description: "**Solo · SFW**\n`!cry` · `!laugh` · `!dance` · `!sleep` · `!happy` · `!blush` · `!smug` · `!wave` · `!facepalm` · `!wink` · `!shrug` · `!smile` · `!pout`\n\nSolo actions; no member mention needed. There are currently no solo NSFW actions enabled." },
+  couple: { label: "Couple", emoji: "💕", description: "**Two-person interactions · SFW**\n`!hug @member` · `!kiss @member` · `!cuddle @member` · `!pat @member` · `!handhold @member` · `!highfive @member` · `!slap @member` · `!bonk @member` · `!spank @member` · `!poke @member` · `!bite @member` · `!lick @member` · `!feet @member` · `!kick @member` · `!shoot @member` · `!kill @member` · `!tease @member` · `!seduce @member`\n\n**VIP · NSFW**\n`!fuck @member` · `!masturbate @member` · `!oral @member` · `!anal @member`\n\nAll NSFW interactions are listed here under Couple, not in separate categories. VIP access is required from either participant. For `!masturbate @member`, the person running the command performs the action toward the mentioned member. `!shoot` includes an anime GIF; `!kill` applies a 30-second timeout." },
   relationship: { label: "Relationships", emoji: "💍", description: "`!couple @member` · `!propose @member` · `!marry @member` · `!breakup` · `!divorce`\n\nThe other member must accept a proposal. Both people need the Member role." },
-  affection: { label: "Romance & Affection", emoji: "💕", description: "`!hug @member` · `!kiss @member` · `!cuddle @member` · `!pat @member` · `!handhold @member` · `!highfive @member`\n\nTwo-person interactions with anime GIFs." },
-  interactions: { label: "Interactions", emoji: "🎀", description: "`!slap @member` · `!bonk @member` · `!spank @member` · `!poke @member` · `!bite @member` · `!lick @member` · `!feet @member` · `!kick @member` · `!shoot @member` · `!kill @member` · `!tease @member` · `!seduce @member`\n\n`!shoot @member` is a playful two-person interaction with an anime GIF. `!kill @member` defeats the mentioned member and applies a 30-second timeout. `!tease` and `!seduce` are VIP-only and include anime GIFs." },
-  nsfw: { label: "Couple · NSFW", emoji: "🔞", description: "**VIP interactions · NSFW**\n`!fuck @member` · `!masturbate @member` · `!oral @member` · `!anal @member`\n\nFor `!masturbate @member`, the person running the command performs the action toward the mentioned member. VIP is required from either participant." },
   community: { label: "Community", emoji: "💌", description: "**Confessions, polls, love letters & suggestions**\nUse the buttons in their channel panels to submit a confession, create a poll, send a love letter, or submit a suggestion.\n\n**Reputation**\n`!rep` · `!rep @member` · `!rep stats` · `!rep stats @member` · `!rep top` · `!rep comments [@member]`" },
   pets: { label: "Pets", emoji: "🐾", description: "**Adoption & profile**\n`!pet adopt` · `!pet` · `!pet status` · `!pet stats` · `!pet select <number>` · `!pet redraw`\n\n**Care & bonding**\n`!pet feed` · `!pet play` · `!pet cuddle` · `!pet talk` · `!pet story` · `!pet gif [happy|dance|sleep]`\n\n**Coins & items**\n`!pet daily` · `!pet shop` · `!pet buy <treat|toy|potion>` · `!pet use <item>` · `!pet inventory` · `!pet delete`\n\n**VIP extras**\n`!pet name <name>` · `!pet color <color>` · `!pet breed <breed>` · `!pet appearance <details>` · `!pet personality <traits>` · `!pet room` · `!pet outfit <name>` · `!pet slots` · `!pet minigame`" },
   functional: { label: "Functional", emoji: "🛠️", description: "**Messages**\n`/delete amount:<1-20>` — delete your own recent messages\n`/vip-delete amount:<1-100>` — VIP message deletion\n`/mod-delete amount:<1-100> [member]` — moderator-only cleanup\n`!quote` — reply to a message, then use `!quote` to create an image quote\n\n**Profiles & stats**\n`!profile [@member]` · `/stats` · `/vip stats [member]`\n\n**Private chats**\n`/priv-chat create` · `/priv-chat add` · `/priv-chat remove` · `/priv-chat rename` · `/priv-chat leave` · `/priv-chat delete` · `/priv-chat commands`" },
@@ -90,7 +88,7 @@ export function buildCommandsPanelPayload() {
       .setColor(COLOR)
       .setTitle(COMMANDS_PANEL_TITLE)
       .setDescription("All Sugar commands, neatly organised ♡\n\nChoose a category below to see its commands and how to use them. Fun and relationship interactions require the Member role; VIP-only commands are marked.")
-      .setFooter({ text: "Select a category to browse commands · Not pinned ♡" })],
+      .setFooter({ text: "Select a category to browse commands ♡" })],
     components: rows,
   };
 }
@@ -139,7 +137,7 @@ export async function ensureCommandsChannel(guild, client) {
   return channel;
 }
 
-async function upsertCommandsPanel(channel, client) {
+async function upsertCommandsPanel(channel, client, { sticky = false } = {}) {
   const recent = await channel.messages.fetch({ limit: 100 });
   const matches = [...recent.values()].filter((message) =>
     message.author?.id === client.user.id &&
@@ -166,6 +164,14 @@ export async function ensureCommandsInfoPanel(guild, client) {
   await upsertCommandsPanel(channel, client);
   console.info("[commands] additional commands guide updated in #" + channel.name);
   return channel;
+}
+
+export async function removeObsoleteCommandsChannel(guild) {
+  const channel = await guild.channels.fetch(OBSOLETE_COMMANDS_CHANNEL_ID).catch(() => null);
+  if (!channel) return false;
+  await channel.delete("Remove the obsolete separate commands channel; the unified guide is kept in the designated commands info channel");
+  console.info("[commands] removed obsolete channel " + OBSOLETE_COMMANDS_CHANNEL_ID);
+  return true;
 }
 
 export function attachCommandsChannel(client) {
