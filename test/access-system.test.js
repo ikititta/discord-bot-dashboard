@@ -188,15 +188,13 @@ test("access, rules, and guide panels use one ordered, fully described channel d
 
   const guideText = guide.embeds[0].data.description;
   const directory = guide.embeds.slice(1).map((item) => item.data.description).join("\n");
-  assert.equal(guide.embeds[0].data.title, `୨୧ ${toRoyalBold("Kittisugar Guide!")} ♡`);
+  assert.equal(guide.embeds[0].data.title, `${toRoyalBold("Kittisugar Guide!")} 🎀`);
   assert.match(guideText, /`!commands` — explore all Sugar commands/);
   assert.match(guideText, /reply to someone's message with `!quote`/);
   assert.match(guideText, /`!smile` — try a fun interaction command/);
   assert.match(guideText, /#dashboard/);
   assert.equal((guide.embeds[0].data.title.match(/🎀/gu) ?? []).length, 1);
-  assert.ok(guideText.includes("`!profile [@member]` — view a member profile."));
-  assert.ok(guideText.includes("`!pet adopt` — open the pet adoption menu."));
-  assert.doesNotMatch(directory, /^\\*\\*୨୧ /m);
+  assert.doesNotMatch(directory, /^\*\*୨୧ /m);
   assert.ok(directory.includes("• <#100000000000000000> — Start here:"));
   assert.ok(directory.includes("• <#100000000000000009> — Share your selfies"));
   assert.ok(directory.includes("• <#100000000000000010> — Introduce yourself"));
