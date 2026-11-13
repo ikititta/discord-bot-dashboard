@@ -173,7 +173,6 @@ export function attachCommandsChannel(client) {
     if (!message.guild || message.author?.bot || message.webhookId ||
         message.channelId === REPUTATION_ONLY_CHANNEL_ID ||
         !/^!commands$/i.test(String(message.content ?? "").trim())) return;
-    if (message.channel?.topic === COMMANDS_CHANNEL_TOPIC) return;
     await message.reply({
       ...buildCommandsPanelPayload(),
       allowedMentions: { parse: [], repliedUser: false },
@@ -195,6 +194,9 @@ export function attachCommandsChannel(client) {
   );
   const setupAll = (guild) => {
     void setup(guild);
+    void ensureCommandsInfoPanel(guild, client).catch((error) =>
+      console.error("[commands] additional guide setup failed in " + guild.id + ": " + error.message),
+    );
     void ensureModerationCommandsPanel(guild, client).catch((error) =>
       console.error("[commands] moderation setup failed in " + guild.id + ": " + error.message),
     );
