@@ -25,7 +25,7 @@ const TWO_PERSON_COMMANDS = Object.freeze({
   bonk: { gif: "bonk", text: "has bonked" },
   spank: { gif: "spank", text: "has given a playful spanking to" },
   fuck: { gif: "fuck", text: "has fucked" },
-  masturbate: { gif: null, nsfwGif: "solo", text: "has masturbated" },
+  masturbate: { gif: null, nsfwGif: "paired_catalog", text: "has masturbated" },
   oral: { gif: null, nsfwGif: "blowjob", text: "has initiated an oral NSFW interaction with" },
   anal: { gif: null, nsfwGif: "anal", text: "has initiated an anal NSFW interaction with" },
   hug: { gif: "hug", text: "has hugged" },
@@ -173,6 +173,19 @@ function validatedGifUrl(rawUrl, expectedHost) {
   return url;
 }
 
+export function resolveMasturbateGifPairing(actorRole, targetRole) {
+  return ({ 'female:female': 'ff', 'female:male': 'fm', 'male:female': 'mf', 'male:male': 'mm' })[String(actorRole) + ':' + String(targetRole)] ?? null;
+}
+export const MASTURBATE_GIF_CATALOG = Object.freeze({ ff: Object.freeze([]), fm: Object.freeze([]), mf: Object.freeze([]), mm: Object.freeze([]) });
+export function selectMasturbateGif(actorRole, targetRole, { catalog = MASTURBATE_GIF_CATALOG, random = Math.random } = {}) {
+  const pairing = resolveMasturbateGifPairing(actorRole, targetRole);
+  if (!pairing) return null;
+  const entries = Array.isArray(catalog?.[pairing]) ? catalog[pairing] : [];
+  const valid = entries.filter((entry) => { try { const url = new URL(typeof entry === 'string' ? entry : entry?.url); return url.protocol === 'https:' && url.pathname.toLowerCase().endsWith('.gif'); } catch { return false; } });
+  if (!valid.length) return null;
+  const selected = valid[Math.min(valid.length - 1, Math.floor(random() * valid.length))];
+  return { url: typeof selected === 'string' ? selected : selected.url, anime: typeof selected === 'string' ? '' : String(selected.anime ?? '').slice(0, 80), pairing, source: 'Kittisugar curated catalog' };
+}
 export function resolveNsfwGifCategory(actorRole, targetRole) {
   if (actorRole === "female" && targetRole === "female") return "yuri";
   if (actorRole === "male" && targetRole === "male") return "yaoi";
@@ -407,9 +420,10 @@ async function handleFunAction(message, store, name, args, fetchImpl) {
   let gif = null;
   try {
     if (name === "fuck") gif = await fetchNsfwGif({ fetchImpl, actorRole: normalizeFunRole(message.member), targetRole });
-    else if (definition.nsfwGif) {
-      const actorRole = normalizeFunRole(message.member);
-      const category = name === "oral" ? resolveOralNsfwGifCategory(targetRole) : definition.nsfwGif === "solo" && actorRole === "male" ? "solo_male" : definition.nsfwGif;
+    else if (name === "masturbate") {
+      gif = selectMasturbateGif(actorRole, targetRole);
+    } else if (definition.nsfwGif) {
+      const category = name === "oral" ? resolveOralNsfwGifCategory(targetRole) : definition.nsfwGif;
       gif = await fetchPurrbotNsfwGif(category, { fetchImpl });
     } else if (definition.gif) {
       if (name === "lick") { try { gif = await fetchPurrbotSfwGif("lick", { fetchImpl }); } catch (error) { console.warn("[fun] PurrBot lick GIF unavailable; trying anime fallback: " + error.message); } }
@@ -419,7 +433,8 @@ async function handleFunAction(message, store, name, args, fetchImpl) {
   catch (error) { console.warn(`[fun] GIF lookup failed for !${name}: ${error.message}`); }
 
   if (!gif) {
-    await safeReply(message, { content: actionText }, [message.author.id, ...(targetUser ? [targetUser.id] : [])]);
+    const content = name === "masturbate" ? actionText + "\nNo hay un GIF verificado para esta combinación de géneros todavía ♡" : actionText;
+    await safeReply(message, { content }, [message.author.id, ...(targetUser ? [targetUser.id] : [])]);
     return true;
   }
   const embed = new EmbedBuilder().setColor(COLOR).setImage(gif.url);
