@@ -289,7 +289,7 @@ test("!fuck selects NSFW GIF categories from both members' gender roles", async 
 
 test("dominance chooses pose-specific GIF tags regardless of command actor", () => {
   assert.deepEqual(resolveNsfwGifSearchTags("female", "male", 2, -2), [["animated", "cowgirl"], ["animated", "reverse_cowgirl"]]);
-  assert.deepEqual(resolveNsfwGifSearchTags("male", "female", 2, -2), [["animated", "doggystyle"], ["animated", "missionary"]]);
+  assert.deepEqual(resolveNsfwGifSearchTags("male", "female", 2, -2), [["animated", "doggy_style"], ["animated", "missionary"]]);
   assert.deepEqual(resolveNsfwGifSearchTags("male", "female", -2, 2), [["animated", "cowgirl"], ["animated", "reverse_cowgirl"]]);
   assert.deepEqual(resolveNsfwGifSearchTags("female", "male", 0, 2), [["animated", "doggystyle"], ["animated", "missionary"]]);
   assert.deepEqual(resolveNsfwGifSearchTags("female", "female", 2, -2), []); // PurrBot yuri category
@@ -304,7 +304,7 @@ test("!fuck uses a tagged GIF result for a dominant woman", async () => {
       const url = new URL(rawUrl);
       assert.equal(url.hostname, "api.rule34.xxx");
       assert.equal(url.searchParams.get("tags"), "animated cowgirl");
-      return { ok: true, json: async () => [{ file_url: "https://us.rule34.xxx/images/123/example.gif" }] };
+      return { ok: true, json: async () => [{ file_url: "https://us.rule34.xxx/images/123/example.gif", tags: "animated cowgirl" }] };
     },
   });
   assert.equal(gif.url, "https://us.rule34.xxx/images/123/example.gif");
@@ -312,20 +312,13 @@ test("!fuck uses a tagged GIF result for a dominant woman", async () => {
   assert.equal(gif.source, "Rule34 tagged GIF search");
 });
 
-test("!fuck falls back to PurrBot when tagged search has no GIF", async () => {
+test("!fuck never falls back to a generic GIF that can depict the dominant woman as submissive", async () => {
   let calls = 0;
-  const result = await fetchNsfwGif({
-    actorRole: "male", targetRole: "female", actorDominance: 2, targetDominance: -2,
-    fetchImpl: async (rawUrl) => {
-      calls += 1;
-      if (String(rawUrl).includes("api.rule34.xxx")) return { ok: true, json: async () => [] };
-      assert.equal(rawUrl, "https://api.purrbot.site/v2/img/nsfw/fuck/gif");
-      return { ok: true, json: async () => ({ link: "https://cdn.purrbot.site/nsfw/fuck/gif/fuck_001.gif", error: false }) };
-    },
-  });
-  assert.equal(calls, 3);
-  assert.equal(result.source, "PurrBot NSFW fallback");
-  assert.equal(result.url, "https://cdn.purrbot.site/nsfw/fuck/gif/fuck_001.gif");
+  await assert.rejects(fetchNsfwGif({
+    actorRole: "female", targetRole: "male", actorDominance: 2, targetDominance: -2,
+    fetchImpl: async () => { calls += 1; return { ok: true, json: async () => [] }; },
+  }), /No GIF matching the dominant member/);
+  assert.equal(calls, 2);
 });
 
 test("!fuck rejects SFW or wrong-gender GIF results instead of falling back", async () => {
