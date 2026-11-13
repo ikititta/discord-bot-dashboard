@@ -822,7 +822,7 @@ export function attachPetSystem(client, store) {
     }
 
     if (interaction.isButton?.() && interaction.customId.startsWith("sugar-pets:delete-room-confirm:")) {
-      const [, , , ownerId, channelId] = interaction.customId.split(":");
+      const [, , ownerId, channelId] = interaction.customId.split(":");
       if (interaction.user.id !== ownerId) return interaction.reply({ content: "This room deletion belongs to someone else ♡", ephemeral: true });
       if (!/^\d{17,20}$/.test(channelId ?? "")) return interaction.reply({ content: "Invalid room deletion request ♡", ephemeral: true });
       const room = await interaction.guild.channels.fetch(channelId).catch(() => null);
