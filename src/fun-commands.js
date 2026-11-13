@@ -20,13 +20,13 @@ const TWO_PERSON_COMMANDS = Object.freeze({
   bonk: { gif: "bonk", text: "has bonked" },
   spank: { gif: "spank", text: "has given a playful spanking to" },
   fuck: { gif: "fuck", text: "has fucked" },
-  masturbate: { gif: null, nsfwGif: "solo", text: "has initiated a NSFW interaction with" },
+  masturbate: { gif: null, nsfwGif: "solo", text: "has masturbated" },
   oral: { gif: null, nsfwGif: "blowjob", text: "has initiated an oral NSFW interaction with" },
   anal: { gif: null, nsfwGif: "anal", text: "has initiated an anal NSFW interaction with" },
   hug: { gif: "hug", text: "has hugged" },
   kiss: { gif: "kiss", text: "has kissed" },
   tease: { gif: null, text: "has playfully teased" },
-  seduce: { gif: null, text: "has tried to charm" },
+  seduce: { gif: "wink", text: "has tried to charm" },
   cuddle: { gif: "cuddle", text: "has cuddled" },
   pat: { gif: "pat", text: "has given a headpat to" },
   poke: { gif: "poke", text: "has poked" },
@@ -413,7 +413,7 @@ async function handleRelationshipButton(interaction, store) {
   await interaction.update({ content: parts[1] === "yes" ? (result.type === "marriage" ? "💍 They said yes! You are now married ♡" : "💗 You are now a couple ♡") : "The proposal was declined.", components: [] });
   return true;
 }
-async function handleRelationshipCommand(message, store, name) {
+async function handleRelationshipCommand(message, store, name, fetchImpl) {
   if (["couple", "propose", "marry"].includes(name)) {
     const target = message.mentions.users.first();
     if (!target || target.bot || target.id === message.author.id) { await safeReply(message, { content: "Usage: !" + name + " @member" }); return; }
@@ -422,7 +422,7 @@ async function handleRelationshipCommand(message, store, name) {
     const type = name === "couple" ? "couple" : "marriage";
     const proposal = store.createRelationshipProposal({ guildId: message.guild.id, proposerId: message.author.id, targetId: target.id, type });
     if (proposal.error) { await safeReply(message, { content: proposal.error === "already_in_relationship" ? "One of you is already in a relationship ♡" : "One of you already has a pending proposal." }); return; }
-    await safeReply(message, { content: (type === "marriage" ? "💍 " : "💗 ") + "<@" + message.author.id + "> has proposed to <@" + target.id + ">!", components: [relationshipRow(proposal.id)] }, [message.author.id, target.id]);
+    let gif = null;\n    try {\n      const category = name === "couple" ? "handhold" : "kiss";\n      gif = await fetchAnimeGif(category, { fetchImpl, actorRole: normalizeFunRole(message.member), targetRole: normalizeFunRole(member) });\n    } catch (error) { console.warn(`[fun] relationship GIF lookup failed for !${name}: ${error.message}`); }\n    const embed = gif ? new EmbedBuilder().setColor(COLOR).setImage(gif.url) : null;\n    await safeReply(message, { content: (type === "marriage" ? "💍 " : "💗 ") + "<@" + message.author.id + "> has proposed to <@" + target.id + ">!", ...(embed ? { embeds: [embed] } : {}), components: [relationshipRow(proposal.id)] }, [message.author.id, target.id]);
     return;
   }
   const expected = name === "divorce" ? "marriage" : "couple";
@@ -491,7 +491,7 @@ export function attachFunCommands(client, { store, fetchImpl = fetch, token, app
       }
       if (["couple", "propose", "marry", "breakup", "divorce"].includes(name)) {
         if (!isVerifiedAdult(message.member)) { await safeReply(message, { content: "Relationships are available to verified Member accounts ♡" }); return; }
-        await handleRelationshipCommand(message, store, name);
+        await handleRelationshipCommand(message, store, name, fetchImpl);
         return;
       }
       if (name === "nsfw-on" || name === "nsfw-off") {
