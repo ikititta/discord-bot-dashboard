@@ -40,10 +40,10 @@ test("commands panel contains the same interactive category buttons for one-shot
 test("each category exposes current command syntax and access requirements", () => {
   const cases = {
     solo: ["!cry", "!dance", "no solo NSFW actions"],
-    couple: ["!hug @member", "!kiss @member", "!cuddle @member", "!shoot @member", "!fuck @member", "!masturbate @member", "!oral @member", "!anal @member", "VIP", "30-second timeout"],
+    couple: ["!hug @member", "!kiss @member", "!cuddle @member", "!shoot @member", "!fuck @member", "!masturbate @member", "!oral @member", "!anal @member", "VIP", "!funstyle", "does not timeout anyone"],
     relationship: ["!couple @member", "!propose @member", "!divorce"],
-    community: ["!rep", "Confessions, polls", "!rep comments"],
-    pets: ["!pet adopt", "!pet select <number>", "!pet buy <treat|toy|potion>", "!pet gif", "!pet delete"],
+    community: ["!rep", "Confessions, polls", "Fun commands can also be used directly", "!rep comments"],
+    pets: ["!pet adopt", "!pet select <number>", "!pet buy <treat|toy|potion>", "!pet gif", "!pet room redesign", "!pet room delete", "!pet delete"],
     functional: ["/delete amount:", "/vip-delete", "/mod-delete", "!quote", "!profile", "/priv-chat create"],
   };
   for (const [category, phrases] of Object.entries(cases)) {
