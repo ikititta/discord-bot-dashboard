@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import {
   AGE_OPTIONS,
   COLOR_OPTIONS,
+  DOMINANCE_OPTIONS,
   GENDER_OPTIONS,
   SEXUALITY_OPTIONS,
   GENDER_ROLE_IDS,
@@ -27,6 +28,9 @@ test("self-role categories use the agreed gender and sexuality options", () => {
     "Prefer not to say",
   ]);
   assert.equal(SEXUALITY_OPTIONS.some(([value]) => value === "queer"), true);
+  assert.deepEqual(DOMINANCE_OPTIONS.map(([, label]) => label), [
+    "Submissive", "Mostly Submissive", "Switch", "Mostly Dominant", "Dominant",
+  ]);
 });
 
 test("age options include the 18- restricted-access route followed by ages 18 through 40", () => {
@@ -52,16 +56,18 @@ test("creates stable role names and rejects options outside the configured categ
   assert.equal(roleNameForSelection("age", "40"), "age-40");
   assert.equal(roleNameForSelection("sexuality", "gay-lesbian"), "sexuality-gay-lesbian");
   assert.equal(roleNameForSelection("sexuality", "queer"), "sexuality-queer");
+  assert.equal(roleNameForSelection("dominance", "mostly-submissive"), "dominance-mostly-submissive");
   assert.throws(() => roleNameForSelection("interests", "music"), /Unknown role category/);
 });
 
 test("self-roles panel separates every category into its own message and selector", () => {
   const payloads = buildSelfRolesPanelPayload();
-  assert.equal(payloads.length, 5);
+  assert.equal(payloads.length, 6);
   assert.deepEqual(payloads.map((payload) => payload.components[0].components[0].data.custom_id), [
     "sugar-selfroles:gender",
     "sugar-selfroles:age",
     "sugar-selfroles:sexuality",
+    "sugar-selfroles:dominance",
     "sugar-selfroles:color",
     "sugar-selfroles:nsfw",
   ]);
