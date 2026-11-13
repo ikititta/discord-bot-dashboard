@@ -17,6 +17,10 @@ const VIP_STATS_MESSAGE = "This is a VIP-only benefit. Get the VIP role to use !
 
 const TWO_PERSON_COMMANDS = Object.freeze({
   slap: { gif: "slap", text: "has slapped" },
+  choke: { gif: null, text: "has playfully choked" },
+  spit: { gif: null, text: "has spat at" },
+  comfort: { gif: "hug", text: "has comforted" },
+  noseboop: { gif: "poke", text: "has booped the nose of" },
   bonk: { gif: "bonk", text: "has bonked" },
   spank: { gif: "spank", text: "has given a playful spanking to" },
   fuck: { gif: "fuck", text: "has fucked" },
@@ -42,6 +46,9 @@ const TWO_PERSON_COMMANDS = Object.freeze({
 
 const SOLO_COMMANDS = Object.freeze({
   cry: { gif: "cry", text: "has cried" },
+  scream: { gif: null, text: "has screamed" },
+  sing: { gif: null, text: "has sung" },
+  think: { gif: null, text: "is thinking" },
   laugh: { gif: "laugh", text: "has laughed" },
   dance: { gif: "dance", text: "has danced" },
   sleep: { gif: "sleep", text: "has fallen asleep" },
@@ -247,7 +254,7 @@ export function isVip(member) {
 export const KILL_TIMEOUT_MS = 30_000;
 
 export function isVipOnlyFunCommand(name) {
-  return ["fuck", "kill", "masturbate", "oral", "anal", "tease", "seduce"].includes(name);
+  return ["fuck", "kill", "masturbate", "oral", "anal", "tease", "seduce", "choke", "spit"].includes(name);
 }
 
 function displayName(member, user) {
