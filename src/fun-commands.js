@@ -2,6 +2,10 @@ import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, Events, RES
 import { GENDER_ROLE_IDS } from "./role-onboarding.js";
 
 const KITTISUGAR_GUILD_ID = "1567093019377930363";
+const FUN_CATEGORY_ID = "1568179038625857576";
+export const GIF_PREFERENCES_CHANNEL_NAME = "🎞️｜୨୧・𝓰𝓲𝓯-𝓹𝓻𝓮𝓯𝓼";
+const GIF_PREFERENCES_CHANNEL_TOPIC = "Choose your personal GIF style for Sugar fun interactions";
+const GIF_PREFERENCES_PANEL_TITLE = "୨୧ 𝓖𝓘𝓕 · 𝓟𝓻𝓮𝓯𝓮𝓻𝓮𝓷𝓬𝓮𝓼 ♡";
 
 export const FUN_ROLE_IDS = GENDER_ROLE_IDS;
 export const FUN_VIP_ROLE_ID = "1568188640113463437";
@@ -464,6 +468,71 @@ async function handleRelationshipCommand(message, store, name, fetchImpl) {
 }
 const STATS_COMMAND = new SlashCommandBuilder().setName("stats").setDescription("Privately view your complete fun statistics").toJSON();
 const VIP_COMMAND = new SlashCommandBuilder().setName("vip").setDescription("VIP commands").addSubcommand((sub) => sub.setName("stats").setDescription("Privately view complete stats").addUserOption((option) => option.setName("member").setDescription("Member whose stats to view").setRequired(false))).toJSON();
+
+export function buildGifPreferencesPanelPayload() {
+  return {
+    embeds: [new EmbedBuilder()
+      .setColor(COLOR)
+      .setTitle(GIF_PREFERENCES_PANEL_TITLE)
+      .setDescription("Choose how Sugar displays GIFs in your fun and relationship interactions. Your choice is saved to your account. ♡\n\n**Anime GIFs** — anime reactions and illustrations\n**Real / movie GIFs** — real-life and cinematic reaction GIFs\n\nNSFW commands keep their existing VIP and Member access restrictions; this setting does not unlock them.")
+      .setFooter({ text: "Your preference is personal · Change it any time ♡" })],
+    components: [new ActionRowBuilder().addComponents(
+      new StringSelectMenuBuilder()
+        .setCustomId("sugar-gif-preferences")
+        .setPlaceholder("Choose your GIF style ♡")
+        .addOptions(
+          { label: "Anime GIFs", value: "anime", description: "Anime reactions and illustrations", emoji: "🌸" },
+          { label: "Real / movie GIFs", value: "real", description: "Real-life and cinematic reaction GIFs", emoji: "🎬" },
+        ),
+    )],
+  };
+}
+
+export async function ensureGifPreferencesChannel(guild, client) {
+  const category = await guild.channels.fetch(FUN_CATEGORY_ID).catch(() => null);
+  if (!category || category.type !== 4) {
+    console.warn("[fun] fun category " + FUN_CATEGORY_ID + " was not found; no GIF preferences channel was created.");
+    return null;
+  }
+
+  let channel = await guild.channels.fetch().then((channels) =>
+    channels.find((item) => item.type === 0 && item.parentId === FUN_CATEGORY_ID &&
+      (item.name === GIF_PREFERENCES_CHANNEL_NAME || item.topic === GIF_PREFERENCES_CHANNEL_TOPIC)),
+  ).catch(() => null);
+
+  if (!channel) {
+    channel = await guild.channels.create({
+      name: GIF_PREFERENCES_CHANNEL_NAME,
+      type: 0,
+      parent: FUN_CATEGORY_ID,
+      topic: GIF_PREFERENCES_CHANNEL_TOPIC,
+      reason: "Create the GIF preferences panel in the Fun category",
+    });
+  } else if (channel.name !== GIF_PREFERENCES_CHANNEL_NAME || channel.topic !== GIF_PREFERENCES_CHANNEL_TOPIC) {
+    await channel.edit({
+      name: GIF_PREFERENCES_CHANNEL_NAME,
+      topic: GIF_PREFERENCES_CHANNEL_TOPIC,
+      reason: "Keep the GIF preferences channel in its designated format",
+    });
+  }
+
+  const recent = await channel.messages.fetch({ limit: 100 });
+  const matches = [...recent.values()].filter((message) =>
+    message.author?.id === client.user.id &&
+    message.embeds.some((embed) => embed.title === GIF_PREFERENCES_PANEL_TITLE),
+  ).sort((a, b) => b.createdTimestamp - a.createdTimestamp);
+  const existing = matches.shift();
+  if (existing) await existing.edit(buildGifPreferencesPanelPayload());
+  else await channel.send(buildGifPreferencesPanelPayload());
+  for (const duplicate of matches) {
+    await duplicate.delete().catch((error) => {
+      if (error?.code !== 10008) throw error;
+    });
+  }
+  console.info("[fun] GIF preferences panel ready in #" + channel.name);
+  return channel;
+}
+
 async function registerFunCommands(token, applicationId) {
   const rest = new REST({ version: "10" }).setToken(token);
   const route = Routes.applicationGuildCommands(applicationId, KITTISUGAR_GUILD_ID);
@@ -474,6 +543,20 @@ export function attachFunCommands(client, { store, fetchImpl = fetch, token, app
   if (!store) throw new Error("The fun-command statistics store is required.");
 
   client.on(Events.InteractionCreate, async (interaction) => {
+    if (interaction.isStringSelectMenu?.() && interaction.customId === "sugar-gif-preferences") {
+      const style = interaction.values?.[0];
+      if (!["anime", "real"].includes(style)) {
+        return interaction.reply({ content: "Choose anime or real GIFs ♡", ephemeral: true });
+      }
+      store.setGifStyle(interaction.guildId, interaction.user.id, style);
+      const note = style === "real" && !process.env.GIPHY_API_KEY
+        ? "\nReal GIFs need GIPHY_API_KEY in FadeHost; Sugar will use anime GIFs until it is configured."
+        : "";
+      return interaction.reply({
+        content: "Your GIF preference is now **" + (style === "anime" ? "Anime GIFs" : "Real / movie GIFs") + "** ♡" + note,
+        ephemeral: true,
+      });
+    }
     if (interaction.isStringSelectMenu?.() && interaction.customId.startsWith("sugar-fun-style:")) {
       const ownerId = interaction.customId.split(":")[1];
       if (interaction.user.id !== ownerId) return interaction.reply({ content: "This GIF style menu belongs to someone else ♡", ephemeral: true });
@@ -511,6 +594,18 @@ export function attachFunCommands(client, { store, fetchImpl = fetch, token, app
   client.once(Events.ClientReady, () => {
     if (token && applicationId) void registerFunCommands(token, applicationId).catch((error) => console.error("[fun] stats command registration failed: " + error.message));
   });
+
+  const setupGifPreferences = (guild) => {
+    if (guild.id !== KITTISUGAR_GUILD_ID) return;
+    void ensureGifPreferencesChannel(guild, client).catch((error) =>
+      console.error("[fun] GIF preferences channel setup failed: " + error.message),
+    );
+  };
+  client.once(Events.ClientReady, () => {
+    const guild = client.guilds.cache.get(KITTISUGAR_GUILD_ID);
+    if (guild) setupGifPreferences(guild);
+  });
+  client.on(Events.GuildCreate, setupGifPreferences);
 
   client.on(Events.MessageCreate, async (message) => {
     if (!message.guild || message.guild.id !== KITTISUGAR_GUILD_ID ||
