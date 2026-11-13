@@ -283,7 +283,7 @@ export function attachCommandsChannel(client) {
           await interaction.editReply("That member is not currently in this server.");
           return;
         }
-        if (targetMember && !targetMember.moderatable && action !== "ban") {
+        if (targetMember && action === "timeout" && !targetMember.moderatable) {
           await interaction.editReply("I cannot moderate that member. Check Sugar's role position and permissions.");
           return;
         }
