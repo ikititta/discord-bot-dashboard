@@ -284,7 +284,7 @@ function buildServerMap(guild) {
     }
     if (description) embeds.push(new EmbedBuilder().setColor(COLOR).setTitle(`୨୧ ${toRoyalBold(group.title)} ♡`).setDescription(description));
   }
-  return embeds.slice(0, 9);
+  return embeds;
 }
 
 async function refreshDashboardGuide(client, guild) {
