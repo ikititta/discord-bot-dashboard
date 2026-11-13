@@ -1,5 +1,6 @@
 import { toRoyalBold } from "./embed-format.js";
 import { NEW_ROLE_ID, MEMBER_ROLE_ID } from "./role-ids.js";
+import { PRIVATE_CHAT_CATEGORY_ID, PRIVATE_CHAT_LOBBY_CHANNEL_ID } from "./private-chat-format.js";
 import { attachRoleOnboarding, ensureSelfRolesChannel, startRoleOnboarding } from "./role-onboarding.js";
 
 import {
@@ -167,139 +168,168 @@ function channelMention(guild, names) {
   return channel ? `<#${channel.id}>` : `**${names[0]}**`;
 }
 
-function guideSectionTitle(title) {
-  return toRoyalBold(title);
-}
-
 export function buildGuidePayload(guild) {
   const embed = new EmbedBuilder()
     .setColor(COLOR)
     .setTitle(`୨୧ ${toRoyalBold("Kittisugar Guide!")} ♡`)
-    .setDescription(
-      "A little guide of Kittisugar ♡ Tap any channel mention to open it.\n" +
-      `## ୨୧ ${guideSectionTitle("Start")}\n\n` +
-      `• ${channelMention(guild, ["getaccess", "get-access"])} — Read the welcome message and press Enter Server when you are ready to access the community.\n` +
-      `• ${channelMention(guild, ["welcomes"])} — See the coquette welcome cards for new members.\n` +
-      `• ${channelMention(guild, ["rules"])} — Check the 18+, SFW, safety, and promotion policies before chatting.\n` +
-      `• ${channelMention(guild, ["guide"])} — Read what each channel is for and how to use the server.\n` +
-      `## ୨୧ ${guideSectionTitle("Community")}\n\n` +
-      `• ${channelMention(guild, ["confessions"])} — Share an anonymous confession or create a poll with the channel buttons.\n` +
-      `• ${channelMention(guild, ["loveletters", "love-letters"])} — Leave a sweet message or appreciation for someone.\n` +
-      `• ${channelMention(guild, ["suggestions"])} — Share ideas to help improve Kittisugar.\n` +
-      `• ${channelMention(guild, ["reputation"])} — Leave comments, check member reputation, read feedback, and see top members with !rep. VIP members can post reputation comments anonymously.\n` +
-      `• ${channelMention(guild, ["quotes"])} — Post memorable, funny, or meaningful quotes from the community.\n` +
-      `• ${channelMention(guild, ["selfies", "selfie"])} — Share your selfies with the community.\n` +
-      `• ${channelMention(guild, ["introductions", "introduction", "introduce-yourself", "introduceyourself"])} — Introduce yourself and let everyone get to know you.\n` +
-      `• ${channelMention(guild, ["pets"])} — Open your private pet room to adopt, care for, and play with your virtual pet.\n` +
-      `## ୨୧ ${guideSectionTitle("Help")}\n\n` +
-      `• ${channelMention(guild, ["support"])} — Open a private ticket for help, VIP purchases, partnerships, applications, reports, appeals, or errors. Use Get Verified for server verification.\n` +
-      `• ${channelMention(guild, ["privatechat", "privatechats", "private-chat"])} — Create and manage private chat rooms with /priv-chat commands.\n` +
-      `• ${channelMention(guild, ["selfroles", "self-roles"])} — Choose or update your age, gender, sexuality, interests, and chat color; manage NSFW channel visibility.\n` +
-      `## ୨୧ ${guideSectionTitle("Commands & Help")}\n\n` +
-      "Use `!commands` to open the complete command guide and browse every command by category.\n" +
-      "`!profile [@member]` — view a member profile.\n" +
-      "`!pet adopt` — open the pet adoption menu.\n" +
-      `## ୨୧ ${guideSectionTitle("Sugar AI")}\n\n` +
-      "Mention Sugar or address the bot directly to start a conversation ♡"
-    )
+    .setDescription([
+      "A little guide of Kittisugar ♡ Tap a channel mention to open it.",
+      "",
+      "Use `!commands` to open Sugar's complete command guide and browse commands by category.",
+      "`!profile [@member]` — view a member profile.",
+      "`!pet adopt` — open the pet adoption menu.",
+      "",
+      "Mention Sugar or address the bot directly to start a conversation ♡",
+      "",
+      "The channel directory below is generated from the server's current channel structure. Each channel appears once with its purpose.",
+    ].join("\n"))
     .setFooter({ text: "Kittisugar · Quick guide ♡" });
   return { embeds: [embed, ...buildServerMap(guild)] };
 }
 
 const CHANNEL_PURPOSES = {
   getaccess: "Start here: read the welcome panel and press Enter Server to begin verification.",
-  welcomes: "View welcome cards posted when new members join the server.",
+  welcomes: "See the welcome cards Sugar posts when new members join.",
   rules: "Read the community rules, age requirement, content boundaries, and promotion policy.",
-  guide: "Read this server guide for channel purposes, navigation, and help.",
-  confessions: "Submit an anonymous confession or create a poll using the buttons.",
-  loveletters: "Send a sweet anonymous or named appreciation message through the channel panel.",
-  suggestions: "Submit suggestions and ideas for improving the community.",
-  reputation: "Give or receive reputation, leave feedback, and browse member reputation with !rep commands.",
-  quotes: "Share and browse memorable, funny, or meaningful quotes from the server.",
-  selfies: "Share selfies with the community.",
-  introductions: "Introduce yourself and tell the community a little about you.",
-  pets: "Open your private virtual-pet room to adopt, care for, and play with a pet.",
-  support: "Open a private support ticket for help, VIP, partnerships, applications, reports, appeals, or errors.",
-  privatechat: "Create and manage private chat rooms using /priv-chat commands.",
-  privatechats: "Create and manage private chat rooms using /priv-chat commands.",
-  selfroles: "Choose age, gender, sexuality, interests, and chat-color roles; control NSFW channel visibility.",
-  commands: "Browse Sugar's command guide with `!commands`.",
-  moderation: "Staff-only moderation tools and moderation command information.",
-  dashboard: "View server management information and bot setup panels.",
+  guide: "Read this guide to understand the server channels and how to use them.",
+  confessions: "Submit an anonymous confession or create a poll using the buttons in the channel.",
+  loveletters: "Send a sweet appreciation message or love letter to someone in the community.",
+  suggestions: "Share suggestions and ideas to help improve Kittisugar.",
+  reputation: "Give or receive reputation, leave feedback, and browse member reputation with !rep.",
+  quotes: "Share and browse memorable, funny, or meaningful quotes from the community.",
+  selfies: "Share your selfies with the community.",
+  introductions: "Introduce yourself and tell everyone a little about you.",
+  pets: "Open your personal virtual-pet room to adopt, care for, and play with your pet.",
+  support: "Use the support panel to open a private ticket for help, purchases, applications, reports, appeals, or errors.",
+  selfroles: "Choose or update your age, gender, sexuality, interests, and chat-color roles; manage NSFW visibility.",
+  commands: "Use !commands to open Sugar's complete command guide.",
+  moderation: "Staff-only moderation tools, reports, and moderation information.",
+  dashboard: "Staff server-management panels and bot configuration information.",
   general: "Chat with the community and take part in everyday conversations.",
-  media: "Share images, videos, and other media relevant to the channel.",
-  nsfw: "Adult-only discussion and media; follow the server's NSFW rules.",
+  media: "Share images, videos, and other media with the community.",
+  nsfw: "Adult-only discussion and media. Follow the server's NSFW rules and channel restrictions.",
   memes: "Share memes and funny content with the community.",
   games: "Talk about games and find people to play with.",
-  music: "Share and discuss music.",
-  bots: "Use bot commands and interact with server bots.",
+  music: "Share and discuss music with other members.",
+  bots: "Use bot commands and interact with the server's bots.",
 };
 
+function isPrivateChatRoom(channel) {
+  return channel.parentId === PRIVATE_CHAT_CATEGORY_ID ||
+    String(channel.name ?? "").startsWith("👥");
+}
+
 function describeChannel(channel) {
-  const topic = String(channel.topic ?? "").trim();
-  if (topic) return topic.replace(/\s+/g, " ").slice(0, 220);
+  if (channel.id === PRIVATE_CHAT_LOBBY_CHANNEL_ID) {
+    return "Create a new private chat room here with the Create Private Chat button or /priv-chat create. Private rooms are intentionally not listed in this directory.";
+  }
+
   const key = normalizeName(channel.name);
   if (CHANNEL_PURPOSES[key]) return CHANNEL_PURPOSES[key];
+
+  const topic = String(channel.topic ?? "").replace(/\s+/g, " ").trim();
+  if (topic && normalizeName(topic) !== key) return topic.slice(0, 220);
+
   if (channel.type === ChannelType.GuildVoice || channel.type === ChannelType.GuildStageVoice) {
     return "Join this voice channel to talk with other members in real time.";
   }
   if (channel.type === ChannelType.GuildForum) {
-    return "Create a post or join an existing discussion about this channel's topic.";
+    return "Create a post or join an existing discussion in this forum.";
   }
   if (channel.type === ChannelType.GuildAnnouncement) {
     return "Read important server announcements and updates.";
   }
-  const readable = String(channel.name ?? "this channel").replace(/[|｜]/g, " ").replace(/[_-]+/g, " ").trim();
-  return `A community space for ${readable || "chatting and sharing"}; check the channel topic and follow its rules.`;
+
+  const readable = String(channel.name ?? "this channel")
+    .replace(/[|｜]/g, " ")
+    .replace(/[_-]+/g, " ")
+    .trim();
+  return `Use this channel for ${readable || "community"} discussions, posts, and related content.`;
 }
 
 function buildServerMap(guild) {
   if (!guild?.channels?.cache) return [];
-  const all = [...guild.channels.cache.values()].filter((channel) =>
-    channel.type !== ChannelType.GuildCategory && !channel.isThread?.(),
+
+  const channels = [...guild.channels.cache.values()].filter((channel) =>
+    channel.type !== ChannelType.GuildCategory &&
+    !channel.isThread?.() &&
+    !isPrivateChatRoom(channel),
   );
   const categories = [...guild.channels.cache.values()]
     .filter((channel) => channel.type === ChannelType.GuildCategory)
-    .sort((a, b) => a.rawPosition - b.rawPosition);
+    .sort((a, b) => (a.rawPosition ?? 0) - (b.rawPosition ?? 0));
+  const categoryIds = new Set(categories.map((category) => category.id));
+
   const groups = categories.map((category) => ({
     title: category.name,
-    channels: all.filter((channel) => channel.parentId === category.id).sort((a, b) => a.rawPosition - b.rawPosition),
+    channels: channels
+      .filter((channel) => channel.parentId === category.id)
+      .sort((a, b) => (a.rawPosition ?? 0) - (b.rawPosition ?? 0)),
   })).filter((group) => group.channels.length);
-  const uncategorized = all.filter((channel) => !channel.parentId).sort((a, b) => a.rawPosition - b.rawPosition);
+
+  const uncategorized = channels
+    .filter((channel) => !channel.parentId || !categoryIds.has(channel.parentId))
+    .sort((a, b) => (a.rawPosition ?? 0) - (b.rawPosition ?? 0));
   if (uncategorized.length) groups.push({ title: "Other channels", channels: uncategorized });
 
   const embeds = [];
+  let description = "";
+  const flush = () => {
+    if (!description) return;
+    embeds.push(new EmbedBuilder()
+      .setColor(COLOR)
+      .setTitle(`୨୧ ${toRoyalBold("Server Channels")} ♡`)
+      .setDescription(description));
+    description = "";
+  };
+
   for (const group of groups) {
-    let lines = [];
-    let description = "";
+    const heading = `**୨୧ ${group.title}**`;
+    if (description && description.length + heading.length + 2 > 3800) flush();
+    description += (description ? "\n\n" : "") + heading;
+
     for (const channel of group.channels) {
       const line = `• <#${channel.id}> — ${describeChannel(channel)}`;
-      if (description.length + line.length + 1 > 3800 && lines.length) {
-        embeds.push(new EmbedBuilder().setColor(COLOR).setTitle(`୨୧ ${toRoyalBold(group.title)} ♡`).setDescription(description));
-        lines = [];
-        description = "";
-      }
-      lines.push(line);
-      description = lines.join("\n");
+      if (description.length + line.length + 1 > 3800) flush();
+      description += (description ? "\n" : "") + line;
     }
-    if (description) embeds.push(new EmbedBuilder().setColor(COLOR).setTitle(`୨୧ ${toRoyalBold(group.title)} ♡`).setDescription(description));
+  }
+  flush();
+
+  if (embeds.length > 9) {
+    throw new Error(`The server channel directory needs ${embeds.length} embeds; Discord allows at most 9 directory embeds plus the guide intro.`);
   }
   return embeds;
 }
 
-async function refreshDashboardGuide(client, guild) {
-  const dashboard = guild.channels.cache.find((channel) => channel.type === ChannelType.GuildText && normalizeName(channel.name) === "dashboard");
-  if (!dashboard) return;
-  const guide = await upsertPanel(dashboard, client, "୨୧ Kittisugar Guide ♡", buildGuidePayload(guild));
-  await guide.pin().catch(() => {});
-}
-async function upsertPanel(channel, client, title, payload) {
-  const recent = await channel.messages.fetch({ limit: 50 });
-  const existing = recent.find((message) =>
-    message.author?.id === client.user.id && message.embeds.some((embed) => normalizeName(embed.title) === normalizeName(title)),
+async function refreshGuildGuides(client, guild) {
+  const channelIds = new Set(GUIDE_CHANNEL_REFRESH_IDS);
+  const dashboard = guild.channels.cache.find((channel) =>
+    channel.type === ChannelType.GuildText && normalizeName(channel.name) === "dashboard",
   );
-  if (existing) return existing.edit(payload);
-  return channel.send(payload);
+  if (dashboard) channelIds.add(dashboard.id);
+
+  const payload = buildGuidePayload(guild);
+  for (const channelId of channelIds) {
+    const channel = guild.channels.cache.get(channelId) ??
+      await guild.channels.fetch(channelId).catch(() => null);
+    if (!channel || channel.type !== ChannelType.GuildText) continue;
+
+    const recent = await channel.messages.fetch({ limit: 50 });
+    const guides = [...recent.values()].filter((message) =>
+      message.author?.id === client.user.id &&
+      message.embeds.some((item) => normalizeName(item.title).includes("guide")),
+    );
+    if (guides.length) {
+      for (const guide of guides) await guide.edit(payload);
+    } else {
+      const created = await channel.send(payload);
+      if (normalizeName(channel.name) === "dashboard") await created.pin().catch(() => {});
+    }
+    if (normalizeName(channel.name) === "dashboard" && guides[0]) {
+      await guides[0].pin().catch(() => {});
+    }
+  }
 }
 
 async function applyStartPermissions(channel, guild, newRole, botId) {
@@ -363,35 +393,8 @@ export async function ensureStartChannels(guild, client) {
     await upsertPanel(access, client, `୨୧ ${toRoyalBold("Get Access!")} ♡`, buildAccessPanelPayload(guild, { rulesChannel: rules, guideChannel: guide }));
   }
 
-  // Refresh existing Guide embeds in place in both requested guide channels.
-  const guideChannels = new Map();
-  if (guide) guideChannels.set(guide.id, guide);
-  for (const channelId of GUIDE_CHANNEL_REFRESH_IDS) {
-    const channel = guild.channels.cache.get(channelId) ??
-      await guild.channels.fetch(channelId).catch(() => null);
-    if (channel?.type === ChannelType.GuildText) guideChannels.set(channel.id, channel);
-  }
-  for (const guideChannel of guideChannels.values()) {
-    const recentGuideMessages = await guideChannel.messages.fetch({ limit: 50 });
-    const existingGuides = [...recentGuideMessages.values()].filter((message) =>
-      message.author?.id === client.user.id &&
-      message.embeds.some((embed) => normalizeName(embed.title).includes("guide")),
-    );
-    for (const existingGuide of existingGuides) {
-      await existingGuide.edit(buildGuidePayload(guild));
-    }
-  }
-  const dashboard = guild.channels.cache.find((channel) =>
-    channel.type === ChannelType.GuildText && normalizeName(channel.name) === "dashboard",
-  );
-  if (dashboard) {
-    const dashboardGuide = await upsertPanel(dashboard, client, "୨୧ Kittisugar Guide ♡", buildGuidePayload(guild));
-    await dashboardGuide.pin().catch((error) => {
-      console.error(`[access] could not pin the dashboard guide in guild ${guild.id}: ${error.message}`);
-    });
-  }
-
-  console.info(`[access] start category checked for guild ${guild.id}; no channels were created or renamed.`);
+  await refreshGuildGuides(client, guild);
+    console.info(`[access] start category checked for guild ${guild.id}; no channels were created or renamed.`);
   return { category, access, rules, guide };
 }
 
@@ -465,13 +468,13 @@ export function attachAccessSystem(client, { settings } = {}) {
       console.error(`[access] could not enforce New-role channel visibility in guild ${channel.guild.id}: ${error.message}`);
     });
   });  client.on(Events.ChannelCreate, (channel) => {
-    if (channel.guild) void refreshDashboardGuide(client, channel.guild).catch((error) => console.error(`[access] guide refresh failed: ${error.message}`));
+    if (channel.guild) void refreshGuildGuides(client, channel.guild).catch((error) => console.error(`[access] guide refresh failed: ${error.message}`));
   });
   client.on(Events.ChannelUpdate, (_before, channel) => {
-    if (channel.guild) void refreshDashboardGuide(client, channel.guild).catch((error) => console.error(`[access] guide refresh failed: ${error.message}`));
+    if (channel.guild) void refreshGuildGuides(client, channel.guild).catch((error) => console.error(`[access] guide refresh failed: ${error.message}`));
   });
   client.on(Events.ChannelDelete, (channel) => {
-    if (channel.guild) void refreshDashboardGuide(client, channel.guild).catch((error) => console.error(`[access] guide refresh failed: ${error.message}`));
+    if (channel.guild) void refreshGuildGuides(client, channel.guild).catch((error) => console.error(`[access] guide refresh failed: ${error.message}`));
   });
 
   client.on(Events.InteractionCreate, (interaction) => {
