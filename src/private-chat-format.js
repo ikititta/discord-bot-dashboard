@@ -1,6 +1,7 @@
 import { toRoyalBold } from "./embed-format.js";
 
 export const PRIVATE_CHAT_LOBBY_CHANNEL_ID = "1568179043356901376";
+export const PRIVATE_CHAT_CATEGORY_ID = "1568179036520321035";
 
 const MAX_CHANNEL_LABEL_LENGTH = 32;
 
