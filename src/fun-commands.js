@@ -438,9 +438,6 @@ export function attachFunCommands(client, { store, fetchImpl = fetch, token, app
       }
     }
 
-    if (interaction.isChatInputCommand?.() && interaction.commandName === "fun" && interaction.options.getSubcommand() === "help") {
-      await interaction.reply({ embeds: [buildFunHelpEmbed()], ephemeral: true }).catch(() => {});
-    }
     if (interaction.isChatInputCommand?.() && ["stats", "vip"].includes(interaction.commandName)) {
       try {
         const targetUser = interaction.commandName === "vip" ? interaction.options.getUser("member") ?? interaction.user : interaction.user;
