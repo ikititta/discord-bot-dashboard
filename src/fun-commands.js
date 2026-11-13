@@ -289,8 +289,9 @@ async function fetchTaggedNsfwGif(tags, fetchImpl) {
 
 export async function fetchNsfwGif({ fetchImpl = fetch, actorRole = "neutral", targetRole = null, actorDominance = null, targetDominance = null } = {}) {
   const searches = resolveNsfwGifSearchTags(actorRole, targetRole, actorDominance, targetDominance);
-  const dominancePair = resolveDominancePair(actorDominance, targetDominance);
-  const hasDirectionalMixedGenderPair = (actorRole === "female" && targetRole === "male" || actorRole === "male" && targetRole === "female") && dominancePair.mode === "directional";
+  // Prefer a pose matching the members' dominance roles when the tagged
+  // provider has one. If none is available, use the gender-correct category:
+  // the requested genders matter more than the exact dominant/submissive pose.
   for (const tags of searches) {
     try {
       const tagged = await fetchTaggedNsfwGif(tags, fetchImpl);
@@ -299,9 +300,6 @@ export async function fetchNsfwGif({ fetchImpl = fetch, actorRole = "neutral", t
       console.warn(`[fun] tagged GIF lookup failed for ${tags.join(" ")}: ${error.message}`);
     }
   }
-  // Never return a generic mixed-gender GIF for a directional pairing:
-  // it can contradict the member marked as dominant.
-  if (hasDirectionalMixedGenderPair) throw new Error("No GIF matching the dominant member's requested pose was found.");
 
   const category = resolveNsfwGifCategory(actorRole, targetRole, actorDominance, targetDominance);
   const response = await fetchImpl(PURRBOT_API_BASE + "/img/nsfw/" + category + "/gif", {
