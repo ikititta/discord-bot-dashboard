@@ -164,6 +164,7 @@ test("access, rules, and guide panels contain the required confirmations and upd
   assert.doesNotMatch(ruleText, /\n\n##/);
 
   const guideText = guide.embeds[0].data.description;
+  const channelGuideText = guide.embeds.slice(1).map((embed) => embed.data.description).join("\n");
   assert.equal(guide.embeds[0].data.title, `୨୧ ${toRoyalBold("Kittisugar Guide!")} ♡`);
   assert.match(guideText, /A little guide of Kittisugar/);
   assert.doesNotMatch(guideText, /\n\n(?:## )?୨୧/);
@@ -172,13 +173,17 @@ test("access, rules, and guide panels contain the required confirmations and upd
   }
   assert.equal((guideText.match(/• <#\d{18}>/g) ?? []).length, 13);
   assert.ok(guideText.includes(`## ୨୧ ${toRoyalBold("Start")}\n\n• <#100000000000000000>\nRead the welcome message`));
-  assert.ok(guideText.includes("<#1570257241511170150>"));
+  assert.match(guideText, /Use `!commands` to open the complete command guide/);
+  assert.ok(channelGuideText.includes("• <#100000000000000000> —"));
+  assert.ok(channelGuideText.includes("community rules"));
+  assert.ok(guide.embeds.length > 1);
   assert.ok(guideText.includes("`!profile [@member]` — view a member profile."));
   assert.ok(guideText.includes("`!pet adopt` — open the pet adoption menu."));
   assert.doesNotMatch(guideText, /delete amount:/);
   assert.doesNotMatch(guideText, /!rep stats/);
   assert.doesNotMatch(guideText, /!pet daily/);
   assert.doesNotMatch(guideText, /!funhelp/);
+  assert.doesNotMatch(channelGuideText, /• <#\\d{18}>\\s*(?:\\n|$)/);
 });
 
 test("detects Discord server booster status", () => {
