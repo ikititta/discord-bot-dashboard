@@ -98,11 +98,12 @@ export function buildPrivateChatCommand() {
     .toJSON();
 }
 
-export function buildPrivateChatPermissionOverwrites({ everyoneId, ownerId, memberIds, botId }) {
+export function buildPrivateChatPermissionOverwrites({ everyoneId, ownerId, memberIds, botId, excludedOwnerId = null }) {
   return [
     // Explicit overwrites prevent the channel from syncing any category access.
     { id: everyoneId, deny: [PermissionFlagsBits.ViewChannel] },
-    { id: ownerId, allow: MEMBER_PERMISSIONS },
+    ...(ownerId !== excludedOwnerId ? [{ id: ownerId, allow: MEMBER_PERMISSIONS }] : []),
+    ...(excludedOwnerId && excludedOwnerId !== ownerId ? [{ id: excludedOwnerId, deny: [PermissionFlagsBits.ViewChannel] }] : []),
     ...memberIds.map((id) => ({ id, allow: MEMBER_PERMISSIONS })),
     {
       id: botId,
@@ -205,6 +206,22 @@ async function initializePrivateChatLobby(client, { token, applicationId, store,
     await ensurePrivateChatPanels(client, store, lobby.guildId);
   } catch (error) {
     console.error(`[private-chats] could not update existing private-chat panels: ${error.message}`);
+  }
+  // Remove explicit server-owner member access from all existing private chats.
+  // Discord server owners and Administrator users still bypass channel overwrites.
+  const guild = lobby.guild;
+  if (guild?.ownerId) {
+    for (const chat of store.listGuild(lobby.guildId)) {
+      try {
+        const channel = await client.channels.fetch(chat.channelId);
+        if (!channel || channel.type !== ChannelType.GuildText) continue;
+        await channel.permissionOverwrites.delete(guild.ownerId, "Remove server owner from private-chat member access");
+      } catch (error) {
+        if (error?.code !== 10003 && error?.code !== 10004) {
+          console.error(`[private-chats] could not remove server-owner access from ${chat.channelId}: ${error.message}`);
+        }
+      }
+    }
   }
 
   // The user's explicitly requested test chat is the only existing private chat
@@ -865,6 +882,7 @@ export async function createPrivateChat(interaction, client, store, displayName,
     ownerId: interaction.user.id,
     memberIds: inviteeIds,
     botId: client.user.id,
+    excludedOwnerId: guild.ownerId,
   });
 
   const channel = await guild.channels.create({
