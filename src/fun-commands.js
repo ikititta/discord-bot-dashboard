@@ -249,8 +249,8 @@ export function buildFunHelpEmbed() {
       { name: "Relationships", value: "!couple @member · !propose @member · !marry @member · !breakup · !divorce. The other member must accept proposals." },
       { name: "Two-person commands", value: "!hug @member · !slap @member · !bonk @member · !spank @member · !kiss @member · !fuck @member · !cuddle @member · !pat @member · !poke @member · !bite @member · !kick @member · !kill @member (VIP; 30-second timeout) · !highfive @member · !handhold @member" },
       { name: "Solo commands", value: "!cry · !laugh · !dance · !sleep · !happy · !blush · !smug · !wave · !facepalm · !wink · !shrug · !smile · !pout" },
-      { name: "Statistics", value: "!stats — VIP members can see their complete stats.\n!vip stats — same complete report.\n!vip stats @member — view another member’s complete stats.\nStats count commands used, interactions received, and interaction partners." },
-      { name: "VIP", value: "VIP unlocks !fuck, !kill (30-second timeout), complete statistics, and other exclusive benefits. For !fuck and !kill, either the person using the command or the mentioned member must have VIP. Only the person viewing VIP statistics needs VIP." },
+      { name: "Statistics", value: "/stats — privately view your complete stats (VIP).\n/vip stats — privately view your report or another member’s (VIP).\nStats count commands used, interactions received, and interaction partners." },
+      { name: "VIP", value: "VIP unlocks !fuck, !kill (30-second timeout), private statistics, and other exclusive benefits. Use /stats or /vip stats; reports are visible only to the requester." },
     )
     .setFooter({ text: "Have fun in Kittisugar ♡" });
 }
@@ -392,11 +392,13 @@ async function handleRelationshipCommand(message, store, name) {
   await safeReply(message, { content: response });
 }
 const FUN_HELP_COMMAND = new SlashCommandBuilder().setName("fun").setDescription("Fun commands").addSubcommand((sub) => sub.setName("help").setDescription("Show the fun command guide")).toJSON();
+const STATS_COMMAND = new SlashCommandBuilder().setName("stats").setDescription("Privately view your complete fun statistics").toJSON();
+const VIP_COMMAND = new SlashCommandBuilder().setName("vip").setDescription("VIP commands").addSubcommand((sub) => sub.setName("stats").setDescription("Privately view complete stats").addUserOption((option) => option.setName("member").setDescription("Member whose stats to view").setRequired(false))).toJSON();
 async function registerFunHelpCommand(token, applicationId) {
   const rest = new REST({ version: "10" }).setToken(token);
   const route = Routes.applicationGuildCommands(applicationId, KITTISUGAR_GUILD_ID);
   const current = await rest.get(route);
-  await rest.put(route, { body: [...current.filter((command) => command.name !== "fun"), FUN_HELP_COMMAND] });
+  await rest.put(route, { body: [...current.filter((command) => !["fun", "stats", "vip"].includes(command.name)), FUN_HELP_COMMAND, STATS_COMMAND, VIP_COMMAND] });
 }
 export function attachFunCommands(client, { store, fetchImpl = fetch, token, applicationId } = {}) {
   if (!store) throw new Error("The fun-command statistics store is required.");
@@ -413,6 +415,20 @@ export function attachFunCommands(client, { store, fetchImpl = fetch, token, app
 
     if (interaction.isChatInputCommand?.() && interaction.commandName === "fun" && interaction.options.getSubcommand() === "help") {
       await interaction.reply({ embeds: [buildFunHelpEmbed()], ephemeral: true }).catch(() => {});
+    }
+    if (interaction.isChatInputCommand?.() && ["stats", "vip"].includes(interaction.commandName)) {
+      try {
+        const targetUser = interaction.commandName === "vip" ? interaction.options.getUser("member") ?? interaction.user : interaction.user;
+        if (!isVip(interaction.member)) { await interaction.reply({ content: VIP_STATS_MESSAGE, ephemeral: true }); return; }
+        const targetMember = targetUser.id === interaction.user.id ? interaction.member : await interaction.guild.members.fetch(targetUser.id).catch(() => null);
+        if (!targetMember) { await interaction.reply({ content: "Member not found in Kittisugar.", ephemeral: true }); return; }
+        const stats = store.getStats(interaction.guildId, targetUser.id);
+        const embed = buildFunStatsEmbed({ user: { ...targetUser, id: targetUser.id, displayName: displayName(targetMember, targetUser) }, stats, full: true, received: targetUser.id !== interaction.user.id, relationship: store.getRelationship(interaction.guildId, targetUser.id), history: store.getRelationshipHistory(interaction.guildId, targetUser.id) });
+        await interaction.reply({ embeds: [embed], ephemeral: true });
+      } catch (error) {
+        console.error("[fun] private stats failed: " + error.message);
+        if (!interaction.replied && !interaction.deferred) await interaction.reply({ content: "Sugar could not load your private stats. Please try again ♡", ephemeral: true }).catch(() => {});
+      }
     }
   });
   client.once(Events.ClientReady, () => {
@@ -448,8 +464,8 @@ export function attachFunCommands(client, { store, fetchImpl = fetch, token, app
       }
       if (name === "stats" || name === "vip" || name === "fun") {
         if (name === "fun" && !/^stats(?:\s|$)/i.test(args.trim())) return;
-        const statsArgs = name === "vip" ? `vip ${args}` : name === "fun" ? `stats ${args.trim().replace(/^stats\s*/i, "")}` : `stats ${args}`;
-        await handleStats(message, store, statsArgs);
+        // Prefix commands cannot reply ephemerally; remove public invocations.
+        await message.delete().catch(() => {});
         return;
       }
       if (!getFunCommandDefinition(name)) return;
