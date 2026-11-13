@@ -209,7 +209,7 @@ export function isVip(member) {
   // lock out VIP benefits while the stored ID is stale.
   if (roles.has?.(FUN_VIP_ROLE_ID)) return true;
   return typeof roles.some === "function"
-    ? roles.some((role) => String(role?.name ?? "").normalize("NFKD").toLowerCase().replace(/\\p{M}/gu, "").replace(/[^a-z0-9]/g, "") === "vip")
+    ? roles.some((role) => String(role?.name ?? "").normalize("NFKD").toLowerCase().replace(/\p{M}/gu, "").replace(/[^a-z0-9]/g, "") === "vip")
     : false;
 }
 
