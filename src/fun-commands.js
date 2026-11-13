@@ -93,7 +93,7 @@ export function normalizeFunDominance(member) {
     const score = labels.get(normalize(role.name));
     if (score !== undefined) return score;
   }
-  return 0;
+  return null;
 }
 
 export function getFunCommandDefinition(name) {
@@ -146,13 +146,13 @@ export function buildFunStatsEmbed({ user, stats, full = false, received = false
   return embed;
 }
 
-export function resolveGifPairing(actorRole, targetRole = null, actorDominance = 0, targetDominance = 0) {
+export function resolveGifPairing(actorRole, targetRole = null, actorDominance = null, targetDominance = null) {
   if (targetRole === null) {
     if (actorRole === "female") return "f";
     if (actorRole === "male") return "m";
     return null;
   }
-  const reverse = Number(actorDominance) < Number(targetDominance);
+  const reverse = actorDominance !== null && targetDominance !== null && Number(actorDominance) < Number(targetDominance);
   const first = reverse ? targetRole : actorRole;
   const second = reverse ? actorRole : targetRole;
   return ({
@@ -355,7 +355,7 @@ async function handleFunAction(message, store, name, args, fetchImpl) {
   let targetMember = null;
   let targetUser = null;
   let targetRole = null;
-  let targetDominance = 0;
+  let targetDominance = null;
   const actorRole = normalizeFunRole(message.member);
   const actorDominance = normalizeFunDominance(message.member);
   if (definition.needsTarget) {
