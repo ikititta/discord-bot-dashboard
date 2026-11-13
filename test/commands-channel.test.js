@@ -26,18 +26,21 @@ test("commands panel contains interactive category buttons and is explicitly not
   assert.match(payload.embeds[0].data.footer.text, /Not pinned/);
   const ids = payload.components.flatMap((row) => row.components.map((button) => button.data.custom_id));
   assert.deepEqual(ids, [
-    "sugar-commands:fun", "sugar-commands:pets", "sugar-commands:community",
-    "sugar-commands:private", "sugar-commands:profile",
+    "sugar-commands:solo", "sugar-commands:soloNsfw", "sugar-commands:relationship",
+    "sugar-commands:affection", "sugar-commands:interactions", "sugar-commands:nsfw",
+    "sugar-commands:functional",
   ]);
 });
 
 test("each category exposes current command syntax and access requirements", () => {
   const cases = {
-    fun: ["!fuck @member", "VIP-only", "!funhelp", "!vip stats"],
-    pets: ["!pet adopt", "!pet buy <treat|toy|potion>", "!pet gif", "One pet per member"],
-    community: ["!rep", "one active vote per person", "one conversation thread"],
-    private: ["/priv-chat create", "/priv-chat rename", "/priv-chat delete"],
-    profile: ["!profile", "!quote", "/fun help"],
+    solo: ["!cry", "!dance", "Solo · no sexual"],
+    soloNsfw: ["Solo · VIP · NSFW", "!masturbate @member"],
+    relationship: ["!couple @member", "!propose @member", "!divorce"],
+    affection: ["!hug @member", "!kiss @member", "!cuddle @member"],
+    interactions: ["!tease @member", "!seduce @member", "anime GIFs"],
+    nsfw: ["!fuck @member", "!masturbate @member", "!oral @member", "!anal @member"],
+    functional: ["/delete amount:", "/vip-delete", "/mod-delete", "!quote", "!profile", "!rep", "!pet", "/priv-chat create"],
   };
   for (const [category, phrases] of Object.entries(cases)) {
     const embed = buildCommandsCategoryEmbed(category);
