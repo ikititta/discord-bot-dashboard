@@ -6,7 +6,8 @@ import path from "node:path";
 
 import { CommunityStore } from "../src/community-store.js";
 import {
-  buildConfessionsPanelPayload,\n  isCountedCommunityPost,
+  buildConfessionsPanelPayload,
+  isCountedCommunityPost,
   buildLoveLettersPanelPayload,
   buildSuggestionsPanelPayload,
   buildSuggestionComponents,
@@ -74,7 +75,8 @@ test("confessions panel offers anonymous, named, and poll actions", () => {
   assert.ok(buttons.every((item) => !item.label.toLowerCase().includes("with my name")));
   assert.equal(buttons[1].label, "Create Poll ♡");
   assert.equal(buttons[1].style, 2);
-  assert.equal(payload.embeds[0].toJSON().title, "୨୧ 𝒄𝒐𝒏𝒇𝒆𝒔𝒔ions ♡");\n  assert.match(payload.embeds[0].toJSON().description, /Confessions currently in this chat:\\*\\* 0/);\n  assert.match(buildConfessionsPanelPayload(7).embeds[0].toJSON().description, /Confessions currently in this chat:\\*\\* 7/);
+  assert.equal(payload.embeds[0].toJSON().title, "୨୧ 𝒄𝒐𝒏𝒇𝒆𝒔𝒔ions ♡");
+  assert.match(payload.embeds[0].toJSON().description, /Confessions currently in this chat:\\*\\* 0/);\n  assert.match(buildConfessionsPanelPayload(7).embeds[0].toJSON().description, /Confessions currently in this chat:\\*\\* 7/);
 });
 
 test("Suggestions panel offers anonymous or named submissions and native vote/report reactions", () => {
@@ -89,7 +91,10 @@ test("Suggestions panel offers anonymous or named submissions and native vote/re
   assert.match(source, /for \(const emoji of \["⬆️", "⬇️", "⚠️"\]\)/);
   assert.match(source, /sendSuggestionReactionReport/);
 });
-test("love letters panel shows the live in-channel count", () => {\n  assert.match(buildLoveLettersPanelPayload(4).embeds[0].toJSON().description, /Love letters currently in this chat:\\*\\* 4/);\n});\n\ntest("love letters panel offers anonymous and named public submissions", () => {
+test("love letters panel shows the live in-channel count", () => {
+  assert.match(buildLoveLettersPanelPayload(4).embeds[0].toJSON().description, /Love letters currently in this chat:\\*\\* 4/);\n});
+
+test("love letters panel offers anonymous and named public submissions", () => {
   const payload = buildLoveLettersPanelPayload();
   const buttons = payload.components[0].toJSON().components;
   assert.deepEqual(buttons.map((item) => item.custom_id), [
