@@ -88,7 +88,7 @@ export function buildCommandsPanelPayload() {
       .setColor(COLOR)
       .setTitle(COMMANDS_PANEL_TITLE)
       .setDescription("All Sugar commands, neatly organised ♡\n\nChoose a category below to see its commands and how to use them.")
-      .setFooter({ text: "This panel refreshes whenever a new message is sent in this channel · Not pinned ♡" })],
+      .setFooter({ text: "Select a category to browse commands · Not pinned ♡" })],
     components: rows,
   };
 }
@@ -156,6 +156,7 @@ export function attachCommandsChannel(client) {
   client.on(Events.MessageCreate, async (message) => {
     if (!message.guild || message.author?.bot || message.webhookId ||
         !/^!commands$/i.test(String(message.content ?? "").trim())) return;
+    if (message.channel?.topic === COMMANDS_CHANNEL_TOPIC) return;
     await message.reply({
       ...buildCommandsPanelPayload(),
       allowedMentions: { parse: [], repliedUser: false },
@@ -173,7 +174,7 @@ export function attachCommandsChannel(client) {
   });
 
   const refreshForMessage = (message) => {
-    if (!message.guild || message.author?.bot || message.webhookId || /^!commands$/i.test(String(message.content ?? "").trim()) ||
+    if (!message.guild || message.author?.bot || message.webhookId ||
         message.channel?.type !== ChannelType.GuildText ||
         message.channel.parentId !== COMMANDS_CATEGORY_ID ||
         message.channel.topic !== COMMANDS_CHANNEL_TOPIC) return;
