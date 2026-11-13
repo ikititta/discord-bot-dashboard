@@ -292,8 +292,8 @@ test("dominance chooses pose-specific GIF tags regardless of command actor", () 
   assert.deepEqual(resolveNsfwGifSearchTags("male", "female", 2, -2), [["animated", "doggystyle"], ["animated", "missionary"]]);
   assert.deepEqual(resolveNsfwGifSearchTags("male", "female", -2, 2), [["animated", "cowgirl"], ["animated", "reverse_cowgirl"]]);
   assert.deepEqual(resolveNsfwGifSearchTags("female", "male", 0, 2), [["animated", "doggystyle"], ["animated", "missionary"]]);
-  assert.deepEqual(resolveNsfwGifSearchTags("female", "female", 2, -2), [["animated", "yuri"]]);
-  assert.deepEqual(resolveNsfwGifSearchTags("male", "male", -2, 2), [["animated", "yaoi"]]);
+  assert.deepEqual(resolveNsfwGifSearchTags("female", "female", 2, -2), []); // PurrBot yuri category
+  assert.deepEqual(resolveNsfwGifSearchTags("male", "male", -2, 2), []); // PurrBot yaoi category
   assert.deepEqual(resolveNsfwGifSearchTags("female", "male", 0, 0), [["animated", "hetero"]]);
 });
 
