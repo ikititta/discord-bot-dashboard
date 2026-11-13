@@ -125,7 +125,7 @@ export function buildConfessionsPanelPayload(postCount = 0) {
   const embed = new EmbedBuilder()
     .setColor(COLOR)
     .setTitle(CONFESSION_PANEL_TITLE)
-    .setDescription("Share a confession or create a poll. Choose how you want your post to appear.\\n\\n**Confessions currently in this chat:** " + Math.max(0, Number(postCount) || 0));
+    .setDescription("Share a confession or create a poll. Choose how you want your post to appear.\n\n**Confessions currently in this chat:** " + Math.max(0, Number(postCount) || 0));
   const row = new ActionRowBuilder().addComponents(
     button("confess-start", "Submit a Confession ♡"),
     button("poll-start", "Create Poll ♡", ButtonStyle.Secondary),
@@ -137,7 +137,7 @@ export function buildLoveLettersPanelPayload(postCount = 0) {
   const embed = new EmbedBuilder()
     .setColor(COLOR)
     .setTitle(LOVE_PANEL_TITLE)
-    .setDescription("Send a sweet letter for everyone to read. Choose whether to sign it or keep it anonymous.\\n\\n**Love letters currently in this chat:** " + Math.max(0, Number(postCount) || 0));
+    .setDescription("Send a sweet letter for everyone to read. Choose whether to sign it or keep it anonymous.\n\n**Love letters currently in this chat:** " + Math.max(0, Number(postCount) || 0));
   const row = new ActionRowBuilder().addComponents(
     button("letter:anonymous", "Send Anonymously ♡"),
     button("letter:named", "With My Name ♡", ButtonStyle.Secondary),
