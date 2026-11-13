@@ -20,11 +20,13 @@ const TWO_PERSON_COMMANDS = Object.freeze({
   bonk: { gif: "bonk", text: "has bonked" },
   spank: { gif: "spank", text: "has given a playful spanking to" },
   fuck: { gif: "fuck", text: "has fucked" },
-  masturbate: { gif: "blush", text: "has triggered a censored anime reaction for" },
-  oral: { gif: "wink", text: "has triggered a censored anime reaction for" },
-  anal: { gif: "smug", text: "has triggered a censored anime reaction for" },
+  masturbate: { gif: null, text: "has started a private, off-screen interaction with" },
+  oral: { gif: null, text: "has started a private, off-screen interaction with" },
+  anal: { gif: null, text: "has started a private, off-screen interaction with" },
   hug: { gif: "hug", text: "has hugged" },
   kiss: { gif: "kiss", text: "has kissed" },
+  tease: { gif: null, text: "has playfully teased" },
+  seduce: { gif: null, text: "has tried to charm" },
   cuddle: { gif: "cuddle", text: "has cuddled" },
   pat: { gif: "pat", text: "has given a headpat to" },
   poke: { gif: "poke", text: "has poked" },
@@ -222,7 +224,7 @@ export function isVip(member) {
 export const KILL_TIMEOUT_MS = 30_000;
 
 export function isVipOnlyFunCommand(name) {
-  return ["fuck", "kill", "masturbate", "oral", "anal"].includes(name);
+  return ["fuck", "kill", "masturbate", "oral", "anal", "tease", "seduce"].includes(name);
 }
 
 function displayName(member, user) {
@@ -253,10 +255,10 @@ export function buildFunHelpEmbed() {
     .setDescription("Use these commands in Kittisugar. Every fun command requires the Member role. Two-person commands need a member mention; solo commands do not.")
     .addFields(
       { name: "Relationships", value: "!couple @member · !propose @member · !marry @member · !breakup · !divorce. The other member must accept proposals." },
-      { name: "Two-person commands", value: "!hug @member · !slap @member · !bonk @member · !spank @member · !kiss @member · !fuck @member · !cuddle @member · !pat @member · !poke @member · !bite @member · !lick @member · !feet @member · !kick @member · !shoot @member · !masturbate @member (VIP; censored anime GIF) · !oral @member (VIP; censored anime GIF) · !anal @member (VIP; censored anime GIF) · !kill @member (VIP; 30-second timeout) · !highfive @member · !handhold @member" },
+      { name: "Two-person commands", value: "!hug @member · !slap @member · !bonk @member · !spank @member · !kiss @member · !tease @member (VIP; text-only) · !seduce @member (VIP; text-only) · !fuck @member · !cuddle @member · !pat @member · !poke @member · !bite @member · !lick @member · !feet @member · !kick @member · !shoot @member · !masturbate @member (VIP; text-only) · !oral @member (VIP; text-only) · !anal @member (VIP; text-only) · !kill @member (VIP; 30-second timeout) · !highfive @member · !handhold @member" },
       { name: "Solo commands", value: "!cry · !laugh · !dance · !sleep · !happy · !blush · !smug · !wave · !facepalm · !wink · !shrug · !smile · !pout" },
       { name: "Statistics", value: "/stats — privately view your complete stats (VIP).\n/vip stats — privately view your report or another member’s (VIP).\nStats count commands used, interactions received, and interaction partners." },
-      { name: "VIP", value: "VIP unlocks !fuck (existing uncensored anime GIF behavior), !masturbate, !oral, !anal (censored anime reaction GIFs), !kill (30-second timeout), private statistics, and other exclusive benefits. Use /stats or /vip stats; reports are visible only to the requester." },
+      { name: "VIP", value: "VIP unlocks !fuck (existing NSFW anime GIF behavior), !masturbate, !oral, !anal, !tease, and !seduce (text-only interactions), !kill (30-second timeout), private statistics, and other exclusive benefits. Use /stats or /vip stats; reports are visible only to the requester." },
     )
     .setFooter({ text: "Have fun in Kittisugar ♡" });
 }
@@ -348,19 +350,17 @@ async function handleFunAction(message, store, name, args, fetchImpl) {
 
   let gif = null;
   try {
-    gif = name === "shoot" ? null : name === "fuck"
-      ? await fetchNsfwGif({ fetchImpl, actorRole: normalizeFunRole(message.member), targetRole })
-      : await fetchAnimeGif(definition.gif, { fetchImpl, actorRole: normalizeFunRole(message.member), targetRole });
+    if (name === "fuck") gif = await fetchNsfwGif({ fetchImpl, actorRole: normalizeFunRole(message.member), targetRole });
+    else if (definition.gif) gif = await fetchAnimeGif(definition.gif, { fetchImpl, actorRole: normalizeFunRole(message.member), targetRole });
   }
   catch (error) { console.warn(`[fun] GIF lookup failed for !${name}: ${error.message}`); }
 
-  const embed = new EmbedBuilder().setColor(COLOR);
-  if (gif) {
-    embed.setImage(gif.url);
-    if (gif.anime) embed.setFooter({ text: `Anime: ${gif.anime} · ${gif.source}` });
-  } else {
-    embed.setFooter({ text: "Anime GIF unavailable right now ♡" });
+  if (!gif) {
+    await safeReply(message, { content: actionText }, [message.author.id, ...(targetUser ? [targetUser.id] : [])]);
+    return true;
   }
+  const embed = new EmbedBuilder().setColor(COLOR).setImage(gif.url);
+  if (gif.anime) embed.setFooter({ text: `Anime: ${gif.anime} · ${gif.source}` });
   await safeReply(message, { content: actionText, embeds: [embed] }, [message.author.id, ...(targetUser ? [targetUser.id] : [])]);
   return true;
 }
