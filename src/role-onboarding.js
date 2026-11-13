@@ -420,17 +420,19 @@ export async function ensureSelfRolesChannel(guild, client) {
   const recent = await channel.messages.fetch({ limit: 50 });
   const panelPayloads = buildSelfRolesPanelPayload();
   const legacyPanelTitle = `୨୧ ${toRoyalBold("Self Roles")} ♡`;
-  const legacyPanel = recent.find((message) =>
+  const legacyPanels = [...recent.values()].filter((message) =>
     message.author?.id === client.user.id && message.embeds.some((embed) => embed.title === legacyPanelTitle),
   );
-  if (legacyPanel) await legacyPanel.delete();
+  for (const legacy of legacyPanels) await legacy.delete().catch(() => {});
   for (const payload of panelPayloads) {
     const title = payload.embeds[0].data.title;
-    const existing = recent.find((message) =>
+    const matches = [...recent.values()].filter((message) =>
       message.author?.id === client.user.id && message.embeds.some((embed) => embed.title === title),
-    );
+    ).sort((a, b) => b.createdTimestamp - a.createdTimestamp);
+    const existing = matches.shift();
     if (existing) await existing.edit(payload);
     else await channel.send(payload);
+    for (const duplicate of matches) await duplicate.delete().catch(() => {});
   }
 
   const hiddenRole = findNsfwHiddenRole(guild);
