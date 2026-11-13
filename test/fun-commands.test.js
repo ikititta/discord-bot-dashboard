@@ -4,7 +4,6 @@ import assert from "node:assert/strict";
 import {
   FUN_ROLE_IDS,
   FUN_VIP_ROLE_ID,
-  KILL_TIMEOUT_MS,
   buildFunActionText,
   buildFunStatsEmbed,
   fetchAnimeGif,
@@ -55,7 +54,6 @@ test("fun commands use the existing Kittisugar gender role IDs only", () => {
   assert.equal(isVipOnlyFunCommand("anal"), true);
   assert.equal(isVipOnlyFunCommand("tease"), true);
   assert.equal(isVipOnlyFunCommand("seduce"), true);
-  assert.equal(KILL_TIMEOUT_MS, 30_000);
   assert.equal(isVipOnlyFunCommand("spank"), false);
   assert.equal(resolveGifPairing("female", "female"), "ff");
   assert.equal(resolveGifPairing("male", "male"), "mm");
@@ -100,6 +98,7 @@ test("paired and solo commands enforce the correct mention mode", () => {
   assert.equal(getFunCommandDefinition("cry").needsTarget, false);
   assert.equal(getFunCommandDefinition("laugh").needsTarget, false);
   assert.equal(getFunCommandDefinition("kill").needsTarget, true);
+  assert.equal(getFunCommandDefinition("kill").gif, "kick");
   assert.equal(getFunCommandDefinition("bite").needsTarget, true);
   assert.equal(getFunCommandDefinition("lick").needsTarget, true);
   assert.equal(getFunCommandDefinition("lick").gif, "lick");
