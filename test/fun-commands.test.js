@@ -104,9 +104,10 @@ test("fun help explains command types, stats, and VIP access", () => {
   assert.match(fields, /!lick @member/);
   assert.match(fields, /!feet @member/);
   assert.match(fields, /!shoot @member/);
-  assert.match(fields, /!masturbate @member \\(VIP; NSFW channel\\)/);
-  assert.match(fields, /!oral @member \\(VIP; NSFW channel\\)/);
-  assert.match(fields, /!anal @member \\(VIP; NSFW channel\\)/);
+  assert.match(fields, /!masturbate @member \\(VIP; NSFW\\)/);
+  assert.match(fields, /!oral @member \\(VIP; NSFW\\)/);
+  assert.match(fields, /!anal @member \\(VIP; NSFW\\)/);
+  assert.doesNotMatch(fields, /age-restricted channels only|NSFW channel/);
   assert.match(fields, /!tease @member \(VIP; text-only\)/);
   assert.match(fields, /!seduce @member \(VIP; text-only\)/);
   assert.doesNotMatch(fields, /NSFW preferences|!nsfw-on|!nsfw-off|approval/i);
