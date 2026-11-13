@@ -208,7 +208,7 @@ export function attachCommandsChannel(client) {
       if (action === "commands") {
         await interaction.reply({
           embeds: [buildModerationCommandsEmbed().setDescription(
-            "**/mod-delete amount:<1-100> [member:<member>]**\\nDelete up to 100 recent messages in this channel. Add a member to target their messages; leave it empty to clean eligible messages from the channel.\\n\\nThis command is restricted to authorised moderators. Large deletions require confirmation."
+            "**/mod-delete amount:<1-100> [member:<member>]**\nDelete up to 100 recent messages in this channel. Add a member to target their messages; leave it empty to clean eligible messages from the channel.\n\nThis command is restricted to authorised moderators. Large deletions require confirmation."
           )],
           ephemeral: true,
         });
@@ -303,7 +303,7 @@ export function attachCommandsChannel(client) {
           await targetMember.timeout(minutes * 60_000, reason.slice(0, 500));
           await interaction.editReply("🔇 Member timed out for " + minutes + " minute(s).");
         } else if (action === "warn") {
-          await targetMember.send("You received a warning in **" + interaction.guild.name + "**.\\nReason: " + reason.slice(0, 500)).catch(() => null);
+          await targetMember.send("You received a warning in **" + interaction.guild.name + "**.\nReason: " + reason.slice(0, 500)).catch(() => null);
           await interaction.editReply("⚠️ Warning processed. Sugar attempted to DM the member.");
         }
       } catch (error) {
