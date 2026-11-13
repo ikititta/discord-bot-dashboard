@@ -4,9 +4,10 @@ import {
 } from "discord.js";
 
 export const COMMANDS_CATEGORY_ID = "1568179038625857576";
-export const COMMANDS_CHANNEL_NAME = "📖｜୨୧・commands";
+export const COMMANDS_CHANNEL_NAME = "⌨️｜୨୧・𝓬𝓸𝓶𝓶𝓪𝓷𝓭𝓼";
 export const COMMANDS_CHANNEL_TOPIC = "Kittisugar interactive all-commands guide";
 export const COMMANDS_INFO_CHANNEL_ID = "1570257241511170150";
+export const RETIRED_COMMANDS_CHANNEL_ID = "1570860019799302294";
 export const OBSOLETE_COMMANDS_CHANNEL_ID = "1570839239396958218";
 export const COMMANDS_PANEL_TITLE = "୨୧ 𝓚𝓲𝓽𝓽𝓲𝓼𝓾𝓰𝓪𝓻 · 𝓒𝓸𝓶𝓶𝓪𝓷𝓭𝓼 ♡";
 export const MODERATION_COMMANDS_CHANNEL_ID = "1570277294868660264";
@@ -106,46 +107,15 @@ export function buildCommandsPanelPayload() {
 }
 
 export async function ensureCommandsChannel(guild, client) {
-  const category = guild.channels.cache.get(COMMANDS_CATEGORY_ID) ??
-    await guild.channels.fetch(COMMANDS_CATEGORY_ID).catch(() => null);
-  if (!category || category.type !== ChannelType.GuildCategory) {
-    throw new Error("Fun category " + COMMANDS_CATEGORY_ID + " was not found; no channel was created.");
+  // Commands content belongs only in the explicitly designated existing channel.
+  // Never create a separate #commands channel.
+  const channel = await guild.channels.fetch(COMMANDS_INFO_CHANNEL_ID).catch(() => null);
+  if (!channel || channel.type !== ChannelType.GuildText) {
+    console.warn("[commands] designated commands channel " + COMMANDS_INFO_CHANNEL_ID + " was not found; no channel was created.");
+    return null;
   }
-
-  let channel = guild.channels.cache.find((item) =>
-    item.type === ChannelType.GuildText && item.parentId === category.id &&
-    (item.topic === COMMANDS_CHANNEL_TOPIC || item.name === COMMANDS_CHANNEL_NAME),
-  );
-  if (!channel) {
-    channel = await guild.channels.create({
-      name: COMMANDS_CHANNEL_NAME,
-      type: ChannelType.GuildText,
-      parent: category.id,
-      topic: COMMANDS_CHANNEL_TOPIC,
-      reason: "Create the interactive Kittisugar commands guide",
-    });
-  } else if (channel.topic !== COMMANDS_CHANNEL_TOPIC) {
-    await channel.setTopic(COMMANDS_CHANNEL_TOPIC, "Mark the existing commands guide channel");
-  }
-
-  await channel.permissionOverwrites.edit(guild.roles.everyone, {
-    ViewChannel: true,
-    SendMessages: true,
-    ReadMessageHistory: true,
-    EmbedLinks: true,
-    CreatePublicThreads: false,
-    SendMessagesInThreads: false,
-  }, "Allow members to use the commands guide");
-  await channel.permissionOverwrites.edit(client.user.id, {
-    ViewChannel: true,
-    SendMessages: true,
-    ReadMessageHistory: true,
-    EmbedLinks: true,
-    ManageMessages: true,
-  }, "Allow Sugar to update the commands guide");
-
-  await upsertCommandsPanel(channel, client);
-  console.info("[commands] interactive guide ready in #" + channel.name);
+  await upsertCommandsPanel(channel, client, { sticky: true });
+  console.info("[commands] commands guide kept in #" + channel.name);
   return channel;
 }
 
@@ -184,11 +154,29 @@ export async function ensureCommandsInfoPanel(guild, client) {
 }
 
 export async function removeObsoleteCommandsChannel(guild) {
-  const channel = await guild.channels.fetch(OBSOLETE_COMMANDS_CHANNEL_ID).catch(() => null);
-  if (!channel) return false;
-  await channel.delete("Remove the obsolete separate commands channel; the unified guide is kept in the designated commands info channel");
-  console.info("[commands] removed obsolete channel " + OBSOLETE_COMMANDS_CHANNEL_ID);
-  return true;
+  let removed = false;
+  const ids = [RETIRED_COMMANDS_CHANNEL_ID, OBSOLETE_COMMANDS_CHANNEL_ID];
+  for (const id of ids) {
+    const channel = await guild.channels.fetch(id).catch(() => null);
+    if (!channel || channel.id === COMMANDS_INFO_CHANNEL_ID) continue;
+    await channel.delete("Retire the duplicate commands channel; all commands content belongs in the designated commands channel");
+    console.info("[commands] removed retired commands channel " + id);
+    removed = true;
+  }
+
+  // Also clean up any duplicate created under the old channel name, but never
+  // touch the designated channel even if its display name changes.
+  const channels = await guild.channels.fetch().catch(() => null);
+  for (const channel of channels?.values?.() ?? []) {
+    if (channel.id !== COMMANDS_INFO_CHANNEL_ID &&
+        channel.type === ChannelType.GuildText &&
+        channel.name === "📖｜୨୧・commands") {
+      await channel.delete("Remove duplicate commands channel; use the designated commands channel instead");
+      console.info("[commands] removed duplicate commands channel " + channel.id);
+      removed = true;
+    }
+  }
+  return removed;
 }
 
 export function attachCommandsChannel(client) {
@@ -321,16 +309,12 @@ export function attachCommandsChannel(client) {
     });
   });
 
-  const setup = (guild) => ensureCommandsChannel(guild, client).catch((error) =>
-    console.error("[commands] setup failed in " + guild.id + ": " + error.message),
-  );
   const setupAll = (guild) => {
     void removeObsoleteCommandsChannel(guild).catch((error) =>
       console.error("[commands] obsolete channel removal failed in " + guild.id + ": " + error.message),
     );
-    void setup(guild);
     void ensureCommandsInfoPanel(guild, client).catch((error) =>
-      console.error("[commands] additional guide setup failed in " + guild.id + ": " + error.message),
+      console.error("[commands] designated guide setup failed in " + guild.id + ": " + error.message),
     );
     void ensureModerationCommandsPanel(guild, client).catch((error) =>
       console.error("[commands] moderation setup failed in " + guild.id + ": " + error.message),
