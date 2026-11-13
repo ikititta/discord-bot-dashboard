@@ -407,13 +407,17 @@ async function upsertPanel(client, channelId, title, payload, { pinOnCreate = tr
     throw new Error(`Community panel channel ${channelId} is not an accessible text channel.`);
   }
   const recent = await channel.messages.fetch({ limit: 50 });
-  const existing = recent.find((message) =>
-    message.author.id === client.user.id && message.embeds.some((embed) => [title, ...legacyTitles].includes(embed.title)),
-  );
+  const matches = [...recent.values()].filter((message) =>
+    message.author?.id === client.user.id && message.embeds.some((embed) => [title, ...legacyTitles].includes(embed.title)),
+  ).sort((a, b) => b.createdTimestamp - a.createdTimestamp);
+  const existing = matches.shift();
   if (existing) {
     await existing.edit(payload);
     if (!pinOnCreate && existing.pinned) await existing.unpin().catch((error) => {
       console.error(`[community] panel in ${channelId} could not be unpinned: ${error.message}`);
+    });
+    for (const duplicate of matches) await duplicate.delete().catch((error) => {
+      if (error?.code !== 10008) console.error(`[community] duplicate panel in ${channelId} could not be deleted: ${error.message}`);
     });
     return existing;
   }
