@@ -508,12 +508,13 @@ export async function ensureGifPreferencesChannel(guild, client) {
       topic: GIF_PREFERENCES_CHANNEL_TOPIC,
       reason: "Create the GIF preferences panel in the Fun category",
     });
-  } else if (channel.name !== GIF_PREFERENCES_CHANNEL_NAME || channel.topic !== GIF_PREFERENCES_CHANNEL_TOPIC) {
-    await channel.edit({
-      name: GIF_PREFERENCES_CHANNEL_NAME,
-      topic: GIF_PREFERENCES_CHANNEL_TOPIC,
-      reason: "Keep the GIF preferences channel in its designated format",
-    });
+  } else {
+    if (channel.name !== GIF_PREFERENCES_CHANNEL_NAME) {
+      await channel.setName(GIF_PREFERENCES_CHANNEL_NAME, "Keep the GIF preferences channel in its designated format");
+    }
+    if (channel.topic !== GIF_PREFERENCES_CHANNEL_TOPIC) {
+      await channel.setTopic(GIF_PREFERENCES_CHANNEL_TOPIC, "Keep the GIF preferences channel in its designated format");
+    }
   }
 
   const recent = await channel.messages.fetch({ limit: 100 });
