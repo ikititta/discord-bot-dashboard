@@ -275,7 +275,7 @@ test("!fuck selects NSFW GIF categories from both members' gender roles", async 
       assert.equal(url, "https://api.purrbot.site/v2/img/nsfw/yuri/gif");
       return {
         ok: true,
-        json: async () => ({ link: "https://cdn.purrbot.site/nsfw/yuri/gif/yuri_001.gif", error: false }),
+        json: async () => ({ link: "https://cdn.purrbot.site/nsfw/yaoi/gif/yaoi_001.gif", error: false }),
       };
     },
   });
