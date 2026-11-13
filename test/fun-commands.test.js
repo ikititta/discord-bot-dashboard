@@ -275,7 +275,7 @@ test("!fuck selects NSFW GIF categories from both members' gender roles", async 
       assert.equal(url, "https://api.purrbot.site/v2/img/nsfw/yuri/gif");
       return {
         ok: true,
-        json: async () => ({ link: "https://cdn.purrbot.site/nsfw/yaoi/gif/yaoi_001.gif", error: false }),
+        json: async () => ({ link: "https://cdn.purrbot.site/nsfw/yuri/gif/yuri_001.gif", error: false }),
       };
     },
   });
@@ -312,13 +312,34 @@ test("!fuck uses a tagged GIF result for a dominant woman", async () => {
   assert.equal(gif.source, "Rule34 tagged GIF search");
 });
 
-test("!fuck never falls back to a generic GIF that can depict the dominant woman as submissive", async () => {
+test("!fuck falls back to the gender-correct generic GIF when no dominance-matched pose exists", async () => {
   let calls = 0;
-  await assert.rejects(fetchNsfwGif({
+  const gif = await fetchNsfwGif({
     actorRole: "female", targetRole: "male", actorDominance: 2, targetDominance: -2,
-    fetchImpl: async () => { calls += 1; return { ok: true, json: async () => [] }; },
-  }), /No GIF matching the dominant member/);
-  assert.equal(calls, 2);
+    fetchImpl: async (rawUrl) => {
+      calls += 1;
+      if (String(rawUrl).includes("rule34.xxx")) return { ok: true, json: async () => [] };
+      assert.equal(rawUrl, "https://api.purrbot.site/v2/img/nsfw/fuck/gif");
+      return { ok: true, json: async () => ({ link: "https://cdn.purrbot.site/nsfw/fuck/gif/fuck_001.gif", error: false }) };
+    },
+  });
+  assert.equal(calls, 3);
+  assert.equal(gif.pairing, "fuck");
+  assert.equal(gif.url, "https://cdn.purrbot.site/nsfw/fuck/gif/fuck_001.gif");
+  assert.equal(gif.source, "PurrBot NSFW fallback");
+});
+
+test("!fuck keeps the gender-specific category for same-gender pairs after tagged search", async () => {
+  for (const [actorRole, targetRole, category] of [["female","female","yuri"],["male","male","yaoi"]]) {
+    const gif = await fetchNsfwGif({
+      actorRole, targetRole,
+      fetchImpl: async (rawUrl) => {
+        assert.equal(rawUrl, "https://api.purrbot.site/v2/img/nsfw/" + category + "/gif");
+        return { ok: true, json: async () => ({ link: "https://cdn.purrbot.site/nsfw/" + category + "/gif/example.gif", error: false }) };
+      },
+    });
+    assert.equal(gif.pairing, category);
+  }
 });
 
 test("!fuck rejects SFW or wrong-gender GIF results instead of falling back", async () => {
