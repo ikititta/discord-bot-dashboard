@@ -26,6 +26,8 @@ const TWO_PERSON_COMMANDS = Object.freeze({
   pat: { gif: "pat", text: "has given a headpat to" },
   poke: { gif: "poke", text: "has poked" },
   bite: { gif: "bite", text: "has bitten" },
+  lick: { gif: "kiss", text: "has playfully licked" },
+  feet: { gif: "pat", text: "has given a playful foot kiss to" },
   kick: { gif: "kick", text: "has kicked" },
   kill: { gif: "kick", text: "has defeated" },
   highfive: { gif: "highfive", text: "has high-fived" },
@@ -247,7 +249,7 @@ export function buildFunHelpEmbed() {
     .setDescription("Use these commands in Kittisugar. Every fun command requires the Member role. Two-person commands need a member mention; solo commands do not.")
     .addFields(
       { name: "Relationships", value: "!couple @member · !propose @member · !marry @member · !breakup · !divorce. The other member must accept proposals." },
-      { name: "Two-person commands", value: "!hug @member · !slap @member · !bonk @member · !spank @member · !kiss @member · !fuck @member · !cuddle @member · !pat @member · !poke @member · !bite @member · !kick @member · !kill @member (VIP; 30-second timeout) · !highfive @member · !handhold @member" },
+      { name: "Two-person commands", value: "!hug @member · !slap @member · !bonk @member · !spank @member · !kiss @member · !fuck @member · !cuddle @member · !pat @member · !poke @member · !bite @member · !lick @member · !feet @member · !kick @member · !kill @member (VIP; 30-second timeout) · !highfive @member · !handhold @member" },
       { name: "Solo commands", value: "!cry · !laugh · !dance · !sleep · !happy · !blush · !smug · !wave · !facepalm · !wink · !shrug · !smile · !pout" },
       { name: "Statistics", value: "/stats — privately view your complete stats (VIP).\n/vip stats — privately view your report or another member’s (VIP).\nStats count commands used, interactions received, and interaction partners." },
       { name: "VIP", value: "VIP unlocks !fuck, !kill (30-second timeout), private statistics, and other exclusive benefits. Use /stats or /vip stats; reports are visible only to the requester." },
