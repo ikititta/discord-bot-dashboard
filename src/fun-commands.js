@@ -284,8 +284,6 @@ export function isVip(member) {
     : false;
 }
 
-export const KILL_TIMEOUT_MS = 30_000;
-
 export function isVipOnlyFunCommand(name) {
   return ["fuck", "kill", "masturbate", "oral", "anal", "tease", "seduce", "choke", "spit"].includes(name);
 }
