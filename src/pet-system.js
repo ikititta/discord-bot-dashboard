@@ -265,7 +265,7 @@ export async function refreshExistingPetRoomHelpPanels(guild, client) {
   const channels = await guild.channels.fetch().catch(() => guild.channels.cache);
   for (const channel of channels.values()) {
     if (channel.type !== ChannelType.GuildText) continue;
-    const ownerId = /^Sugar personal pet room for (\\d{17,20})$/.exec(channel.topic ?? "")?.[1];
+    const ownerId = /^Sugar personal pet room for (\d{17,20})$/.exec(channel.topic ?? "")?.[1];
     if (!ownerId) continue;
     try {
       const recent = await channel.messages.fetch({ limit: 50 });
