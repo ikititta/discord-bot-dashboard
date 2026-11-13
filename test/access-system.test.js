@@ -204,10 +204,10 @@ test("access, rules, and guide panels use one ordered, fully described channel d
   const lines = directory.split("\n").filter((line) => line.includes("<#"));
   assert.equal(lines.length, channels.length + 1);
   for (const line of lines) {
-    assert.match(line, /^• <#\d{18}> — .+$/);
+    assert.match(line, /^• <#\d{17,20}> — .+$/);
   }
   assert.equal(new Set(lines.map((line) => line.match(/<#(\d+)>/)[1])).size, lines.length);
-  assert.equal((guideText.match(/<#!?\d{18}>/g) ?? []).length, 0);
+  assert.equal((guideText.match(/<#!?\d{17,20}>/g) ?? []).length, 0);
 });
 test("detects Discord server booster status", () => {
   assert.equal(isServerBooster({ premiumSinceTimestamp: 123, premiumSince: new Date(123) }), true);
