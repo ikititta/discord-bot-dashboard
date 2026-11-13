@@ -215,8 +215,8 @@ export function attachCommandsChannel(client) {
       }
       if (!["ban", "timeout", "warn"].includes(action)) return;
       const permitted = action === "ban"
-        ? interaction.memberPermissions?.has("BanMembers") || interaction.memberPermissions?.has("Administrator")
-        : interaction.memberPermissions?.has("ModerateMembers") || interaction.memberPermissions?.has("ManageMessages") || interaction.memberPermissions?.has("Administrator");
+        ? interaction.memberPermissions?.has(PermissionFlagsBits.BanMembers) || interaction.memberPermissions?.has(PermissionFlagsBits.Administrator)
+        : interaction.memberPermissions?.has(PermissionFlagsBits.ModerateMembers) || interaction.memberPermissions?.has(PermissionFlagsBits.ManageMessages) || interaction.memberPermissions?.has(PermissionFlagsBits.Administrator);
       if (!permitted) {
         await interaction.reply({ content: "You don't have permission to use this moderation action.", ephemeral: true });
         return;
@@ -265,8 +265,8 @@ export function attachCommandsChannel(client) {
         return;
       }
       const permitted = action === "ban"
-        ? interaction.memberPermissions?.has("BanMembers") || interaction.memberPermissions?.has("Administrator")
-        : interaction.memberPermissions?.has("ModerateMembers") || interaction.memberPermissions?.has("ManageMessages") || interaction.memberPermissions?.has("Administrator");
+        ? interaction.memberPermissions?.has(PermissionFlagsBits.BanMembers) || interaction.memberPermissions?.has(PermissionFlagsBits.Administrator)
+        : interaction.memberPermissions?.has(PermissionFlagsBits.ModerateMembers) || interaction.memberPermissions?.has(PermissionFlagsBits.ManageMessages) || interaction.memberPermissions?.has(PermissionFlagsBits.Administrator);
       if (!permitted || !interaction.guild) {
         await interaction.reply({ content: "You don't have permission to use this moderation action.", ephemeral: true });
         return;
