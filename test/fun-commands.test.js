@@ -20,6 +20,8 @@ import {
   normalizeFunDominance,
   resolveGifPairing,
   resolveNsfwGifCategory,
+  resolveMasturbateGifPairing,
+  selectMasturbateGif,
 } from "../src/fun-commands.js";
 
 function memberWithRoles(ids) {
@@ -220,6 +222,17 @@ test("fun stats embed contains personal usage and received counts", () => {
   assert.match(embed.data.description, /Received:\*\* 2/);
 });
 
+test("!masturbate selects the exact actor-to-target curated pairing", () => {
+  assert.deepEqual(["female:female","female:male","male:female","male:male"].map((pair) => resolveMasturbateGifPairing(...pair.split(":"))), ["ff","fm","mf","mm"]);
+  assert.equal(resolveMasturbateGifPairing("trans", "female"), null);
+  const catalog = { ff:["https://assets.example/ff.gif"], fm:["https://assets.example/fm.gif"], mf:["https://assets.example/mf.gif"], mm:["https://assets.example/mm.gif"] };
+  for (const [actor,target,expected] of [["female","female","ff"],["female","male","fm"],["male","female","mf"],["male","male","mm"]]) {
+    const gif=selectMasturbateGif(actor,target,{catalog,random:()=>0}); assert.equal(gif.pairing,expected); assert.equal(gif.url,"https://assets.example/"+expected+".gif");
+  }
+  assert.equal(selectMasturbateGif("female","male",{catalog:{fm:[]}}),null);
+  assert.equal(selectMasturbateGif("female","male",{catalog:{fm:["http://assets.example/no.gif"]}}),null);
+  assert.equal(selectMasturbateGif("female","male",{catalog:{fm:["https://assets.example/no.png"]}}),null);
+});
 test("!fuck selects NSFW GIF categories from both members' gender roles", async () => {
   assert.equal(resolveNsfwGifCategory("female", "female"), "yuri");
   assert.equal(resolveNsfwGifCategory("male", "male"), "yaoi");
