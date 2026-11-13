@@ -214,7 +214,7 @@ const CHANNEL_PURPOSES = {
   memes: "Share memes and funny content with the community.",
   games: "Talk about games and find peopfunction isPrivateChatRoom(channel) {
   const name = normalizeName(channel.name);
-  if (channel.id === PRIVATE_CHAT_LOBBY_CHANNEL_ID) return false;
+  if (channel.id === PRIVATE_CHAT_LOBBY_CHANNEL_ID || name === "privatechatlobby" || name === "createprivatechat") return false;
   return channel.parentId === PRIVATE_CHAT_CATEGORY_ID ||
     name.startsWith("privateroom") ||
     name.startsWith("privatechatroom") ||
