@@ -189,24 +189,30 @@ test("access, rules, and guide panels use one ordered, fully described channel d
   const guideText = guide.embeds[0].data.description;
   const directory = guide.embeds.slice(1).map((item) => item.data.description).join("\n");
   assert.equal(guide.embeds[0].data.title, `୨୧ ${toRoyalBold("Kittisugar Guide!")} ♡`);
-  assert.match(guideText, /Use `!commands` to open Sugar's complete command guide/);
+  assert.match(guideText, /`!commands` — explore all Sugar commands/);
+  assert.match(guideText, /reply to someone's message with `!quote`/);
+  assert.match(guideText, /`!smile` — try a fun interaction command/);
+  assert.match(guideText, /#dashboard/);
+  assert.equal((guide.embeds[0].data.title.match(/🎀/gu) ?? []).length, 1);
   assert.ok(guideText.includes("`!profile [@member]` — view a member profile."));
   assert.ok(guideText.includes("`!pet adopt` — open the pet adoption menu."));
-  assert.ok(directory.includes("**୨୧ start**"));
-  assert.ok(directory.includes("**୨୧ community**"));
+  assert.doesNotMatch(directory, /start|community|private chats/i);
   assert.ok(directory.includes("• <#100000000000000000> — Start here:"));
   assert.ok(directory.includes("• <#100000000000000009> — Share your selfies"));
   assert.ok(directory.includes("• <#100000000000000010> — Introduce yourself"));
-  assert.ok(directory.includes("• <#1568179043356901376> — Create a new private chat room here"));
+  assert.ok(directory.includes("• <#1568179043356901376> — Create a private chat room here"));
   assert.doesNotMatch(directory, /1568179043356901377/);
   assert.doesNotMatch(directory, /private chat room.*test-room/i);
 
   const lines = directory.split("\n").filter((line) => line.includes("<#"));
-  assert.equal(lines.length, channels.length + 1);
+  assert.equal(lines.length, channels.length);
   for (const line of lines) {
     assert.match(line, /^• <#\d{17,20}> — .+$/);
   }
   assert.equal(new Set(lines.map((line) => line.match(/<#(\d+)>/)[1])).size, lines.length);
+  assert.ok(guide.embeds.length <= 4);
+  for (const item of guide.embeds.slice(1)) assert.equal((item.data.title.match(/🎀/gu) ?? []).length, 1);
+  assert.doesNotMatch(directory, /<#\d+> — Use this channel for support/);
   assert.equal((guideText.match(/<#!?\d{17,20}>/g) ?? []).length, 0);
 });
 test("detects Discord server booster status", () => {
