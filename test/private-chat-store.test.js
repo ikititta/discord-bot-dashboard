@@ -407,6 +407,18 @@ test("private-chat command exposes create, add, remove, rename, delete, leave, a
   assert.equal(PRIVATE_CHAT_LOBBY_CHANNEL_ID, "1568179043356901376");
 });
 
+test("private channels exclude the server owner from explicit access", () => {
+  const overwrites = buildPrivateChatPermissionOverwrites({
+    everyoneId: "123456789012345678",
+    ownerId: "223456789012345678",
+    memberIds: ["323456789012345678", "523456789012345678"],
+    botId: "423456789012345678",
+    excludedOwnerId: "223456789012345678",
+  });
+  assert.equal(overwrites.some((item) => item.id === "223456789012345678" && item.allow?.includes(PermissionFlagsBits.ViewChannel)), false);
+  assert.equal(overwrites.some((item) => item.id === "523456789012345678" && item.allow?.includes(PermissionFlagsBits.ViewChannel)), true);
+});
+
 test("private channels deny everyone and grant only named members and the bot", () => {
   const overwrites = buildPrivateChatPermissionOverwrites({
     everyoneId: "123456789012345678",
