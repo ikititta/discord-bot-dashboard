@@ -152,15 +152,14 @@ export function resolveGifPairing(actorRole, targetRole = null, actorDominance =
     if (actorRole === "male") return "m";
     return null;
   }
-  const reverse = actorDominance !== null && targetDominance !== null && Number(actorDominance) < Number(targetDominance);
-  const first = reverse ? targetRole : actorRole;
-  const second = reverse ? actorRole : targetRole;
+  // Pairing order is always actor first, target second. Dominance describes
+  // presentation only; it must never reverse who performs the action.
   return ({
     "female:female": "ff",
     "male:male": "mm",
     "female:male": "fm",
     "male:female": "mf",
-  })[`${first}:${second}`] ?? null;
+  })[`${actorRole}:${targetRole}`] ?? null;
 }
 
 function validatedGifUrl(rawUrl, expectedHost) {
@@ -188,10 +187,10 @@ export function selectMasturbateGif(actorRole, targetRole, { catalog = MASTURBAT
 }
 export function shouldPreferAnalGif(actorRole, targetRole, actorDominance = null, targetDominance = null) {
   const bothWomen = actorRole === "female" && targetRole === "female";
-  const maleVerySubmissiveAndOtherVeryDominant =
-    (actorRole === "male" && actorDominance === -2 && targetDominance === 2) ||
-    (targetRole === "male" && targetDominance === -2 && actorDominance === 2);
-  return bothWomen || maleVerySubmissiveAndOtherVeryDominant;
+  // PurrBot's generic "anal" category cannot guarantee actor/target direction
+  // for mixed-gender pairs. Do not use it for the male-submissive/female-dominant
+  // case: that can return a GIF depicting the opposite action.
+  return bothWomen;
 }
 
 export function resolveNsfwGifCategory(actorRole, targetRole, actorDominance = null, targetDominance = null) {
