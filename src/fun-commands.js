@@ -34,7 +34,7 @@ const TWO_PERSON_COMMANDS = Object.freeze({
   lick: { gif: "lick", text: "has playfully licked" },
   feet: { gif: "pat", text: "has given a playful foot kiss to" },
   kick: { gif: "kick", text: "has kicked" },
-  shoot: { gif: null, text: "has playfully shot" },
+  shoot: { gif: "shoot", text: "has playfully shot" },
   kill: { gif: "kick", text: "has defeated" },
   highfive: { gif: "highfive", text: "has high-fived" },
   handhold: { gif: "handhold", text: "is holding hands with" },
