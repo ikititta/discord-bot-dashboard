@@ -121,11 +121,11 @@ export function buildPollVoteComponents(messageId, options, counts = []) {
   )];
 }
 
-export function buildConfessionsPanelPayload() {
+export function buildConfessionsPanelPayload(postCount = 0) {
   const embed = new EmbedBuilder()
     .setColor(COLOR)
     .setTitle(CONFESSION_PANEL_TITLE)
-    .setDescription("Share a confession or create a poll. Choose how you want your post to appear.");
+    .setDescription("Share a confession or create a poll. Choose how you want your post to appear.\\n\\n**Confessions currently in this chat:** " + Math.max(0, Number(postCount) || 0));
   const row = new ActionRowBuilder().addComponents(
     button("confess-start", "Submit a Confession ♡"),
     button("poll-start", "Create Poll ♡", ButtonStyle.Secondary),
@@ -133,11 +133,11 @@ export function buildConfessionsPanelPayload() {
   return { embeds: [embed], components: [row] };
 }
 
-export function buildLoveLettersPanelPayload() {
+export function buildLoveLettersPanelPayload(postCount = 0) {
   const embed = new EmbedBuilder()
     .setColor(COLOR)
     .setTitle(LOVE_PANEL_TITLE)
-    .setDescription("Send a sweet letter for everyone to read. Choose whether to sign it or keep it anonymous.");
+    .setDescription("Send a sweet letter for everyone to read. Choose whether to sign it or keep it anonymous.\\n\\n**Love letters currently in this chat:** " + Math.max(0, Number(postCount) || 0));
   const row = new ActionRowBuilder().addComponents(
     button("letter:anonymous", "Send Anonymously ♡"),
     button("letter:named", "With My Name ♡", ButtonStyle.Secondary),
@@ -279,6 +279,24 @@ export function attachCommunitySystem(client, { store, stickyPanels, settings, s
       });
     });
   }
+  let countRefreshQueue = Promise.resolve();
+  const scheduleCountRefresh = (channelId) => {
+    if (![CONFESSIONS_CHANNEL_ID, LOVE_LETTERS_CHANNEL_ID].includes(channelId)) return;
+    countRefreshQueue = countRefreshQueue
+      .then(() => refreshCommunityPanelCounts(client))
+      .catch((error) => console.error("[community] live post count refresh failed:", error));
+  };
+  client.once(Events.ClientReady, () => {
+    // Sticky panels finish their initial setup on the same ready event.
+    setTimeout(() => scheduleCountRefresh(CONFESSIONS_CHANNEL_ID), 1000);
+  });
+  client.on(Events.MessageCreate, (message) => scheduleCountRefresh(message.channelId));
+  client.on(Events.MessageDelete, (message) => scheduleCountRefresh(message.channelId));
+  client.on(Events.MessageBulkDelete, (messages) => {
+    const first = messages.first();
+    if (first) scheduleCountRefresh(first.channelId);
+  });
+
   client.on(Events.InteractionCreate, (interaction) => {
     if (interaction.isButton() && interaction.customId.startsWith(PREFIX)) {
       void handleCommunityButton(interaction, store).catch(async (error) => {
@@ -314,6 +332,51 @@ export function attachCommunitySystem(client, { store, stickyPanels, settings, s
       console.error(`[community] suggestion reaction remove failed: ${error.message}`);
     });
   });
+}
+
+export function isCountedCommunityPost(message, kind, botUserId) {
+  if (!message || message.author?.id !== botUserId || !Array.isArray(message.embeds)) return false;
+  const title = message.embeds[0]?.title ?? "";
+  if (kind === "confession") {
+    return title.startsWith(toRoyalBold("Confession #(")) ||
+      title.startsWith(toRoyalBold("Anonymous Confession #("));
+  }
+  if (kind === "letter") return title.startsWith(toRoyalBold("Love Letter #"));
+  return false;
+}
+
+async function countChannelCommunityPosts(channel, kind, botUserId) {
+  let before;
+  let count = 0;
+  while (true) {
+    const batch = await channel.messages.fetch({ limit: 100, ...(before ? { before } : {}) });
+    if (!batch.size) break;
+    for (const message of batch.values()) {
+      if (isCountedCommunityPost(message, kind, botUserId)) count += 1;
+    }
+    if (batch.size < 100) break;
+    before = batch.last().id;
+  }
+  return count;
+}
+
+async function refreshCommunityPanelCounts(client) {
+  for (const [kind, channelId, title, buildPayload] of [
+    ["confession", CONFESSIONS_CHANNEL_ID, CONFESSION_PANEL_TITLE, buildConfessionsPanelPayload],
+    ["letter", LOVE_LETTERS_CHANNEL_ID, LOVE_PANEL_TITLE, buildLoveLettersPanelPayload],
+  ]) {
+    const channel = await client.channels.fetch(channelId).catch(() => null);
+    if (!channel || channel.type !== ChannelType.GuildText) continue;
+    const [count, recent] = await Promise.all([
+      countChannelCommunityPosts(channel, kind, client.user.id),
+      channel.messages.fetch({ limit: 100 }),
+    ]);
+    const panel = [...recent.values()]
+      .filter((message) => message.author?.id === client.user.id &&
+        message.embeds.some((embed) => embed.title === title))
+      .sort((a, b) => b.createdTimestamp - a.createdTimestamp)[0];
+    if (panel) await panel.edit(buildPayload(count));
+  }
 }
 
 async function renameSuggestionsChannel(client) {
