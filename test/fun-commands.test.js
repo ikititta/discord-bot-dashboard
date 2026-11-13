@@ -8,6 +8,8 @@ import {
   buildFunActionText,
   buildFunStatsEmbed,
   fetchAnimeGif,
+  fetchPurrbotSfwGif,
+  fetchRealGif,
   fetchNsfwGif,
   fetchPurrbotNsfwGif,
   resolveOralNsfwGifCategory,
@@ -183,6 +185,29 @@ test("!shoot retrieves a dedicated shooting reaction GIF", async () => {
   assert.equal(gif.source, "Nekos.best");
 });
 
+test("!lick can retrieve a dedicated SFW GIF from PurrBot", async () => {
+  const gif = await fetchPurrbotSfwGif("lick", {
+    fetchImpl: async (url) => {
+      assert.equal(url, "https://api.purrbot.site/v2/img/sfw/lick/gif");
+      return { ok: true, json: async () => ({ link: "https://cdn.purrbot.site/sfw/lick/gif/lick_001.gif", error: false }) };
+    },
+  });
+  assert.equal(gif.source, "PurrBot SFW");
+  assert.match(gif.url, /lick_001\\.gif$/);
+});
+
+test("real movie GIF lookup uses Giphy with a safe rating", async () => {
+  const gif = await fetchRealGif("cinematic movie shooting", {
+    apiKey: "test-key",
+    fetchImpl: async (url) => {
+      assert.equal(url.searchParams.get("rating"), "pg-13");
+      assert.equal(url.searchParams.get("q"), "cinematic movie shooting");
+      return { ok: true, json: async () => ({ data: [{ images: { original: { url: "https://media.giphy.com/media/example/giphy.gif" } } }] }) };
+    },
+  });
+  assert.equal(gif.source, "Giphy");
+  await assert.rejects(fetchRealGif("shoot", { apiKey: "", fetchImpl: async () => { throw new Error("must not fetch"); } }), /GIPHY_API_KEY/);
+});
 test("anime GIF lookup rejects non-GIF and off-site URLs", async () => {
   await assert.rejects(fetchAnimeGif("hug", {
     fetchImpl: async () => ({ ok: true, json: async () => ({ url: "https://example.com/file.gif" }) }),
