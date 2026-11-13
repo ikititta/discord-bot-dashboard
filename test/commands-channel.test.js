@@ -9,7 +9,7 @@ import {
   MODERATION_PANEL_TITLE,
   COMMANDS_CATEGORY_ID,
   COMMANDS_CHANNEL_NAME,
-  COMMANDS_CHANNEL_TOPIC,
+  COMMANDS_CHANNEL_TOPIC,\n  REPUTATION_ONLY_CHANNEL_ID,
 } from "../src/commands-channel.js";
 
 test("commands guide is configured in the Kittisugar category", () => {
@@ -38,7 +38,7 @@ test("each category exposes current command syntax and access requirements", () 
     soloNsfw: ["Solo · VIP · NSFW", "!masturbate @member"],
     relationship: ["!couple @member", "!propose @member", "!divorce"],
     affection: ["!hug @member", "!kiss @member", "!cuddle @member"],
-    interactions: ["!tease @member", "!seduce @member", "anime GIFs"],
+    interactions: ["!tease @member", "!seduce @member", "!kill @member", "!shoot @member", "30-second timeout", "playful two-person interaction"],
     nsfw: ["!fuck @member", "!masturbate @member", "!oral @member", "!anal @member"],
     community: ["!rep", "Confessions, polls", "!rep comments"],
     pets: ["!pet adopt", "!pet buy <treat|toy|potion>", "!pet gif", "!pet delete"],
