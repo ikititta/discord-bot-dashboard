@@ -146,8 +146,14 @@ export function resolveNsfwGifCategory(actorRole, targetRole) {
   return "fuck";
 }
 
+export function resolveOralNsfwGifCategory(targetRole) {
+  if (targetRole === "female") return "pussylick";
+  if (targetRole === "male") return "blowjob";
+  return null;
+}
+
 export async function fetchPurrbotNsfwGif(category, { fetchImpl = fetch } = {}) {
-  const allowedCategories = new Set(["solo", "solo_male", "blowjob", "anal"]);
+  const allowedCategories = new Set(["solo", "solo_male", "blowjob", "pussylick", "anal"]);
   if (!allowedCategories.has(category)) throw new Error("Invalid PurrBot NSFW GIF category.");
   const response = await fetchImpl(PURRBOT_API_BASE + "/img/nsfw/" + category + "/gif", {
     headers: { "User-Agent": "SugarDiscordBot/1.0 (https://github.com/ikititta/discord-bot-dashboard)" },
@@ -336,6 +342,10 @@ async function handleFunAction(message, store, name, args, fetchImpl) {
       return true;
     }
     targetRole = normalizeFunRole(targetMember);
+    if (name === "oral" && !resolveOralNsfwGifCategory(targetRole)) {
+      await safeReply(message, { content: "I need the mentioned member to have a Female or Male role to choose the matching oral GIF ♡" });
+      return true;
+    }
     if (["masturbate", "oral", "anal"].includes(name) && message.channel?.nsfw !== true) {
       await safeReply(message, { content: "This NSFW command is only available in an age-restricted channel 🔞" });
       return true;
@@ -374,7 +384,9 @@ async function handleFunAction(message, store, name, args, fetchImpl) {
     if (name === "fuck") gif = await fetchNsfwGif({ fetchImpl, actorRole: normalizeFunRole(message.member), targetRole });
     else if (definition.nsfwGif) {
       const actorRole = normalizeFunRole(message.member);
-      const category = definition.nsfwGif === "solo" && actorRole === "male" ? "solo_male" : definition.nsfwGif;
+      const category = name === "oral"
+        ? resolveOralNsfwGifCategory(targetRole)
+        : definition.nsfwGif === "solo" && actorRole === "male" ? "solo_male" : definition.nsfwGif;
       gif = await fetchPurrbotNsfwGif(category, { fetchImpl });
     } else if (definition.gif) gif = await fetchAnimeGif(definition.gif, { fetchImpl, actorRole: normalizeFunRole(message.member), targetRole });
   }
