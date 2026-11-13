@@ -10,13 +10,15 @@ import {
   COMMANDS_CATEGORY_ID,
   COMMANDS_CHANNEL_NAME,
   COMMANDS_CHANNEL_TOPIC,
-  REPUTATION_ONLY_CHANNEL_ID,\n  COMMANDS_INFO_CHANNEL_ID,
+  REPUTATION_ONLY_CHANNEL_ID,
+  COMMANDS_INFO_CHANNEL_ID,
 } from "../src/commands-channel.js";
 
 test("commands guide is configured in the Kittisugar category", () => {
   assert.equal(COMMANDS_CATEGORY_ID, "1568179038625857576");
   assert.equal(COMMANDS_CHANNEL_NAME, "📖｜୨୧・commands");
-  assert.ok(!COMMANDS_CHANNEL_TOPIC.includes("sticky"));\n  assert.equal(COMMANDS_INFO_CHANNEL_ID, "1570257241511170150");
+  assert.ok(!COMMANDS_CHANNEL_TOPIC.includes("sticky"));
+  assert.equal(COMMANDS_INFO_CHANNEL_ID, "1570257241511170150");
 });
 
 test("commands panel contains the same interactive category buttons for one-shot posts", () => {
