@@ -196,7 +196,7 @@ test("access, rules, and guide panels use one ordered, fully described channel d
   assert.equal((guide.embeds[0].data.title.match(/🎀/gu) ?? []).length, 1);
   assert.ok(guideText.includes("`!profile [@member]` — view a member profile."));
   assert.ok(guideText.includes("`!pet adopt` — open the pet adoption menu."));
-  assert.doesNotMatch(directory, /start|community|private chats/i);
+  assert.doesNotMatch(directory, /^\\*\\*୨୧ /m);
   assert.ok(directory.includes("• <#100000000000000000> — Start here:"));
   assert.ok(directory.includes("• <#100000000000000009> — Share your selfies"));
   assert.ok(directory.includes("• <#100000000000000010> — Introduce yourself"));
