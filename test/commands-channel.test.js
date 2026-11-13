@@ -9,7 +9,8 @@ import {
   MODERATION_PANEL_TITLE,
   COMMANDS_CATEGORY_ID,
   COMMANDS_CHANNEL_NAME,
-  COMMANDS_CHANNEL_TOPIC,\n  REPUTATION_ONLY_CHANNEL_ID,
+  COMMANDS_CHANNEL_TOPIC,
+  REPUTATION_ONLY_CHANNEL_ID,
 } from "../src/commands-channel.js";
 
 test("commands guide is configured in the Kittisugar category", () => {
@@ -59,7 +60,8 @@ test("moderation is kept out of normal commands and only mod-delete is posted in
   assert.equal(payload.embeds[0].data.title, MODERATION_PANEL_TITLE);
   assert.match(payload.embeds[0].data.title, /Moderation/);
   const normalIds = buildCommandsPanelPayload().components.flatMap((row) => row.components.map((button) => button.data.custom_id));
-  assert.ok(!normalIds.some((id) => id.includes("staff") || id.includes("moderation")));\n  assert.equal(REPUTATION_ONLY_CHANNEL_ID, "1569930648804925522");
+  assert.ok(!normalIds.some((id) => id.includes("staff") || id.includes("moderation")));
+  assert.equal(REPUTATION_ONLY_CHANNEL_ID, "1569930648804925522");
   for (const phrase of ["/mod-delete", "100 recent messages", "authorised moderators"]) {
     assert.ok(payload.embeds[0].data.description.toLowerCase().includes(phrase.toLowerCase()));
   }
