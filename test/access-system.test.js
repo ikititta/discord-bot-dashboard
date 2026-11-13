@@ -138,6 +138,9 @@ test("access, rules, and guide panels use one ordered, fully described channel d
   const startCategory = { id: "1569548036055507055", name: "start", type: 4, rawPosition: 0 };
   const communityCategory = { id: "1569548036055507056", name: "community", type: 4, rawPosition: 1 };
   const privateCategory = { id: "1568179036520321035", name: "private chats", type: 4, rawPosition: 2 };
+  const staffCategory = { id: "1568179036520321036", name: "staff", type: 4, rawPosition: 3 };
+  const ticketCategory = { id: "1568179036520321037", name: "tickets", type: 4, rawPosition: 4 };
+  const adminCategory = { id: "1568179036520321038", name: "admin", type: 4, rawPosition: 5 };
   const channelNames = ["get-access", "welcomes", "rules", "guide", "confessions", "loveletters", "suggestions", "reputation", "quotes", "selfies", "introductions", "pets", "support", "self-roles"];
   const channels = channelNames.map((name, index) => ({
     name,
@@ -160,7 +163,12 @@ test("access, rules, and guide panels use one ordered, fully described channel d
     parentId: privateCategory.id,
     rawPosition: 1,
   };
-  const allChannels = [startCategory, communityCategory, privateCategory, ...channels, lobby, privateRoom];
+  const hiddenChannels = [
+    { id: "1568179043356901380", name: "staff-chat", type: 0, parentId: staffCategory.id, rawPosition: 0 },
+    { id: "1568179043356901381", name: "ticket-123", type: 0, parentId: ticketCategory.id, rawPosition: 0 },
+    { id: "1568179043356901382", name: "admin-logs", type: 0, parentId: adminCategory.id, rawPosition: 0 },
+  ];
+  const allChannels = [startCategory, communityCategory, privateCategory, staffCategory, ticketCategory, adminCategory, ...channels, lobby, privateRoom, ...hiddenChannels];
   const guide = buildGuidePayload({
     channels: {
       cache: {
@@ -208,7 +216,7 @@ test("access, rules, and guide panels use one ordered, fully described channel d
     assert.match(line, /^• <#\d{17,20}> — .+$/);
   }
   assert.equal(new Set(lines.map((line) => line.match(/<#(\d+)>/)[1])).size, lines.length);
-  assert.ok(guide.embeds.length <= 4);
+  assert.ok(guide.embeds.length >= 3 && guide.embeds.length <= 4);
   for (const item of guide.embeds.slice(1)) assert.equal((item.data.title.match(/🎀/gu) ?? []).length, 1);
   assert.doesNotMatch(directory, /<#\d+> — Use this channel for support/);
   assert.equal((guideText.match(/<#!?\d{17,20}>/g) ?? []).length, 0);
