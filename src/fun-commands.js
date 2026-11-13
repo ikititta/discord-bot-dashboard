@@ -484,8 +484,7 @@ export function attachFunCommands(client, { store, fetchImpl = fetch, token, app
         await safeReply(message, { content: "All two-person fun interactions are automatic now. No approval settings are needed ♡" });
         return;
       }
-      if (name === "stats" || name === "vip" || name === "fun") {
-        if (name === "fun" && !/^stats(?:\s|$)/i.test(args.trim())) return;
+      if (name === "stats" || name === "vip") {
         // Prefix commands cannot reply ephemerally; remove public invocations.
         await message.delete().catch(() => {});
         return;
