@@ -215,6 +215,7 @@ const CHANNEL_PURPOSES = {
 };
 
 function isPrivateChatRoom(channel) {
+  if (channel.id === PRIVATE_CHAT_LOBBY_CHANNEL_ID) return false;
   return channel.parentId === PRIVATE_CHAT_CATEGORY_ID ||
     String(channel.name ?? "").startsWith("👥");
 }
