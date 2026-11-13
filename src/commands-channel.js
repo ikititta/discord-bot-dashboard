@@ -11,52 +11,13 @@ export const MODERATION_PANEL_TITLE = "୨୧ 𝓜𝓸𝓭𝓮𝓻𝓪𝓽𝓲�
 const COLOR = 0xffd9ff;
 const PREFIX = "sugar-commands:";
 const categories = {
-  fun: {
-    label: "Fun",
-    emoji: "🎀",
-    description:
-      "**Two-person**\n`!slap @member` · `!bonk @member` · `!spank @member` · `!hug @member` · `!kiss @member` · `!cuddle @member` · `!pat @member` · `!poke @member` · `!bite @member` · `!kick @member` · `!kill @member` · `!highfive @member` · `!handhold @member`\n\n" +
-      "**VIP-only**\n`!fuck @member`\n\n" +
-      "**Solo**\n`!cry` · `!laugh` · `!dance` · `!sleep` · `!happy` · `!blush` · `!smug` · `!wave` · `!facepalm` · `!wink` · `!shrug` · `!smile` · `!pout`\n\n" +
-      "**Relationships**\n`!couple @member` · `!propose @member` · `!marry @member` · `!breakup` · `!divorce`\n\n" +
-      "**Stats & help**\n`!funhelp` · `/fun help` · `!stats` / `!fun stats` (VIP) · `!vip stats [@member]` (VIP)\n\nAll fun and relationship interactions require the Member role. `!fuck` is VIP-only.",
-  },
-  pets: {
-    label: "Pets",
-    emoji: "🐾",
-    description:
-      "**Adoption & profile**\n`!pet adopt` · `!pet` · `!pet stats` · `!pet select <number>`\nChoose a species in the adoption selector. Everyone gets a random design; VIP can customise before adopting. One pet per member by default; VIP can unlock up to three slots.\n\n" +
-      "**Care & bonding**\n`!pet feed` · `!pet play` · `!pet cuddle` · `!pet talk` · `!pet story` · `!pet gif [happy|dance|sleep]`\nBonding unlocks special dialogue and reaction GIFs.\n\n" +
-      "**Coins & items**\n`!pet daily` · `!pet shop` · `!pet buy <treat|toy|potion>` · `!pet use <item>` · `!pet inventory` · `!pet delete`\nTreats restore hunger, toys boost happiness and bond, and potions refill hunger completely.\n\n" +
-      "**VIP customisation & extras**\n`!pet name <name>` · `!pet color <color>` · `!pet breed <breed>` · `!pet appearance <details>` · `!pet personality <traits>` · `!pet room` · `!pet outfit <name>` · `!pet slots` · `!pet minigame`",
-  },
-  community: {
-    label: "Community",
-    emoji: "💌",
-    description:
-      "**Confessions, polls, love letters & suggestions**\nUse the buttons in their respective channel panels to submit a confession, create a poll, send a love letter, reply in its publication thread, or submit a suggestion. Each confession, poll and love letter has one conversation thread. Polls allow one active vote per person; choosing another option changes your vote.\n\n" +
-      "**Reputation**\n`!rep` · `!rep @member` · `!rep stats` · `!rep stats @member` · `!rep top` · `!rep comments [@member]`",
-  },
-  private: {
-    label: "Private Chats",
-    emoji: "🔒",
-    description:
-      "**Slash commands**\n`/priv-chat create name:<name>` — create a private chat and optionally invite up to five people.\n" +
-      "`/priv-chat add user:<member>` · `/priv-chat remove user:<member>` · `/priv-chat rename name:<name>`\n" +
-      "`/priv-chat leave` · `/priv-chat delete` · `/priv-chat commands`\n\n" +
-      "The owner manages invites, renaming and deletion. Invited members can leave. The owner may rename their private chat at any time.",
-  },
-  profile: {
-    label: "Profiles & Tools",
-    emoji: "🪞",
-    description:
-      "`!profile [@member]` — view a member profile, fun stats, reputation and pet summary.\n" +
-      "`!quote` — reply to a message, then send `!quote` to create an image quote.\n" +
-      "`!funhelp` or `/fun help` — fun-command help.\n" +
-      "`!pet shop` — pet shop and item prices.\n" +
-      "`!pet inventory` — items owned by your active pet.",
-  },
-
+  solo: { label: "Solo · SFW", emoji: "🌷", description: "**Solo · no sexual**\n`!cry` · `!laugh` · `!dance` · `!sleep` · `!happy` · `!blush` · `!smug` · `!wave` · `!facepalm` · `!wink` · `!shrug` · `!smile` · `!pout`\n\nSolo actions; no member mention needed." },
+  soloNsfw: { label: "Solo · NSFW", emoji: "🔞", description: "**Solo · VIP · NSFW**\nNo solo NSFW action is currently enabled. `!masturbate @member` is a two-person interaction and appears in Couple · NSFW." },
+  relationship: { label: "Relationships", emoji: "💍", description: "`!couple @member` · `!propose @member` · `!marry @member` · `!breakup` · `!divorce`\n\nThe other member must accept a proposal. Both people need the Member role." },
+  affection: { label: "Romance & Affection", emoji: "💕", description: "`!hug @member` · `!kiss @member` · `!cuddle @member` · `!pat @member` · `!handhold @member` · `!highfive @member`\n\nTwo-person interactions with anime GIFs." },
+  interactions: { label: "Interactions", emoji: "🎀", description: "`!slap @member` · `!bonk @member` · `!spank @member` · `!poke @member` · `!bite @member` · `!lick @member` · `!feet @member` · `!kick @member` · `!shoot @member` · `!kill @member` · `!tease @member` · `!seduce @member`\n\n`!tease` and `!seduce` are VIP-only and include anime GIFs. `!kill` applies a 30-second timeout." },
+  nsfw: { label: "Couple · NSFW", emoji: "🔞", description: "**VIP interactions · NSFW**\n`!fuck @member` · `!masturbate @member` · `!oral @member` · `!anal @member`\n\nFor `!masturbate @member`, the person running the command performs the action toward the mentioned member. VIP is required from either participant." },
+  functional: { label: "Functional", emoji: "🛠️", description: "**Messages**\n`/delete amount:<1-20>` — delete your own recent messages\n`/vip-delete amount:<1-100>` — VIP message deletion\n`/mod-delete amount:<1-100> [member]` — moderator-only cleanup\n`!quote` — reply to a message, then use `!quote` to create an image quote\n\n**Profiles & stats**\n`!profile [@member]` · `/stats` · `/vip stats [member]`\n\n**Community & pets**\n`!rep` · `!rep @member` · `!rep stats` · `!rep top` · `!pet` and `!pet <action>`\n\n**Private chats**\n`/priv-chat create` · `/priv-chat add` · `/priv-chat remove` · `/priv-chat rename` · `/priv-chat leave` · `/priv-chat delete` · `/priv-chat commands`" },
 };
 
 export function buildCommandsCategoryEmbed(category) {
@@ -190,6 +151,15 @@ async function refreshCommandsSticky(channel, client) {
 
 const refreshQueues = new Map();
 export function attachCommandsChannel(client) {
+  client.on(Events.MessageCreate, async (message) => {
+    if (!message.guild || message.author?.bot || message.webhookId ||
+        !/^!commands$/i.test(String(message.content ?? "").trim())) return;
+    await message.reply({
+      ...buildCommandsPanelPayload(),
+      allowedMentions: { parse: [], repliedUser: false },
+    }).catch((error) => console.error("[commands] !commands response failed: " + error.message));
+  });
+
   client.on(Events.InteractionCreate, async (interaction) => {
     if (!interaction.isButton?.()) return;
     if (!interaction.customId.startsWith(PREFIX)) return;
@@ -201,7 +171,7 @@ export function attachCommandsChannel(client) {
   });
 
   const refreshForMessage = (message) => {
-    if (!message.guild || message.author?.bot || message.webhookId ||
+    if (!message.guild || message.author?.bot || message.webhookId || /^!commands$/i.test(String(message.content ?? "").trim()) ||
         message.channel?.type !== ChannelType.GuildText ||
         message.channel.parentId !== COMMANDS_CATEGORY_ID ||
         message.channel.topic !== COMMANDS_CHANNEL_TOPIC) return;
