@@ -62,6 +62,20 @@ export class FunCommandStore {
     return this.getStats(guildId, actorId);
   }
 
+  setGifStyle(guildId, userId, style) {
+    if (!["anime", "real"].includes(style)) throw new Error("Invalid fun GIF style.");
+    const guild = this.#guild(guildId);
+    guild.gifStyles ??= {};
+    guild.gifStyles[userId] = style;
+    this.#write();
+    return style;
+  }
+
+  getGifStyle(guildId, userId) {
+    const style = this.data.guilds[guildId]?.gifStyles?.[userId];
+    return ["anime", "real"].includes(style) ? style : "anime";
+  }
+
   setNsfwAutoAccept(guildId, userId, enabled) {
     const guild = this.#guild(guildId);
     guild.nsfwAutoAccept ??= {};
