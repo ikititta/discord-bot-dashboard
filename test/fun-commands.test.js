@@ -86,6 +86,7 @@ test("fun commands recognize the live Member role even if its role ID changes", 
 test("fun action messages mention the actor and target with clear past-tense wording", () => {
   assert.equal(buildFunActionText("111", "222", { text: "has hugged" }), "<@111> has hugged <@222>!");
   assert.equal(buildFunActionText("111", null, { text: "has cried" }), "<@111> has cried!");
+  assert.equal(buildFunActionText("111", "222", { text: "has masturbated" }), "<@111> has masturbated <@222>!");
 });
 
 test("fun help explains command types, stats, and VIP access", () => {
@@ -109,7 +110,7 @@ test("fun help explains command types, stats, and VIP access", () => {
   assert.match(fields, /!anal @member \\(VIP; NSFW\\)/);
   assert.doesNotMatch(fields, /age-restricted channels only|NSFW channel/);
   assert.match(fields, /!tease @member \(VIP; text-only\)/);
-  assert.match(fields, /!seduce @member \(VIP; text-only\)/);
+  assert.match(fields, /!seduce @member \(VIP; GIF\)/);
   assert.doesNotMatch(fields, /NSFW preferences|!nsfw-on|!nsfw-off|approval/i);
 });
 
@@ -138,7 +139,7 @@ test("paired and solo commands enforce the correct mention mode", () => {
   assert.equal(getFunCommandDefinition("oral").gif, null);
   assert.equal(getFunCommandDefinition("anal").gif, null);
   assert.equal(getFunCommandDefinition("tease").gif, null);
-  assert.equal(getFunCommandDefinition("seduce").gif, null);
+  assert.equal(getFunCommandDefinition("seduce").gif, "wink");
   assert.equal(getFunCommandDefinition("unknown"), null);
 });
 
