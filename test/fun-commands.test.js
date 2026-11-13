@@ -244,6 +244,7 @@ test("!fuck selects NSFW GIF categories from both members' gender roles", async 
   assert.equal(shouldPreferAnalGif("male", "female", -1, 2), false);
   assert.equal(shouldPreferAnalGif("male", "female", -2, 1), false);
   assert.equal(resolveNsfwGifCategory("male", "female", -2, 2), "anal");
+  assert.equal(resolveNsfwGifCategory("male", "male", -2, 2), "yaoi");
   assert.equal(resolveNsfwGifCategory("female", "male", 2, -2), "anal");
   assert.equal(resolveNsfwGifCategory("trans", "female"), "fuck");
   const gif = await fetchNsfwGif({
