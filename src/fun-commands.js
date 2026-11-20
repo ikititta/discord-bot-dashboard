@@ -430,15 +430,15 @@ async function handleStats(message, store, args) {
   return null;
 }
 
-async function handleFunAction(message, store, name, args, fetchImpl) {
+async function handleFunAction(message, store, name, args, fetchImpl, actorMember = message.member) {
   const definition = getFunCommandDefinition(name);
   if (!definition) return false;
   let targetMember = null;
   let targetUser = null;
   let targetRole = null;
   let targetDominance = null;
-  const actorRole = normalizeFunRole(message.member);
-  const actorDominance = normalizeFunDominance(message.member);
+  const actorRole = normalizeFunRole(actorMember);
+  const actorDominance = normalizeFunDominance(actorMember);
   if (definition.needsTarget) {
     targetUser = message.mentions.users.first();
     const replyTargetAllowed = !["fuck", "masturbate", "oral", "anal"].includes(name);
@@ -466,7 +466,7 @@ async function handleFunAction(message, store, name, args, fetchImpl) {
       return true;
     }
     // VIP access for paired commands is satisfied when either participant is VIP.
-    if (isVipOnlyFunCommand(name) && !isVip(message.member) && !isVip(targetMember)) {
+    if (isVipOnlyFunCommand(name) && !isVip(actorMember) && !isVip(targetMember)) {
       await safeReply(message, { content: `The !${name} command is a VIP-only benefit ♡` });
       return true;
     }
@@ -622,7 +622,7 @@ export function attachFunCommands(client, { store, fetchImpl = fetch, token, app
 
   client.on(Events.MessageCreate, async (message) => {
     if (!message.guild || message.guild.id !== KITTISUGAR_GUILD_ID ||
-        message.author?.bot || message.webhookId || !message.member) return;
+        message.author?.bot || message.webhookId) return;
     const commandText = String(message.content ?? "").trim();
     const match = /^!([a-z-]+)(?:\s+([\s\S]*))?$/i.exec(commandText);
     if (!match) return;
@@ -630,6 +630,13 @@ export function attachFunCommands(client, { store, fetchImpl = fetch, token, app
     const name = match[1].toLowerCase();
     const args = match[2] ?? "";
     try {
+      // Discord may omit the member payload even in a guild message. Recover it
+      // from the guild instead of silently dropping the command.
+      const actorMember = message.member ?? await message.guild.members.fetch(message.author.id).catch(() => null);
+      if (!actorMember) {
+        await safeReply(message, { content: "I couldn't load your Kittisugar member profile. Please try again ♡" });
+        return;
+      }
       if (BLOCKED_COMMANDS.has(name)) {
         await safeReply(message, { content: "That command isn't available." });
         return;
@@ -649,11 +656,11 @@ export function attachFunCommands(client, { store, fetchImpl = fetch, token, app
         return;
       }
       if (!getFunCommandDefinition(name)) return;
-      if (!isVerifiedAdult(message.member)) {
+      if (!isVerifiedAdult(actorMember)) {
         await safeReply(message, { content: "Fun commands require the Member role ♡" });
         return;
       }
-      await handleFunAction(message, store, name, args, fetchImpl);
+      await handleFunAction(message, store, name, args, fetchImpl, actorMember);
     } catch (error) {
       console.error(`[fun] !${name} failed for member ${message.author.id}: ${error.message}`);
       await safeReply(message, { content: "Sugar couldn't complete that fun command. Please try again ♡" }).catch(() => {});
